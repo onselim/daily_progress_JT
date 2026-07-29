@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../../lib/AuthContext';
 import { useProjectBySlug } from '../../lib/useProject';
 import { useAssetStats } from '../../lib/useAssetStats';
+import { DailyProgressForm } from '../../components/DailyProgressForm';
 
 export default function FieldProjectPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -37,7 +38,7 @@ export default function FieldProjectPage() {
         </div>
       </div>
 
-      <p>Daily log entry and photo upload land here next.</p>
+      <DailyProgressForm projectId={project.id} />
     </div>
   );
 }
