@@ -21,33 +21,36 @@ export default function PublicViewerPage() {
   }
 
   return (
-    <div className="viewer-shell viewer-shell-wide project-workspace">
-      <header className="viewer-header">
-        <div>
+    <div className="project-shell">
+      <header className="project-topbar">
+        <div className="project-topbar-left">
           <h1>{project.name}</h1>
-          {project.client && <p className="viewer-sub">{project.client}</p>}
+          {project.client && <p>{project.client}</p>}
+        </div>
+        <div className="project-topbar-stats">
+          <span className="stat-pill">
+            <span className="stat-pill-dot" style={{ background: '#00d4aa' }} />
+            <span className="stat-pill-val">{stats.inProgress}</span>
+            <span className="stat-pill-lbl">Active</span>
+          </span>
+          <span className="stat-pill">
+            <span className="stat-pill-dot" style={{ background: '#ef4444' }} />
+            <span className="stat-pill-val">{restrictedAssetIds.size}</span>
+            <span className="stat-pill-lbl">No Access</span>
+          </span>
+          <span className="stat-pill">
+            <span className="stat-pill-dot" style={{ background: '#3b82f6' }} />
+            <span className="stat-pill-val">{stats.completed}</span>
+            <span className="stat-pill-lbl">Completed</span>
+          </span>
+          <span className="stat-pill">
+            <span className="stat-pill-dot" style={{ background: '#3d4259' }} />
+            <span className="stat-pill-val">{stats.total}</span>
+            <span className="stat-pill-lbl">Towers</span>
+          </span>
         </div>
         <button onClick={() => window.print()}>Print PDF</button>
       </header>
-
-      <div className="stat-row">
-        <div className="stat-card">
-          <div className="stat-val">{stats.total}</div>
-          <div className="stat-lbl">Total assets</div>
-        </div>
-        <div className="stat-card stat-card-completed">
-          <div className="stat-val">{stats.completed}</div>
-          <div className="stat-lbl">Completed</div>
-        </div>
-        <div className="stat-card stat-card-progress">
-          <div className="stat-val">{stats.inProgress}</div>
-          <div className="stat-lbl">In progress</div>
-        </div>
-        <div className="stat-card stat-card-danger">
-          <div className="stat-val">{restrictedAssetIds.size}</div>
-          <div className="stat-lbl">No access today</div>
-        </div>
-      </div>
 
       <AssetWorkspace projectId={project.id} coordinateSystem={project.coordinate_system} editable={false} />
     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { utmToLatLng } from '../lib/utmToLatLng';
@@ -9,6 +9,29 @@ const STATUS_COLOR: Record<string, string> = {
   in_progress: '#00d4aa',
   completed: '#3b82f6',
   on_hold: '#ef4444',
+};
+
+const BASEMAPS: Record<string, { label: string; url: string; options: L.TileLayerOptions }> = {
+  satellite: {
+    label: 'Google Satellite',
+    url: 'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+    options: { subdomains: '0123', maxZoom: 21, attribution: 'Google Satellite' },
+  },
+  osm: {
+    label: 'OpenStreetMap',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    options: { maxZoom: 19, attribution: 'OpenStreetMap' },
+  },
+  topo: {
+    label: 'Topographic',
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    options: { maxZoom: 17, attribution: 'OpenTopoMap' },
+  },
+  esri: {
+    label: 'ESRI ArcGIS',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    options: { maxZoom: 19, attribution: 'ESRI ArcGIS' },
+  },
 };
 
 function restrictedIconHtml(size: number, code: string): string {
@@ -61,17 +84,16 @@ export function MapView({ assets, coordinateSystem, selectedAssetId, onSelect, r
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
   const lineRef = useRef<L.Polyline | null>(null);
+  const basemapLayerRef = useRef<L.TileLayer | null>(null);
   const hasFitBounds = useRef(false);
+  const [basemap, setBasemap] = useState<keyof typeof BASEMAPS>('satellite');
+  const [basemapMenuOpen, setBasemapMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
     const map = L.map(containerRef.current, { zoomControl: true }).setView([0, 0], 2);
-    L.tileLayer('https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-      subdomains: '0123',
-      maxZoom: 21,
-      attribution: 'Google Satellite',
-    }).addTo(map);
+    basemapLayerRef.current = L.tileLayer(BASEMAPS.satellite.url, BASEMAPS.satellite.options).addTo(map);
     lineRef.current = L.polyline([], { color: '#fff', weight: 2, dashArray: '4 6', opacity: 0.8 }).addTo(map);
     mapRef.current = map;
 
@@ -80,6 +102,14 @@ export function MapView({ assets, coordinateSystem, selectedAssetId, onSelect, r
       mapRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (basemapLayerRef.current) map.removeLayer(basemapLayerRef.current);
+    const bm = BASEMAPS[basemap];
+    basemapLayerRef.current = L.tileLayer(bm.url, bm.options).addTo(map);
+  }, [basemap]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -140,5 +170,31 @@ export function MapView({ assets, coordinateSystem, selectedAssetId, onSelect, r
     }
   }, [assets, coordinateSystem, selectedAssetId, onSelect, restrictedAssetIds]);
 
-  return <div ref={containerRef} className="map-view" />;
+  return (
+    <>
+      <div ref={containerRef} className="map-view" />
+      <div className="basemap-control">
+        {basemapMenuOpen && (
+          <div className="basemap-menu">
+            {Object.entries(BASEMAPS).map(([key, bm]) => (
+              <button
+                key={key}
+                type="button"
+                className={key === basemap ? 'active' : ''}
+                onClick={() => {
+                  setBasemap(key as keyof typeof BASEMAPS);
+                  setBasemapMenuOpen(false);
+                }}
+              >
+                {bm.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <button type="button" className="basemap-btn" onClick={() => setBasemapMenuOpen((v) => !v)}>
+          🗺 Base Map ▾
+        </button>
+      </div>
+    </>
+  );
 }
