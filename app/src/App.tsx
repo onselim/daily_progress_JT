@@ -7,6 +7,7 @@ import ProjectPickerPage from './pages/ProjectPickerPage';
 import AdminProjectPage from './pages/admin/AdminProjectPage';
 import FieldProjectPage from './pages/field/FieldProjectPage';
 import PublicViewerPage from './pages/PublicViewerPage';
+import PrintReportPage from './pages/PrintReportPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/field/:slug" element={<FieldProjectPage />} />
         </Route>
 
+        <Route path="/print/:slug" element={<PrintReportPage />} />
         <Route path="/:slug" element={<PublicViewerPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

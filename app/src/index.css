@@ -945,3 +945,397 @@ button:disabled {
     display: none;
   }
 }
+
+/* ============ Print report (light theme, independent of app dark theme) ============ */
+
+.pd-page {
+  background: #e5e7eb;
+  min-height: 100vh;
+  padding: 24px;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  color: #111827;
+}
+
+.pd-toolbar {
+  max-width: 1200px;
+  margin: 0 auto 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pd-sheet {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #fff;
+  color: #111827;
+  padding: 28px 32px;
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.pd-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 16px;
+}
+
+.pd-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pd-logo {
+  width: 42px;
+  height: 42px;
+  background: #1e3a5f;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pd-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.pd-sub {
+  font-size: 11px;
+  color: #6b7280;
+  letter-spacing: 0.03em;
+  margin-top: 2px;
+}
+
+.pd-header-right {
+  text-align: right;
+}
+
+.pd-date {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.pd-contract {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.pd-stat-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.pd-stat-main {
+  background: #1e3a5f;
+  border-radius: 8px;
+  padding: 14px 16px;
+  color: #fff;
+}
+
+.pd-stat-main-val {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.pd-stat-lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+
+.pd-stat-main .pd-stat-lbl {
+  color: #cbd5e1;
+}
+
+.pd-stat-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.pd-stat-bar-fill {
+  height: 100%;
+  background: #60a5fa;
+  border-radius: 2px;
+}
+
+.pd-stat {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px 16px;
+  text-align: center;
+}
+
+.pd-stat-val {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.pd-stat-val-sm {
+  font-size: 14px;
+}
+
+.pd-stat .pd-stat-lbl {
+  color: #6b7280;
+}
+
+.pd-stat-green {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.pd-stat-green .pd-stat-val {
+  color: #059669;
+}
+
+.pd-stat-red {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.pd-stat-red .pd-stat-val {
+  color: #dc2626;
+}
+
+.pd-stat-blue {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.pd-stat-blue .pd-stat-val {
+  color: #2563eb;
+}
+
+.pd-3col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: start;
+}
+
+.pd-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.pd-box {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.pd-box-red {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.pd-box-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pd-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.pd-dot-round {
+  border-radius: 50%;
+}
+
+.pd-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.pd-bar-lbl {
+  flex: 0 0 110px;
+  font-size: 11px;
+  color: #374151;
+}
+
+.pd-bar-lbl-muted {
+  color: #9ca3af;
+}
+
+.pd-bar-track {
+  flex: 1;
+  height: 5px;
+  background: #f3f4f6;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.pd-bar-fill2 {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.pd-bar-val {
+  flex: 0 0 40px;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: right;
+  color: #374151;
+}
+
+.pd-subtotal {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.pd-muted {
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.pd-weather-row {
+  display: flex;
+  gap: 6px;
+}
+
+.pd-weather-day {
+  flex: 1;
+  text-align: center;
+  font-size: 10px;
+}
+
+.pd-weather-day .day {
+  color: #9ca3af;
+  font-weight: 700;
+}
+
+.pd-weather-day .temp {
+  color: #374151;
+  font-weight: 700;
+  font-size: 11px;
+  margin: 2px 0;
+}
+
+.pd-condition {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.pd-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pd-badge {
+  font-size: 10px;
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #fecaca;
+}
+
+.pd-badge-more {
+  font-size: 10px;
+  color: #9ca3af;
+  padding: 2px 4px;
+}
+
+.pd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.pd-table th {
+  text-align: left;
+  padding: 4px 6px;
+  color: #9ca3af;
+  font-weight: 700;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.pd-table td {
+  padding: 5px 6px;
+  border-bottom: 1px solid #f9fafb;
+  color: #374151;
+}
+
+.pd-table td:first-child {
+  font-weight: 700;
+}
+
+.pd-empty-row {
+  color: #9ca3af;
+  text-align: center;
+  padding: 10px;
+}
+
+.pd-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #9ca3af;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+@media print {
+  .pd-toolbar {
+    display: none;
+  }
+  .pd-page {
+    background: #fff;
+    padding: 0;
+  }
+  .pd-sheet {
+    box-shadow: none;
+    max-width: 100%;
+  }
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+}

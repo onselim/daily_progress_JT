@@ -49,7 +49,12 @@ export default function AdminProjectPage() {
             <span className="stat-pill-lbl">Towers</span>
           </span>
         </div>
-        <button onClick={signOut}>Sign out</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" onClick={() => window.open(`/print/${project.slug}`, '_blank')}>
+            Print PDF
+          </button>
+          <button onClick={signOut}>Sign out</button>
+        </div>
       </header>
 
       <AssetWorkspace projectId={project.id} coordinateSystem={project.coordinate_system} />
