@@ -1,0 +1,263 @@
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/AuthContext';
+import { useWorkItemsConfig } from '../lib/useProjectConfig';
+import { useAssetPhotos } from '../lib/useAssetPhotos';
+import { uploadAssetPhoto } from '../lib/uploadAssetPhoto';
+
+type WorkItemStatus = 'not_started' | 'in_progress' | 'completed';
+
+const STATUS_OPTIONS: { value: WorkItemStatus; label: string }[] = [
+  { value: 'not_started', label: 'Not started' },
+  { value: 'in_progress', label: 'In progress' },
+  { value: 'completed', label: 'Completed' },
+];
+
+const PERCENT_BY_STATUS: Record<WorkItemStatus, number> = {
+  not_started: 0,
+  in_progress: 50,
+  completed: 100,
+};
+
+function statusFromPercent(percent: number): WorkItemStatus {
+  if (percent <= 0) return 'not_started';
+  if (percent >= 100) return 'completed';
+  return 'in_progress';
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+interface AssetEditorProps {
+  projectId: string;
+  assetId: string;
+}
+
+export function AssetEditor({ projectId, assetId }: AssetEditorProps) {
+  const { user } = useAuth();
+  const { workItems, loading: workItemsLoading } = useWorkItemsConfig(projectId);
+  const { photos, loading: photosLoading, refresh: refreshPhotos } = useAssetPhotos(assetId);
+
+  const [assetCode, setAssetCode] = useState('');
+  const [assetType, setAssetType] = useState<string | null>(null);
+  const [notes, setNotes] = useState('');
+  const [statusByKey, setStatusByKey] = useState<Record<string, WorkItemStatus>>({});
+  const [completedToday, setCompletedToday] = useState('');
+  const [plannedTomorrow, setPlannedTomorrow] = useState('');
+  const [siteAccessStatus, setSiteAccessStatus] = useState('normal');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setMessage(null);
+
+    Promise.all([
+      supabase.from('assets').select('asset_code, asset_type, notes').eq('id', assetId).maybeSingle(),
+      supabase.from('asset_work_items').select('work_item_key, percent_complete').eq('asset_id', assetId),
+      supabase
+        .from('asset_daily_log')
+        .select('completed_today, planned_tomorrow, site_access_status')
+        .eq('asset_id', assetId)
+        .eq('log_date', todayIso())
+        .maybeSingle(),
+    ]).then(([assetRes, workItemsRes, logRes]) => {
+      if (cancelled) return;
+
+      setAssetCode(assetRes.data?.asset_code ?? '');
+      setAssetType(assetRes.data?.asset_type ?? null);
+      setNotes(assetRes.data?.notes ?? '');
+
+      const next: Record<string, WorkItemStatus> = {};
+      for (const item of workItemsRes.data ?? []) {
+        next[item.work_item_key] = statusFromPercent(Number(item.percent_complete));
+      }
+      setStatusByKey(next);
+
+      setCompletedToday(logRes.data?.completed_today ?? '');
+      setPlannedTomorrow(logRes.data?.planned_tomorrow ?? '');
+      setSiteAccessStatus(logRes.data?.site_access_status ?? 'normal');
+
+      setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [assetId]);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+    setSaving(true);
+    setMessage(null);
+
+    const workItemRows = workItems.map((item) => {
+      const status = statusByKey[item.key] ?? 'not_started';
+      return {
+        asset_id: assetId,
+        work_item_key: item.key,
+        percent_complete: PERCENT_BY_STATUS[status],
+        status,
+        completed_at: status === 'completed' ? new Date().toISOString() : null,
+        updated_by: user.id,
+      };
+    });
+
+    const [workItemsResult, dailyLogResult, assetResult] = await Promise.all([
+      supabase.from('asset_work_items').upsert(workItemRows, { onConflict: 'asset_id,work_item_key' }),
+      supabase.from('asset_daily_log').upsert(
+        {
+          asset_id: assetId,
+          log_date: todayIso(),
+          completed_today: completedToday,
+          planned_tomorrow: plannedTomorrow,
+          site_access_status: siteAccessStatus,
+          updated_by: user.id,
+        },
+        { onConflict: 'asset_id,log_date' },
+      ),
+      supabase.from('assets').update({ notes }).eq('id', assetId),
+    ]);
+
+    setSaving(false);
+
+    const firstError = workItemsResult.error ?? dailyLogResult.error ?? assetResult.error;
+    if (firstError) {
+      setMessage(`Save failed: ${firstError.message}`);
+      return;
+    }
+
+    await supabase.from('activity_log').insert({
+      project_id: projectId,
+      user_id: user.id,
+      action_type: 'daily_progress_update',
+      details: { asset_id: assetId, log_date: todayIso() },
+    });
+
+    setMessage('Saved.');
+  }
+
+  async function handlePhotoUpload(e: ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !user) return;
+    setUploading(true);
+    setMessage(null);
+
+    try {
+      for (const file of Array.from(files)) {
+        await uploadAssetPhoto({ projectId, assetCode, assetId, file, uploadedBy: user.id });
+      }
+      await refreshPhotos();
+    } catch (err) {
+      setMessage(`Photo upload failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  }
+
+  if (loading) return <p>Loading asset…</p>;
+
+  const groups: { name: string; items: typeof workItems }[] = [];
+  for (const item of workItems) {
+    const name = item.group ?? 'Work items';
+    let group = groups.find((g) => g.name === name);
+    if (!group) {
+      group = { name, items: [] };
+      groups.push(group);
+    }
+    group.items.push(item);
+  }
+
+  return (
+    <form className="asset-editor" onSubmit={handleSubmit}>
+      <h2>
+        {assetCode}
+        {assetType && <span className="asset-editor-type"> — {assetType}</span>}
+      </h2>
+
+      {!workItemsLoading &&
+        groups.map((group) => {
+          const done = group.items.filter((item) => (statusByKey[item.key] ?? 'not_started') === 'completed')
+            .length;
+          return (
+            <fieldset key={group.name}>
+              <legend>
+                {group.name} <span className="group-count">{done}/{group.items.length}</span>
+              </legend>
+              {group.items.map((item) => {
+                const current = statusByKey[item.key] ?? 'not_started';
+                return (
+                  <div key={item.key} className="work-item-row">
+                    <span>{item.label}</span>
+                    <div className="status-toggle" role="group" aria-label={item.label}>
+                      {STATUS_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          className={`status-btn status-btn-${opt.value}${current === opt.value ? ' active' : ''}`}
+                          onClick={() => setStatusByKey((prev) => ({ ...prev, [item.key]: opt.value }))}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </fieldset>
+          );
+        })}
+
+      <label>
+        Completed today
+        <textarea value={completedToday} onChange={(e) => setCompletedToday(e.target.value)} rows={2} />
+      </label>
+
+      <label>
+        Planned for tomorrow
+        <textarea value={plannedTomorrow} onChange={(e) => setPlannedTomorrow(e.target.value)} rows={2} />
+      </label>
+
+      <label>
+        Site access
+        <select value={siteAccessStatus} onChange={(e) => setSiteAccessStatus(e.target.value)}>
+          <option value="normal">Normal working day</option>
+          <option value="restricted">Non-working day — unfavourable weather/terrain</option>
+        </select>
+      </label>
+
+      <label>
+        Notes
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+      </label>
+
+      <fieldset>
+        <legend>Photos</legend>
+        <div className="photo-grid">
+          {photosLoading && <p>Loading photos…</p>}
+          {photos.map((p) => (
+            <a key={p.id} href={p.file_url} target="_blank" rel="noreferrer" className="photo-thumb">
+              <img src={p.file_url} alt="" />
+            </a>
+          ))}
+        </div>
+        <label className="photo-upload-label">
+          {uploading ? 'Uploading…' : '+ Add photos'}
+          <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} disabled={uploading} />
+        </label>
+      </fieldset>
+
+      <button type="submit" disabled={saving}>
+        {saving ? 'Saving…' : 'Save'}
+      </button>
+
+      {message && <p className="form-message">{message}</p>}
+    </form>
+  );
+}

@@ -5,6 +5,7 @@ export interface WorkItemConfig {
   key: string;
   label: string;
   weight: number;
+  group?: string;
 }
 
 export function useWorkItemsConfig(projectId: string | undefined) {

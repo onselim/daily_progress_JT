@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../../lib/AuthContext';
 import { useProjectBySlug } from '../../lib/useProject';
 import { useAssetStats } from '../../lib/useAssetStats';
-import { DailyProgressForm } from '../../components/DailyProgressForm';
+import { AssetWorkspace } from '../../components/AssetWorkspace';
 
 export default function FieldProjectPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -14,7 +14,7 @@ export default function FieldProjectPage() {
   if (error || !project) return <div className="page-loading">Project not found.</div>;
 
   return (
-    <div className="panel-shell">
+    <div className="panel-shell panel-shell-wide">
       <header className="panel-header">
         <div>
           <Link to="/field">← Projects</Link>
@@ -38,7 +38,7 @@ export default function FieldProjectPage() {
         </div>
       </div>
 
-      <DailyProgressForm projectId={project.id} />
+      <AssetWorkspace projectId={project.id} coordinateSystem={project.coordinate_system} />
     </div>
   );
 }
