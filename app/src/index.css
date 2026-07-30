@@ -469,6 +469,124 @@ button:disabled {
   display: none;
 }
 
+.project-workspace {
+  --text: #9aa0b4;
+  --text-h: #e8eaf0;
+  --bg: #0f1117;
+  --panel-bg: #171b26;
+  --border: rgba(255, 255, 255, 0.08);
+  --accent: #00d4aa;
+  --accent-h: #00b894;
+  --danger: #ef4444;
+  background: var(--bg);
+  color: var(--text);
+  padding: 24px;
+  border-radius: 12px;
+}
+
+.project-workspace button:not(.status-btn):not(.asset-list-item) {
+  color: #0f1117;
+}
+
+.project-workspace a {
+  color: #60a5fa;
+}
+
+.stat-card-completed .stat-val {
+  color: var(--accent);
+}
+
+.stat-card-progress .stat-val {
+  color: #f59e0b;
+}
+
+.stat-card-danger .stat-val {
+  color: var(--danger);
+}
+
+.asset-list-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.asset-badge {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.asset-badge-restricted {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.asset-progress-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.asset-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+.asset-progress-pct {
+  align-self: flex-end;
+  font-size: 10px;
+  color: var(--text);
+  font-family: var(--mono);
+}
+
+.asset-list-item {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.viewer-shell-wide {
+  max-width: 1600px;
+}
+
+.status-pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.status-pill-not_started {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+.status-pill-in_progress {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.status-pill-completed {
+  background: rgba(0, 212, 170, 0.15);
+  color: #00d4aa;
+}
+
+.readonly-field {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.readonly-field strong {
+  color: var(--text-h);
+}
+
 @media print {
   button {
     display: none;

@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../../lib/AuthContext';
 import { useProjectBySlug } from '../../lib/useProject';
 import { useAssetStats } from '../../lib/useAssetStats';
+import { useRestrictedToday } from '../../lib/useRestrictedToday';
 import { AssetWorkspace } from '../../components/AssetWorkspace';
 
 export default function AdminProjectPage() {
@@ -9,12 +10,13 @@ export default function AdminProjectPage() {
   const { signOut } = useAuth();
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
+  const restrictedAssetIds = useRestrictedToday(project?.id);
 
   if (loading) return <div className="page-loading">Loading…</div>;
   if (error || !project) return <div className="page-loading">Project not found.</div>;
 
   return (
-    <div className="panel-shell panel-shell-wide">
+    <div className="panel-shell panel-shell-wide project-workspace">
       <header className="panel-header">
         <div>
           <Link to="/admin">← Projects</Link>
@@ -28,17 +30,21 @@ export default function AdminProjectPage() {
           <div className="stat-val">{stats.total}</div>
           <div className="stat-lbl">Total assets</div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card stat-card-completed">
           <div className="stat-val">{stats.completed}</div>
           <div className="stat-lbl">Completed</div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card stat-card-progress">
           <div className="stat-val">{stats.inProgress}</div>
           <div className="stat-lbl">In progress</div>
         </div>
         <div className="stat-card">
           <div className="stat-val">{stats.notStarted}</div>
           <div className="stat-lbl">Not started</div>
+        </div>
+        <div className="stat-card stat-card-danger">
+          <div className="stat-val">{restrictedAssetIds.size}</div>
+          <div className="stat-lbl">No access today</div>
         </div>
       </div>
 

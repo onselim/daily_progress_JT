@@ -5,9 +5,9 @@ import { utmToLatLng } from '../lib/utmToLatLng';
 import type { AssetListItem } from '../lib/useAssets';
 
 const STATUS_COLOR: Record<string, string> = {
-  not_started: '#6b7280',
+  not_started: '#3d4259',
   in_progress: '#f59e0b',
-  completed: '#10b981',
+  completed: '#00d4aa',
   on_hold: '#ef4444',
 };
 
@@ -16,9 +16,10 @@ interface MapViewProps {
   coordinateSystem: string | null;
   selectedAssetId: string;
   onSelect: (assetId: string) => void;
+  restrictedAssetIds: Set<string>;
 }
 
-export function MapView({ assets, coordinateSystem, selectedAssetId, onSelect }: MapViewProps) {
+export function MapView({ assets, coordinateSystem, selectedAssetId, onSelect, restrictedAssetIds }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
@@ -62,7 +63,9 @@ export function MapView({ assets, coordinateSystem, selectedAssetId, onSelect }:
       }
       if (lat == null || lng == null) continue;
 
-      const color = STATUS_COLOR[asset.status] ?? STATUS_COLOR.not_started;
+      const color = restrictedAssetIds.has(asset.id)
+        ? '#ef4444'
+        : (STATUS_COLOR[asset.status] ?? STATUS_COLOR.not_started);
       const isSelected = asset.id === selectedAssetId;
       const size = isSelected ? 30 : 20;
 
@@ -87,7 +90,7 @@ export function MapView({ assets, coordinateSystem, selectedAssetId, onSelect }:
       map.fitBounds(points, { padding: [40, 40] });
       hasFitBounds.current = true;
     }
-  }, [assets, coordinateSystem, selectedAssetId, onSelect]);
+  }, [assets, coordinateSystem, selectedAssetId, onSelect, restrictedAssetIds]);
 
   return <div ref={containerRef} className="map-view" />;
 }

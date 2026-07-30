@@ -1,11 +1,14 @@
 import { useParams } from 'react-router-dom';
 import { useProjectBySlug } from '../lib/useProject';
 import { useAssetStats } from '../lib/useAssetStats';
+import { useRestrictedToday } from '../lib/useRestrictedToday';
+import { AssetWorkspace } from '../components/AssetWorkspace';
 
 export default function PublicViewerPage() {
   const { slug } = useParams<{ slug: string }>();
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
+  const restrictedAssetIds = useRestrictedToday(project?.id);
 
   if (loading) return <div className="page-loading">Loading…</div>;
 
@@ -18,7 +21,7 @@ export default function PublicViewerPage() {
   }
 
   return (
-    <div className="viewer-shell">
+    <div className="viewer-shell viewer-shell-wide project-workspace">
       <header className="viewer-header">
         <div>
           <h1>{project.name}</h1>
@@ -32,19 +35,21 @@ export default function PublicViewerPage() {
           <div className="stat-val">{stats.total}</div>
           <div className="stat-lbl">Total assets</div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card stat-card-completed">
           <div className="stat-val">{stats.completed}</div>
           <div className="stat-lbl">Completed</div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card stat-card-progress">
           <div className="stat-val">{stats.inProgress}</div>
           <div className="stat-lbl">In progress</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-val">{stats.notStarted}</div>
-          <div className="stat-lbl">Not started</div>
+        <div className="stat-card stat-card-danger">
+          <div className="stat-val">{restrictedAssetIds.size}</div>
+          <div className="stat-lbl">No access today</div>
         </div>
       </div>
+
+      <AssetWorkspace projectId={project.id} coordinateSystem={project.coordinate_system} editable={false} />
     </div>
   );
 }

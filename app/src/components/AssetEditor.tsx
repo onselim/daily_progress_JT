@@ -32,9 +32,10 @@ function todayIso() {
 interface AssetEditorProps {
   projectId: string;
   assetId: string;
+  editable?: boolean;
 }
 
-export function AssetEditor({ projectId, assetId }: AssetEditorProps) {
+export function AssetEditor({ projectId, assetId, editable = true }: AssetEditorProps) {
   const { user } = useAuth();
   const { workItems, loading: workItemsLoading } = useWorkItemsConfig(projectId);
   const { photos, loading: photosLoading, refresh: refreshPhotos } = useAssetPhotos(assetId);
@@ -192,6 +193,16 @@ export function AssetEditor({ projectId, assetId }: AssetEditorProps) {
               </legend>
               {group.items.map((item) => {
                 const current = statusByKey[item.key] ?? 'not_started';
+                if (!editable) {
+                  return (
+                    <div key={item.key} className="work-item-row">
+                      <span>{item.label}</span>
+                      <span className={`status-pill status-pill-${current}`}>
+                        {STATUS_OPTIONS.find((o) => o.value === current)?.label}
+                      </span>
+                    </div>
+                  );
+                }
                 return (
                   <div key={item.key} className="work-item-row">
                     <span>{item.label}</span>
@@ -214,48 +225,76 @@ export function AssetEditor({ projectId, assetId }: AssetEditorProps) {
           );
         })}
 
-      <label>
-        Completed today
-        <textarea value={completedToday} onChange={(e) => setCompletedToday(e.target.value)} rows={2} />
-      </label>
+      {editable ? (
+        <>
+          <label>
+            Completed today
+            <textarea value={completedToday} onChange={(e) => setCompletedToday(e.target.value)} rows={2} />
+          </label>
 
-      <label>
-        Planned for tomorrow
-        <textarea value={plannedTomorrow} onChange={(e) => setPlannedTomorrow(e.target.value)} rows={2} />
-      </label>
+          <label>
+            Planned for tomorrow
+            <textarea value={plannedTomorrow} onChange={(e) => setPlannedTomorrow(e.target.value)} rows={2} />
+          </label>
 
-      <label>
-        Site access
-        <select value={siteAccessStatus} onChange={(e) => setSiteAccessStatus(e.target.value)}>
-          <option value="normal">Normal working day</option>
-          <option value="restricted">Non-working day — unfavourable weather/terrain</option>
-        </select>
-      </label>
+          <label>
+            Site access
+            <select value={siteAccessStatus} onChange={(e) => setSiteAccessStatus(e.target.value)}>
+              <option value="normal">Normal working day</option>
+              <option value="restricted">Non-working day — unfavourable weather/terrain</option>
+            </select>
+          </label>
 
-      <label>
-        Notes
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
-      </label>
+          <label>
+            Notes
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+          </label>
+        </>
+      ) : (
+        <fieldset>
+          <legend>Daily status</legend>
+          <p className="readonly-field">
+            <strong>Today:</strong> {completedToday || '—'}
+          </p>
+          <p className="readonly-field">
+            <strong>Next day:</strong> {plannedTomorrow || '—'}
+          </p>
+          <p className="readonly-field">
+            <strong>Site access:</strong>{' '}
+            {siteAccessStatus === 'restricted' ? 'Non-working day — unfavourable weather/terrain' : 'Normal'}
+          </p>
+          {notes && (
+            <p className="readonly-field">
+              <strong>Notes:</strong> {notes}
+            </p>
+          )}
+        </fieldset>
+      )}
 
       <fieldset>
         <legend>Photos</legend>
         <div className="photo-grid">
           {photosLoading && <p>Loading photos…</p>}
+          {!photosLoading && photos.length === 0 && <p className="readonly-field">No photos yet.</p>}
           {photos.map((p) => (
             <a key={p.id} href={p.file_url} target="_blank" rel="noreferrer" className="photo-thumb">
               <img src={p.file_url} alt="" />
             </a>
           ))}
         </div>
-        <label className="photo-upload-label">
-          {uploading ? 'Uploading…' : '+ Add photos'}
-          <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} disabled={uploading} />
-        </label>
+        {editable && (
+          <label className="photo-upload-label">
+            {uploading ? 'Uploading…' : '+ Add photos'}
+            <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} disabled={uploading} />
+          </label>
+        )}
       </fieldset>
 
-      <button type="submit" disabled={saving}>
-        {saving ? 'Saving…' : 'Save'}
-      </button>
+      {editable && (
+        <button type="submit" disabled={saving}>
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+      )}
 
       {message && <p className="form-message">{message}</p>}
     </form>
