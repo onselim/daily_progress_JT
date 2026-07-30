@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
-import { useWorkItemsConfig } from '../lib/useProjectConfig';
+import { useWorkItemsConfig, type WorkItemConfig } from '../lib/useProjectConfig';
 import { useAssetPhotos } from '../lib/useAssetPhotos';
 import { uploadAssetPhoto } from '../lib/uploadAssetPhoto';
 
@@ -19,6 +19,12 @@ const PERCENT_BY_STATUS: Record<WorkItemStatus, number> = {
   completed: 100,
 };
 
+const ITEM_STATUS_COLOR: Record<WorkItemStatus, string> = {
+  not_started: '#3d4259',
+  in_progress: '#00d4aa',
+  completed: '#3b82f6',
+};
+
 function statusFromPercent(percent: number): WorkItemStatus {
   if (percent <= 0) return 'not_started';
   if (percent >= 100) return 'completed';
@@ -27,6 +33,13 @@ function statusFromPercent(percent: number): WorkItemStatus {
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function groupColor(items: WorkItemConfig[], statusByKey: Record<string, WorkItemStatus>): string {
+  const statuses = items.map((item) => statusByKey[item.key] ?? 'not_started');
+  if (statuses.every((s) => s === 'completed')) return '#3b82f6';
+  if (statuses.some((s) => s !== 'not_started')) return '#00d4aa';
+  return '#3d4259';
 }
 
 interface AssetEditorProps {
@@ -42,6 +55,7 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
 
   const [assetCode, setAssetCode] = useState('');
   const [assetType, setAssetType] = useState<string | null>(null);
+  const [station, setStation] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [statusByKey, setStatusByKey] = useState<Record<string, WorkItemStatus>>({});
   const [completedToday, setCompletedToday] = useState('');
@@ -58,7 +72,7 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
     setMessage(null);
 
     Promise.all([
-      supabase.from('assets').select('asset_code, asset_type, notes').eq('id', assetId).maybeSingle(),
+      supabase.from('assets').select('asset_code, asset_type, station, notes').eq('id', assetId).maybeSingle(),
       supabase.from('asset_work_items').select('work_item_key, percent_complete').eq('asset_id', assetId),
       supabase
         .from('asset_daily_log')
@@ -71,6 +85,7 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
 
       setAssetCode(assetRes.data?.asset_code ?? '');
       setAssetType(assetRes.data?.asset_type ?? null);
+      setStation(assetRes.data?.station ?? null);
       setNotes(assetRes.data?.notes ?? '');
 
       const next: Record<string, WorkItemStatus> = {};
@@ -164,7 +179,7 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
 
   if (loading) return <p>Loading asset…</p>;
 
-  const groups: { name: string; items: typeof workItems }[] = [];
+  const groups: { name: string; items: WorkItemConfig[] }[] = [];
   for (const item of workItems) {
     const name = item.group ?? 'Work items';
     let group = groups.find((g) => g.name === name);
@@ -175,29 +190,72 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
     group.items.push(item);
   }
 
+  const isRestricted = siteAccessStatus === 'restricted';
+
   return (
     <form className="asset-editor" onSubmit={handleSubmit}>
       <h2>
         {assetCode}
         {assetType && <span className="asset-editor-type"> — {assetType}</span>}
+        {station != null && <span className="asset-editor-station"> · Sta.{station}m</span>}
       </h2>
+
+      <div className="overall-bar">
+        {groups.map((group) => (
+          <div
+            key={group.name}
+            className="overall-seg"
+            style={{ flex: group.items.length, background: groupColor(group.items, statusByKey) }}
+            title={group.name}
+          />
+        ))}
+      </div>
+
+      {isRestricted ? (
+        <div className="access-banner">
+          <span className="access-banner-icon">⛔</span>
+          <div>
+            <div className="access-banner-title">Site Access Restricted</div>
+            <div className="access-banner-sub">Non-working day — unfavourable weather/terrain</div>
+          </div>
+        </div>
+      ) : (
+        (completedToday || plannedTomorrow) && (
+          <div className="daily-cards">
+            <div className="daily-card daily-card-today">
+              <div className="daily-card-lbl">✅ Today</div>
+              <div className="daily-card-val">{completedToday || '—'}</div>
+            </div>
+            <div className="daily-card daily-card-next">
+              <div className="daily-card-lbl">📋 Next day</div>
+              <div className="daily-card-val">{plannedTomorrow || '—'}</div>
+            </div>
+          </div>
+        )
+      )}
 
       {!workItemsLoading &&
         groups.map((group) => {
+          const color = groupColor(group.items, statusByKey);
           const done = group.items.filter((item) => (statusByKey[item.key] ?? 'not_started') === 'completed')
             .length;
           return (
             <fieldset key={group.name}>
-              <legend>
+              <legend style={{ color }}>
                 {group.name} <span className="group-count">{done}/{group.items.length}</span>
               </legend>
               {group.items.map((item) => {
                 const current = statusByKey[item.key] ?? 'not_started';
+                const fill = PERCENT_BY_STATUS[current];
+                const itemColor = ITEM_STATUS_COLOR[current];
                 if (!editable) {
                   return (
-                    <div key={item.key} className="work-item-row">
-                      <span>{item.label}</span>
-                      <span className={`status-pill status-pill-${current}`}>
+                    <div key={item.key} className="task-row">
+                      <span className="task-name">{item.label}</span>
+                      <div className="task-bar">
+                        <div className="task-fill" style={{ width: `${fill}%`, background: itemColor }} />
+                      </div>
+                      <span className="task-status" style={{ color: itemColor }}>
                         {STATUS_OPTIONS.find((o) => o.value === current)?.label}
                       </span>
                     </div>
@@ -205,7 +263,12 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
                 }
                 return (
                   <div key={item.key} className="work-item-row">
-                    <span>{item.label}</span>
+                    <div className="task-row">
+                      <span className="task-name">{item.label}</span>
+                      <div className="task-bar">
+                        <div className="task-fill" style={{ width: `${fill}%`, background: itemColor }} />
+                      </div>
+                    </div>
                     <div className="status-toggle" role="group" aria-label={item.label}>
                       {STATUS_OPTIONS.map((opt) => (
                         <button
@@ -225,7 +288,7 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
           );
         })}
 
-      {editable ? (
+      {editable && (
         <>
           <label>
             Completed today
@@ -250,25 +313,12 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </label>
         </>
-      ) : (
-        <fieldset>
-          <legend>Daily status</legend>
-          <p className="readonly-field">
-            <strong>Today:</strong> {completedToday || '—'}
-          </p>
-          <p className="readonly-field">
-            <strong>Next day:</strong> {plannedTomorrow || '—'}
-          </p>
-          <p className="readonly-field">
-            <strong>Site access:</strong>{' '}
-            {siteAccessStatus === 'restricted' ? 'Non-working day — unfavourable weather/terrain' : 'Normal'}
-          </p>
-          {notes && (
-            <p className="readonly-field">
-              <strong>Notes:</strong> {notes}
-            </p>
-          )}
-        </fieldset>
+      )}
+
+      {!editable && notes && (
+        <p className="readonly-field">
+          <strong>Notes:</strong> {notes}
+        </p>
       )}
 
       <fieldset>

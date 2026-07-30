@@ -5,6 +5,7 @@ import { MapView } from './MapView';
 import { useAssets } from '../lib/useAssets';
 import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress';
 import { useRestrictedToday } from '../lib/useRestrictedToday';
+import { useWorkItemsConfig } from '../lib/useProjectConfig';
 
 interface AssetWorkspaceProps {
   projectId: string;
@@ -15,8 +16,9 @@ interface AssetWorkspaceProps {
 export function AssetWorkspace({ projectId, coordinateSystem, editable = true }: AssetWorkspaceProps) {
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const { assets } = useAssets(projectId);
-  const { progressByAsset } = useProjectWorkItemsProgress(projectId);
+  const { progressByAsset, percentByAssetAndKey } = useProjectWorkItemsProgress(projectId);
   const restrictedAssetIds = useRestrictedToday(projectId);
+  const { workItems } = useWorkItemsConfig(projectId);
 
   return (
     <div className="asset-workspace">
@@ -25,6 +27,8 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true }:
         selectedAssetId={selectedAssetId}
         onSelect={setSelectedAssetId}
         progressByAsset={progressByAsset}
+        percentByAssetAndKey={percentByAssetAndKey}
+        workItems={workItems}
         restrictedAssetIds={restrictedAssetIds}
       />
       <MapView

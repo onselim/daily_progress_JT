@@ -267,20 +267,20 @@ button:disabled {
 }
 
 .status-btn.active.status-btn-not_started {
-  background: #6b7280;
-  border-color: #6b7280;
+  background: #3d4259;
+  border-color: #3d4259;
   color: #fff;
 }
 
 .status-btn.active.status-btn-in_progress {
-  background: #f59e0b;
-  border-color: #f59e0b;
-  color: #fff;
+  background: #00d4aa;
+  border-color: #00d4aa;
+  color: #0f1117;
 }
 
 .status-btn.active.status-btn-completed {
-  background: #10b981;
-  border-color: #10b981;
+  background: #3b82f6;
+  border-color: #3b82f6;
   color: #fff;
 }
 
@@ -493,11 +493,11 @@ button:disabled {
 }
 
 .stat-card-completed .stat-val {
-  color: var(--accent);
+  color: #3b82f6;
 }
 
 .stat-card-progress .stat-val {
-  color: #f59e0b;
+  color: var(--accent);
 }
 
 .stat-card-danger .stat-val {
@@ -506,44 +506,77 @@ button:disabled {
 
 .asset-list-item-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
   width: 100%;
 }
 
+.asset-num {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 20px;
+}
+
+.asset-station {
+  color: #3d4259;
+  font-size: 9px;
+}
+
 .asset-badge {
   margin-left: auto;
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-weight: 600;
+  font-size: 9px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-weight: 500;
+  flex-shrink: 0;
 }
 
 .asset-badge-restricted {
-  background: rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.2);
   color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.4);
 }
 
-.asset-progress-track {
-  width: 100%;
-  height: 4px;
+.asset-badge-active {
+  background: rgba(0, 212, 170, 0.15);
+  color: #00d4aa;
+}
+
+.asset-mini-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.asset-mini-bar-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: #3d4259;
+  min-width: 34px;
+}
+
+.asset-mini-bar-track {
+  flex: 1;
+  height: 3px;
+  background: var(--bg);
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
-  margin-top: 4px;
+  display: flex;
+  gap: 1px;
 }
 
-.asset-progress-fill {
+.asset-mini-bar-seg {
   height: 100%;
-  border-radius: 2px;
+  border-radius: 1px;
 }
 
 .asset-progress-pct {
-  align-self: flex-end;
-  font-size: 10px;
-  color: var(--text);
   font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text);
+  min-width: 24px;
+  text-align: right;
 }
 
 .asset-list-item {
@@ -569,13 +602,13 @@ button:disabled {
 }
 
 .status-pill-in_progress {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  background: rgba(0, 212, 170, 0.15);
+  color: #00d4aa;
 }
 
 .status-pill-completed {
-  background: rgba(0, 212, 170, 0.15);
-  color: #00d4aa;
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
 }
 
 .readonly-field {
@@ -585,6 +618,121 @@ button:disabled {
 
 .readonly-field strong {
   color: var(--text-h);
+}
+
+.asset-editor-station {
+  color: var(--text);
+  font-weight: 400;
+  font-size: 13px;
+  font-family: var(--mono);
+}
+
+.overall-bar {
+  display: flex;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  gap: 1px;
+}
+
+.overall-seg {
+  height: 100%;
+}
+
+.access-banner {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.access-banner-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.access-banner-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ef4444;
+  margin-bottom: 2px;
+}
+
+.access-banner-sub {
+  font-size: 11px;
+  color: #fca5a5;
+}
+
+.daily-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.daily-card {
+  border-radius: 8px;
+  padding: 9px 11px;
+}
+
+.daily-card-today {
+  background: rgba(0, 212, 170, 0.08);
+  border: 1px solid rgba(0, 212, 170, 0.25);
+}
+
+.daily-card-next {
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.daily-card-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 5px;
+  color: var(--text);
+}
+
+.daily-card-val {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.task-name {
+  color: var(--text);
+  flex: 1;
+}
+
+.task-bar {
+  width: 60px;
+  height: 3px;
+  background: var(--bg);
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.task-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+.task-status {
+  font-family: var(--mono);
+  font-size: 11px;
+  min-width: 80px;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 @media print {
