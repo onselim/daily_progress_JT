@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 import { useWorkItemsConfig, type WorkItemConfig } from '../lib/useProjectConfig';
-import { useAssetPhotos } from '../lib/useAssetPhotos';
+import { useAssetPhotos, type AssetPhoto } from '../lib/useAssetPhotos';
 import { uploadAssetPhoto } from '../lib/uploadAssetPhoto';
 
 type WorkItemStatus = 'not_started' | 'in_progress' | 'completed';
@@ -25,6 +25,8 @@ const ITEM_STATUS_COLOR: Record<WorkItemStatus, string> = {
   completed: '#3b82f6',
 };
 
+const LOCATION_PHOTO_CATEGORIES = new Set(['location', 'general', 'site']);
+
 function statusFromPercent(percent: number): WorkItemStatus {
   if (percent <= 0) return 'not_started';
   if (percent >= 100) return 'completed';
@@ -40,6 +42,18 @@ function groupColor(items: WorkItemConfig[], statusByKey: Record<string, WorkIte
   if (statuses.every((s) => s === 'completed')) return '#3b82f6';
   if (statuses.some((s) => s !== 'not_started')) return '#00d4aa';
   return '#3d4259';
+}
+
+function PhotoThumbs({ photos }: { photos: AssetPhoto[] }) {
+  return (
+    <div className="photo-grid photo-grid-inline">
+      {photos.map((p) => (
+        <a key={p.id} href={p.file_url} target="_blank" rel="noreferrer" className="photo-thumb">
+          <img src={p.file_url} alt="" />
+        </a>
+      ))}
+    </div>
+  );
 }
 
 interface AssetEditorProps {
@@ -64,7 +78,8 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+  const [expandedPhotoKey, setExpandedPhotoKey] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -158,21 +173,21 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
     setMessage('Saved.');
   }
 
-  async function handlePhotoUpload(e: ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoUpload(e: ChangeEvent<HTMLInputElement>, category: string) {
     const files = e.target.files;
     if (!files || files.length === 0 || !user) return;
-    setUploading(true);
+    setUploadingKey(category);
     setMessage(null);
 
     try {
       for (const file of Array.from(files)) {
-        await uploadAssetPhoto({ projectId, assetCode, assetId, file, uploadedBy: user.id });
+        await uploadAssetPhoto({ projectId, assetCode, assetId, file, uploadedBy: user.id, category });
       }
       await refreshPhotos();
     } catch (err) {
       setMessage(`Photo upload failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
-      setUploading(false);
+      setUploadingKey(null);
       e.target.value = '';
     }
   }
@@ -188,6 +203,16 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
       groups.push(group);
     }
     group.items.push(item);
+  }
+
+  const photosByKey: Record<string, AssetPhoto[]> = {};
+  const locationPhotos: AssetPhoto[] = [];
+  for (const p of photos) {
+    if (!p.category || LOCATION_PHOTO_CATEGORIES.has(p.category)) {
+      locationPhotos.push(p);
+    } else {
+      (photosByKey[p.category] ??= []).push(p);
+    }
   }
 
   const isRestricted = siteAccessStatus === 'restricted';
@@ -248,19 +273,9 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
                 const current = statusByKey[item.key] ?? 'not_started';
                 const fill = PERCENT_BY_STATUS[current];
                 const itemColor = ITEM_STATUS_COLOR[current];
-                if (!editable) {
-                  return (
-                    <div key={item.key} className="task-row">
-                      <span className="task-name">{item.label}</span>
-                      <div className="task-bar">
-                        <div className="task-fill" style={{ width: `${fill}%`, background: itemColor }} />
-                      </div>
-                      <span className="task-status" style={{ color: itemColor }}>
-                        {STATUS_OPTIONS.find((o) => o.value === current)?.label}
-                      </span>
-                    </div>
-                  );
-                }
+                const itemPhotos = photosByKey[item.key] ?? [];
+                const isExpanded = expandedPhotoKey === item.key;
+
                 return (
                   <div key={item.key} className="work-item-row">
                     <div className="task-row">
@@ -268,19 +283,54 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
                       <div className="task-bar">
                         <div className="task-fill" style={{ width: `${fill}%`, background: itemColor }} />
                       </div>
+                      {!editable && (
+                        <span className="task-status" style={{ color: itemColor }}>
+                          {STATUS_OPTIONS.find((o) => o.value === current)?.label}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        className={`photo-toggle-btn${itemPhotos.length > 0 ? ' has-photos' : ''}`}
+                        onClick={() => setExpandedPhotoKey(isExpanded ? null : item.key)}
+                        title={`Photos for ${item.label}`}
+                      >
+                        📷 {itemPhotos.length > 0 ? itemPhotos.length : ''}
+                      </button>
                     </div>
-                    <div className="status-toggle" role="group" aria-label={item.label}>
-                      {STATUS_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          className={`status-btn status-btn-${opt.value}${current === opt.value ? ' active' : ''}`}
-                          onClick={() => setStatusByKey((prev) => ({ ...prev, [item.key]: opt.value }))}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
+
+                    {editable && (
+                      <div className="status-toggle" role="group" aria-label={item.label}>
+                        {STATUS_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            className={`status-btn status-btn-${opt.value}${current === opt.value ? ' active' : ''}`}
+                            onClick={() => setStatusByKey((prev) => ({ ...prev, [item.key]: opt.value }))}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {isExpanded && (
+                      <div className="item-photo-panel">
+                        {itemPhotos.length === 0 && <p className="accordion-empty">No photos for {item.label} yet.</p>}
+                        <PhotoThumbs photos={itemPhotos} />
+                        {editable && (
+                          <label className="photo-upload-label photo-upload-label-sm">
+                            {uploadingKey === item.key ? 'Uploading…' : `+ Add ${item.label} photo`}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={(e) => handlePhotoUpload(e, item.key)}
+                              disabled={uploadingKey === item.key}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -322,11 +372,11 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
       )}
 
       <fieldset>
-        <legend>Photos</legend>
+        <legend>Location</legend>
         <div className="photo-grid">
           {photosLoading && <p>Loading photos…</p>}
-          {!photosLoading && photos.length === 0 && <p className="readonly-field">No photos yet.</p>}
-          {photos.map((p) => (
+          {!photosLoading && locationPhotos.length === 0 && <p className="readonly-field">No location photos yet.</p>}
+          {locationPhotos.map((p) => (
             <a key={p.id} href={p.file_url} target="_blank" rel="noreferrer" className="photo-thumb">
               <img src={p.file_url} alt="" />
             </a>
@@ -334,8 +384,14 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
         </div>
         {editable && (
           <label className="photo-upload-label">
-            {uploading ? 'Uploading…' : '+ Add photos'}
-            <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} disabled={uploading} />
+            {uploadingKey === 'location' ? 'Uploading…' : '+ Add location photo'}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => handlePhotoUpload(e, 'location')}
+              disabled={uploadingKey === 'location'}
+            />
           </label>
         )}
       </fieldset>

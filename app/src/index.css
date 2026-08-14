@@ -434,6 +434,40 @@ button:disabled {
   display: none;
 }
 
+.photo-upload-label-sm {
+  padding: 5px 10px;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.photo-toggle-btn {
+  flex-shrink: 0;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 6px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.photo-toggle-btn.has-photos {
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+
+.item-photo-panel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  margin-top: 4px;
+}
+
+.photo-grid-inline {
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+}
+
 .asset-list-item-row {
   display: flex;
   align-items: baseline;
