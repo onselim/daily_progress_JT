@@ -20,24 +20,47 @@ export const DEFAULT_WORK_ITEM_TEMPLATE: WorkItemConfig[] = [
   { group: 'Stringing', key: 'st_ew', label: 'EW', weight: 4 },
 ];
 
-interface WorkItemsStepProps {
-  projectId: string;
-  onComplete: () => void;
-  onBack: () => void;
+function mergeTemplate(initialItems: WorkItemConfig[] | undefined): WorkItemConfig[] {
+  if (!initialItems) return DEFAULT_WORK_ITEM_TEMPLATE;
+  const byKey = new Map(DEFAULT_WORK_ITEM_TEMPLATE.map((item) => [item.key, item]));
+  for (const item of initialItems) {
+    if (!byKey.has(item.key)) byKey.set(item.key, item);
+  }
+  return Array.from(byKey.values());
 }
 
-export function WorkItemsStep({ projectId, onComplete, onBack }: WorkItemsStepProps) {
+interface WorkItemsStepProps {
+  projectId: string;
+  initialItems?: WorkItemConfig[];
+  title?: string;
+  submitLabel?: string;
+  onComplete: () => void;
+  onBack?: () => void;
+}
+
+export function WorkItemsStep({
+  projectId,
+  initialItems,
+  title = '2. Work items',
+  submitLabel = 'Next: Import structure list',
+  onComplete,
+  onBack,
+}: WorkItemsStepProps) {
+  const allItems = mergeTemplate(initialItems);
+  const enabledKeys = new Set((initialItems ?? DEFAULT_WORK_ITEM_TEMPLATE).map((item) => item.key));
+  const weightByKey = new Map((initialItems ?? DEFAULT_WORK_ITEM_TEMPLATE).map((item) => [item.key, item.weight]));
+
   const [enabled, setEnabled] = useState<Record<string, boolean>>(
-    Object.fromEntries(DEFAULT_WORK_ITEM_TEMPLATE.map((item) => [item.key, true])),
+    Object.fromEntries(allItems.map((item) => [item.key, enabledKeys.has(item.key)])),
   );
   const [weights, setWeights] = useState<Record<string, number>>(
-    Object.fromEntries(DEFAULT_WORK_ITEM_TEMPLATE.map((item) => [item.key, item.weight])),
+    Object.fromEntries(allItems.map((item) => [item.key, weightByKey.get(item.key) ?? item.weight])),
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const groups: { name: string; items: WorkItemConfig[] }[] = [];
-  for (const item of DEFAULT_WORK_ITEM_TEMPLATE) {
+  for (const item of allItems) {
     let group = groups.find((g) => g.name === item.group);
     if (!group) {
       group = { name: item.group ?? 'Work items', items: [] };
@@ -50,9 +73,9 @@ export function WorkItemsStep({ projectId, onComplete, onBack }: WorkItemsStepPr
     setSaving(true);
     setError(null);
 
-    const workItems: WorkItemConfig[] = DEFAULT_WORK_ITEM_TEMPLATE.filter((item) => enabled[item.key]).map(
-      (item) => ({ ...item, weight: weights[item.key] }),
-    );
+    const workItems: WorkItemConfig[] = allItems
+      .filter((item) => enabled[item.key])
+      .map((item) => ({ ...item, weight: weights[item.key] }));
 
     const { error: upsertError } = await supabase
       .from('project_config')
@@ -68,7 +91,7 @@ export function WorkItemsStep({ projectId, onComplete, onBack }: WorkItemsStepPr
 
   return (
     <div className="wizard-form">
-      <h2>2. Work items</h2>
+      <h2>{title}</h2>
       <p className="wizard-hint">
         Uncheck anything that doesn't apply to this project (e.g. skip Soil Investigation if you only track
         foundation type). Weights feed the Construction% formula.
@@ -103,11 +126,15 @@ export function WorkItemsStep({ projectId, onComplete, onBack }: WorkItemsStepPr
       {error && <p className="form-message">{error}</p>}
 
       <div className="wizard-actions">
-        <button type="button" onClick={onBack} className="wizard-secondary-btn">
-          Back
-        </button>
+        {onBack ? (
+          <button type="button" onClick={onBack} className="wizard-secondary-btn">
+            Back
+          </button>
+        ) : (
+          <span />
+        )}
         <button type="button" onClick={handleSubmit} disabled={saving}>
-          {saving ? 'Saving…' : 'Next: Import structure list'}
+          {saving ? 'Saving…' : submitLabel}
         </button>
       </div>
     </div>

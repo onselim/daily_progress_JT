@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../lib/AuthContext';
 import { useProjectBySlug } from '../../lib/useProject';
 import { useAssetStats } from '../../lib/useAssetStats';
@@ -7,6 +7,7 @@ import { AssetWorkspace } from '../../components/AssetWorkspace';
 
 export default function AdminProjectPage() {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const { signOut } = useAuth();
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
@@ -50,6 +51,9 @@ export default function AdminProjectPage() {
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" onClick={() => navigate(`/admin/${project.slug}/work-items`)}>
+            Edit work items
+          </button>
           <button type="button" onClick={() => window.open(`/print/${project.slug}`, '_blank')}>
             Print PDF
           </button>
