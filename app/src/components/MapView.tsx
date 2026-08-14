@@ -17,6 +17,11 @@ const BASEMAPS: Record<string, { label: string; url: string; options: L.TileLaye
     url: 'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
     options: { subdomains: '0123', maxZoom: 21, attribution: 'Google Satellite' },
   },
+  hybrid: {
+    label: 'Google Hybrid',
+    url: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    options: { subdomains: '0123', maxZoom: 21, attribution: 'Google Hybrid' },
+  },
   osm: {
     label: 'OpenStreetMap',
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -113,7 +118,7 @@ export function MapView({ assets, coordinateSystem, selectedAssetId, onSelect, r
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !coordinateSystem) return;
+    if (!map) return;
 
     Object.values(markersRef.current).forEach((m) => m.remove());
     markersRef.current = {};
@@ -123,7 +128,7 @@ export function MapView({ assets, coordinateSystem, selectedAssetId, onSelect, r
     for (const asset of assets) {
       let lat = asset.lat;
       let lng = asset.lng;
-      if ((lat == null || lng == null) && asset.x != null && asset.y != null) {
+      if ((lat == null || lng == null) && asset.x != null && asset.y != null && coordinateSystem) {
         try {
           [lat, lng] = utmToLatLng(asset.x, asset.y, coordinateSystem);
         } catch {

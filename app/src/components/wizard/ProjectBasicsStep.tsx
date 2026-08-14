@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useAuth } from '../../lib/AuthContext';
 import { createProject } from '../../lib/wizard/createProject';
+import { utmZoneToEpsg } from '../../lib/utmToLatLng';
 import type { ProjectRow } from '../../lib/useProject';
 
 const TOWER_HEAD_OPTIONS = [
@@ -25,7 +26,6 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
   const [contractNo, setContractNo] = useState('');
   const [industryType, setIndustryType] = useState('transmission_line');
   const [utmZone, setUtmZone] = useState('');
-  const [coordinateSystem, setCoordinateSystem] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [voltage, setVoltage] = useState('');
   const [circuitType, setCircuitType] = useState('single');
@@ -45,6 +45,17 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
     if (!user || !name.trim()) return;
     setSaving(true);
     setError(null);
+
+    let coordinateSystem = '';
+    if (utmZone.trim()) {
+      try {
+        coordinateSystem = utmZoneToEpsg(utmZone);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+        setSaving(false);
+        return;
+      }
+    }
 
     try {
       const project = await createProject({
@@ -109,20 +120,10 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
         </select>
       </label>
 
-      <div className="wizard-form-row">
-        <label>
-          UTM zone (e.g. 38N)
-          <input value={utmZone} onChange={(e) => setUtmZone(e.target.value)} placeholder="38N" />
-        </label>
-        <label>
-          Coordinate system (EPSG code)
-          <input
-            value={coordinateSystem}
-            onChange={(e) => setCoordinateSystem(e.target.value)}
-            placeholder="EPSG:32638"
-          />
-        </label>
-      </div>
+      <label>
+        UTM zone (e.g. 38N) — needed for X/Y (Excel) imports to show on the map. Not needed for KML/KMZ import.
+        <input value={utmZone} onChange={(e) => setUtmZone(e.target.value)} placeholder="38N" />
+      </label>
 
       <label className="wizard-checkbox-label">
         <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />

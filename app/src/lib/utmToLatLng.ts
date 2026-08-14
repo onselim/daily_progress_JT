@@ -31,3 +31,15 @@ export function utmToLatLng(x: number, y: number, epsgCode: string): [number, nu
   const [lng, lat] = proj4(epsgCode, 'WGS84', [x, y]);
   return [lat, lng];
 }
+
+/** Converts a UTM zone like "38N" / "38 S" / "38" (defaults to north) into a WGS84 UTM EPSG code. */
+export function utmZoneToEpsg(zoneInput: string): string {
+  const match = zoneInput.trim().match(/^(\d{1,2})\s*([NnSs]?)$/);
+  if (!match) throw new Error(`Could not parse UTM zone "${zoneInput}" (expected e.g. "38N")`);
+
+  const zone = Number(match[1]);
+  if (zone < 1 || zone > 60) throw new Error(`UTM zone must be between 1 and 60, got ${zone}`);
+
+  const south = match[2].toLowerCase() === 's';
+  return `EPSG:${south ? 32700 + zone : 32600 + zone}`;
+}
