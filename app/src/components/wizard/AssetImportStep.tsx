@@ -3,6 +3,9 @@ import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import { importAssets, type AssetImportRow } from '../../lib/wizard/importAssets';
 import { parseKmlOrKmzFile, type KmlAsset } from '../../lib/wizard/parseKml';
+import { utmZoneToEpsg } from '../../lib/utmToLatLng';
+import { UtmZoneSelect } from './UtmZoneSelect';
+import type { ProjectRow } from '../../lib/useProject';
 
 type FieldKey = 'asset_code' | 'asset_type' | 'x' | 'y' | 'z' | 'station';
 
@@ -111,13 +114,15 @@ function verifyUtmAxes(
 }
 
 interface AssetImportStepProps {
-  projectId: string;
+  project: ProjectRow;
   onComplete: () => void;
   onBack: () => void;
 }
 
-export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportStepProps) {
+export function AssetImportStep({ project, onComplete, onBack }: AssetImportStepProps) {
+  const projectId = project.id;
   const [mode, setMode] = useState<'spreadsheet' | 'kml'>('spreadsheet');
+  const [utmZone, setUtmZone] = useState(project.utm_zone ?? '');
   const [kmlAssets, setKmlAssets] = useState<KmlAsset[]>([]);
   const [kmlFileName, setKmlFileName] = useState('');
   const [kmlError, setKmlError] = useState<string | null>(null);
@@ -230,7 +235,12 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
   }, [resolvedRows]);
 
   const canImport =
-    mapping.asset_code !== -1 && mapping.x !== -1 && mapping.y !== -1 && dataRows.length > 0 && !importing;
+    mapping.asset_code !== -1 &&
+    mapping.x !== -1 &&
+    mapping.y !== -1 &&
+    dataRows.length > 0 &&
+    utmZone.trim() !== '' &&
+    !importing;
 
   async function handleImport() {
     setImporting(true);
@@ -239,6 +249,15 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
     const rows = resolvedRows.filter((r): r is AssetImportRow => r !== null);
 
     try {
+      if (utmZone.trim() && utmZone !== project.utm_zone) {
+        const coordinateSystem = utmZoneToEpsg(utmZone);
+        const { error } = await supabase
+          .from('projects')
+          .update({ utm_zone: utmZone, coordinate_system: coordinateSystem })
+          .eq('id', projectId);
+        if (error) throw error;
+      }
+
       await importAssets(projectId, rows);
 
       if (uniqueTypes.length > 0) {
@@ -323,6 +342,9 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
             Upload the project's structure list as .xlsx or .csv — supports asset type, tower head classification
             and full column mapping. PDF exports vary too much between projects to parse automatically.
           </p>
+
+          <p className="wizard-hint">UTM zone — required to convert X/Y into map coordinates.</p>
+          <UtmZoneSelect value={utmZone} onChange={setUtmZone} />
 
           <label className="photo-upload-label">
             {fileName || '+ Choose file'}

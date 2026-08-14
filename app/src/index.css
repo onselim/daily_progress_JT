@@ -870,6 +870,27 @@ button:disabled {
   border-radius: 0;
 }
 
+.floating-editor-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(23, 27, 38, 0.9);
+  color: var(--text-h);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.floating-editor-close:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+}
+
 @media (max-width: 720px) {
   .floating-editor {
     left: 16px;
@@ -882,6 +903,25 @@ button:disabled {
   left: 12px;
   bottom: 12px;
   z-index: 500;
+}
+
+.zoom-to-location-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 500;
+  font: inherit;
+  font-size: 11px;
+  background: rgba(23, 27, 38, 0.95);
+  color: var(--text-h);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.zoom-to-location-btn:hover {
+  border-color: var(--accent);
 }
 
 .basemap-btn {

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useAuth } from '../../lib/AuthContext';
 import { createProject } from '../../lib/wizard/createProject';
 import { utmZoneToEpsg } from '../../lib/utmToLatLng';
+import { UtmZoneSelect } from './UtmZoneSelect';
 import type { ProjectRow } from '../../lib/useProject';
 
 const TOWER_HEAD_OPTIONS = [
@@ -120,10 +121,10 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
         </select>
       </label>
 
-      <label>
-        UTM zone (e.g. 38N) — needed for X/Y (Excel) imports to show on the map. Not needed for KML/KMZ import.
-        <input value={utmZone} onChange={(e) => setUtmZone(e.target.value)} placeholder="38N" />
-      </label>
+      <p className="wizard-hint">
+        UTM zone — needed for X/Y (Excel) imports to show on the map. Not needed for KML/KMZ import.
+      </p>
+      <UtmZoneSelect value={utmZone} onChange={setUtmZone} />
 
       <label className="wizard-checkbox-label">
         <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />

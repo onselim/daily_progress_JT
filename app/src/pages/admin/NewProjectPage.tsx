@@ -43,7 +43,7 @@ export default function NewProjectPage() {
 
         {step === 3 && project && (
           <AssetImportStep
-            projectId={project.id}
+            project={project}
             onBack={() => setStep(2)}
             onComplete={() => navigate(`/admin/${project.slug}`)}
           />

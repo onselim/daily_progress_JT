@@ -163,6 +163,11 @@ export function MapView({ assets, coordinateSystem, selectedAssetId, onSelect, r
 
       const marker = L.marker([lat, lng], { icon }).addTo(map);
       marker.on('click', () => onSelect(asset.id));
+      marker.on('contextmenu', (e) => {
+        L.DomEvent.preventDefault(e.originalEvent);
+        onSelect(asset.id);
+        map.flyTo([lat as number, lng as number], Math.max(map.getZoom(), 17));
+      });
       markersRef.current[asset.id] = marker;
       points.push([lat, lng]);
     }
@@ -175,9 +180,21 @@ export function MapView({ assets, coordinateSystem, selectedAssetId, onSelect, r
     }
   }, [assets, coordinateSystem, selectedAssetId, onSelect, restrictedAssetIds]);
 
+  function zoomToSelected() {
+    const map = mapRef.current;
+    const marker = markersRef.current[selectedAssetId];
+    if (!map || !marker) return;
+    map.flyTo(marker.getLatLng(), Math.max(map.getZoom(), 17));
+  }
+
   return (
     <>
       <div ref={containerRef} className="map-view" />
+      {selectedAssetId && markersRef.current[selectedAssetId] && (
+        <button type="button" className="zoom-to-location-btn" onClick={zoomToSelected}>
+          🎯 Zoom to location
+        </button>
+      )}
       <div className="basemap-control">
         {basemapMenuOpen && (
           <div className="basemap-menu">

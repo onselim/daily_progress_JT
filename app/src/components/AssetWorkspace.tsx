@@ -64,6 +64,15 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true }:
         />
         {selectedAssetId && (
           <div className="floating-editor">
+            <button
+              type="button"
+              className="floating-editor-close"
+              onClick={() => setSelectedAssetId('')}
+              title="Close"
+              aria-label="Close"
+            >
+              ×
+            </button>
             <AssetEditor key={selectedAssetId} projectId={projectId} assetId={selectedAssetId} editable={editable} />
           </div>
         )}
