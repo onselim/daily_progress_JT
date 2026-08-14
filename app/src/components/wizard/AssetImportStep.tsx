@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import { importAssets, type AssetImportRow } from '../../lib/wizard/importAssets';
+import { parseKmlOrKmzFile, type KmlAsset } from '../../lib/wizard/parseKml';
 
 type FieldKey = 'asset_code' | 'asset_type' | 'x' | 'y' | 'z' | 'station';
 
@@ -116,6 +117,12 @@ interface AssetImportStepProps {
 }
 
 export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportStepProps) {
+  const [mode, setMode] = useState<'spreadsheet' | 'kml'>('spreadsheet');
+  const [kmlAssets, setKmlAssets] = useState<KmlAsset[]>([]);
+  const [kmlFileName, setKmlFileName] = useState('');
+  const [kmlError, setKmlError] = useState<string | null>(null);
+  const [kmlImporting, setKmlImporting] = useState(false);
+
   const [allRows, setAllRows] = useState<unknown[][]>([]);
   const [headerRowIndex, setHeaderRowIndex] = useState(-1);
   const [mapping, setMapping] = useState<Record<FieldKey, number>>({
@@ -254,22 +261,132 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
 
   const headerCandidates = allRows.slice(0, Math.min(allRows.length, MAX_HEADER_SCAN_ROWS));
 
+  async function handleKmlFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setKmlError(null);
+    setKmlFileName(file.name);
+
+    try {
+      const assets = await parseKmlOrKmzFile(file);
+      if (assets.length === 0) {
+        setKmlError('No Point placemarks found in this file.');
+        return;
+      }
+      setKmlAssets(assets);
+    } catch (err) {
+      setKmlError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  async function handleKmlImport() {
+    setKmlImporting(true);
+    setKmlError(null);
+
+    const rows: AssetImportRow[] = kmlAssets.map((a) => ({
+      asset_code: a.code,
+      lat: a.lat,
+      lng: a.lng,
+      z: a.elevation,
+    }));
+
+    try {
+      await importAssets(projectId, rows);
+      onComplete();
+    } catch (err) {
+      setKmlError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setKmlImporting(false);
+    }
+  }
+
   return (
     <div className="wizard-form">
       <h2>3. Import structure list</h2>
-      <p className="wizard-hint">
-        Upload the project's structure list as .xlsx or .csv. Excel/CSV is the reliable format — PDF exports vary
-        too much between projects to parse automatically.
-      </p>
 
-      <label className="photo-upload-label">
-        {fileName || '+ Choose file'}
-        <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} />
-      </label>
+      <div className="wizard-mode-toggle">
+        <button
+          type="button"
+          className={mode === 'spreadsheet' ? 'active' : ''}
+          onClick={() => setMode('spreadsheet')}
+        >
+          Excel / CSV
+        </button>
+        <button type="button" className={mode === 'kml' ? 'active' : ''} onClick={() => setMode('kml')}>
+          KML / KMZ
+        </button>
+      </div>
 
-      {parseError && <p className="form-message">{parseError}</p>}
+      {mode === 'spreadsheet' ? (
+        <>
+          <p className="wizard-hint">
+            Upload the project's structure list as .xlsx or .csv — supports asset type, tower head classification
+            and full column mapping. PDF exports vary too much between projects to parse automatically.
+          </p>
 
-      {allRows.length > 0 && (
+          <label className="photo-upload-label">
+            {fileName || '+ Choose file'}
+            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} />
+          </label>
+
+          {parseError && <p className="form-message">{parseError}</p>}
+        </>
+      ) : (
+        <>
+          <p className="wizard-hint">
+            For a quick, geometry-only setup: upload a .kml or .kmz with one Point placemark per tower. No column
+            mapping needed — placemark names become asset codes, coordinates are read directly as lat/lng.
+          </p>
+
+          <label className="photo-upload-label">
+            {kmlFileName || '+ Choose file'}
+            <input type="file" accept=".kml,.kmz" onChange={handleKmlFile} />
+          </label>
+
+          {kmlError && <p className="form-message">{kmlError}</p>}
+
+          {kmlAssets.length > 0 && (
+            <fieldset className="wizard-fieldset">
+              <legend>
+                Preview ({kmlAssets.length} placemark{kmlAssets.length === 1 ? '' : 's'} detected)
+              </legend>
+              <div className="wizard-preview-scroll">
+                <table className="pd-table">
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Lat</th>
+                      <th>Lng</th>
+                      <th>Elevation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {kmlAssets.slice(0, 10).map((a, i) => (
+                      <tr key={i}>
+                        <td>{a.code}</td>
+                        <td>{a.lat}</td>
+                        <td>{a.lng}</td>
+                        <td>{a.elevation ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </fieldset>
+          )}
+
+          <div className="wizard-actions">
+            <button type="button" onClick={onBack} className="wizard-secondary-btn">
+              Back
+            </button>
+            <button type="button" onClick={handleKmlImport} disabled={kmlAssets.length === 0 || kmlImporting}>
+              {kmlImporting ? 'Importing…' : `Import ${kmlAssets.length || ''} assets & finish`}
+            </button>
+          </div>
+        </>
+      )}
+
+      {mode === 'spreadsheet' && allRows.length > 0 && (
         <>
           <label>
             Header row (the row with column titles like "Construction No", "X Coordinate"…)
@@ -372,16 +489,20 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
         </>
       )}
 
-      {importError && <p className="form-message">{importError}</p>}
+      {mode === 'spreadsheet' && (
+        <>
+          {importError && <p className="form-message">{importError}</p>}
 
-      <div className="wizard-actions">
-        <button type="button" onClick={onBack} className="wizard-secondary-btn">
-          Back
-        </button>
-        <button type="button" onClick={handleImport} disabled={!canImport}>
-          {importing ? 'Importing…' : `Import ${dataRows.length || ''} assets & finish`}
-        </button>
-      </div>
+          <div className="wizard-actions">
+            <button type="button" onClick={onBack} className="wizard-secondary-btn">
+              Back
+            </button>
+            <button type="button" onClick={handleImport} disabled={!canImport}>
+              {importing ? 'Importing…' : `Import ${dataRows.length || ''} assets & finish`}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

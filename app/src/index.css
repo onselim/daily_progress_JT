@@ -1677,3 +1677,24 @@ button:disabled {
 .modal-danger-btn:disabled {
   background: #7f1d1d;
 }
+
+.wizard-mode-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.wizard-mode-toggle button {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.wizard-mode-toggle button.active {
+  background: var(--accent);
+  color: #0f1117;
+  border-color: var(--accent);
+}

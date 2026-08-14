@@ -7,6 +7,8 @@ export interface AssetImportRow {
   y?: number | null;
   z?: number | null;
   station?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 const CHUNK_SIZE = 500;
