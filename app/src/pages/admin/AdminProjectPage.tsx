@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../lib/AuthContext';
 import { useProjectBySlug } from '../../lib/useProject';
 import { useAssetStats } from '../../lib/useAssetStats';
 import { useRestrictedToday } from '../../lib/useRestrictedToday';
 import { AssetWorkspace } from '../../components/AssetWorkspace';
+import { DeleteProjectDialog } from '../../components/DeleteProjectDialog';
 
 export default function AdminProjectPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -12,6 +14,7 @@ export default function AdminProjectPage() {
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
   const restrictedAssetIds = useRestrictedToday(project?.id);
+  const [showDelete, setShowDelete] = useState(false);
 
   if (loading) return <div className="page-loading">Loading…</div>;
   if (error || !project) return <div className="page-loading">Project not found.</div>;
@@ -57,11 +60,23 @@ export default function AdminProjectPage() {
           <button type="button" onClick={() => window.open(`/print/${project.slug}`, '_blank')}>
             Print PDF
           </button>
+          <button type="button" className="modal-danger-btn" onClick={() => setShowDelete(true)}>
+            Delete
+          </button>
           <button onClick={signOut}>Sign out</button>
         </div>
       </header>
 
       <AssetWorkspace projectId={project.id} coordinateSystem={project.coordinate_system} />
+
+      {showDelete && (
+        <DeleteProjectDialog
+          projectId={project.id}
+          projectName={project.name}
+          onClose={() => setShowDelete(false)}
+          onDeleted={() => navigate('/admin')}
+        />
+      )}
     </div>
   );
 }

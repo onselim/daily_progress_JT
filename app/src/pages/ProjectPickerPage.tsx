@@ -16,28 +16,35 @@ export default function ProjectPickerPage({ basePath, allowedRoles, title }: Pro
   const isAdminSomewhere = roles.some((r) => r.role === 'admin');
 
   return (
-    <div className="panel-shell">
-      <header className="panel-header">
-        <h1>{title}</h1>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {basePath === '/admin' && isAdminSomewhere && <Link to="/admin/new">+ New project</Link>}
-          <button onClick={signOut}>Sign out</button>
+    <div className="project-shell">
+      <div className="picker-content">
+        <header className="picker-header">
+          <h1>{title}</h1>
+          <div className="picker-actions">
+            {basePath === '/admin' && isAdminSomewhere && (
+              <Link to="/admin/new" className="picker-new-btn">
+                + New project
+              </Link>
+            )}
+            <button onClick={signOut}>Sign out</button>
+          </div>
+        </header>
+
+        {loading && <p className="wizard-hint">Loading your projects…</p>}
+
+        {!loading && visible.length === 0 && (
+          <p className="wizard-hint">No projects are assigned to your account yet. Ask an admin to invite you.</p>
+        )}
+
+        <div className="picker-grid">
+          {visible.map((r) => (
+            <Link key={r.project_id} to={`${basePath}/${r.project.slug}`} className="picker-card">
+              <span className="picker-card-name">{r.project.name}</span>
+              <span className="picker-card-arrow">→</span>
+            </Link>
+          ))}
         </div>
-      </header>
-
-      {loading && <p>Loading your projects…</p>}
-
-      {!loading && visible.length === 0 && (
-        <p>No projects are assigned to your account yet. Ask an admin to invite you.</p>
-      )}
-
-      <ul className="project-list">
-        {visible.map((r) => (
-          <li key={r.project_id}>
-            <Link to={`${basePath}/${r.project.slug}`}>{r.project.name}</Link>
-          </li>
-        ))}
-      </ul>
+      </div>
     </div>
   );
 }

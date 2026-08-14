@@ -1545,3 +1545,135 @@ button:disabled {
 .wizard-preview-scroll .pd-table td {
   border-color: var(--border);
 }
+
+/* ============ Project picker ============ */
+
+.picker-content {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 20px 60px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.picker-header h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.picker-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.picker-new-btn {
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.picker-new-btn:hover {
+  background: rgba(0, 212, 170, 0.1);
+}
+
+.picker-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.picker-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  text-decoration: none;
+  color: var(--text-h);
+  transition: border-color 0.15s;
+}
+
+.picker-card:hover {
+  border-color: var(--accent);
+}
+
+.picker-card-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.picker-card-arrow {
+  color: var(--text);
+}
+
+/* ============ Modal / delete confirmation ============ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 18px;
+  color: #ef4444;
+}
+
+.modal-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-h);
+}
+
+.modal-confirm-input {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.modal-danger-btn {
+  background: #ef4444;
+}
+
+.modal-danger-btn:hover {
+  background: #dc2626;
+}
+
+.modal-danger-btn:disabled {
+  background: #7f1d1d;
+}
