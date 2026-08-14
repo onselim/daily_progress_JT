@@ -40,6 +40,7 @@ export default function App() {
         </Route>
 
         <Route path="/print/:slug" element={<PrintReportPage />} />
+        <Route path="/reports/:slug" element={<PublicViewerPage />} />
         <Route path="/:slug" element={<PublicViewerPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

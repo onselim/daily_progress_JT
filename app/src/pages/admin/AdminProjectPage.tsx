@@ -22,8 +22,8 @@ export default function AdminProjectPage() {
           <Link to="/admin">← Projects</Link>
           <h1>{project.name}</h1>
           <p>
-            <a href={`/${project.slug}`} target="_blank" rel="noreferrer">
-              Public link: /{project.slug}
+            <a href={`/reports/${project.slug}`} target="_blank" rel="noreferrer">
+              Public link: /reports/{project.slug}
             </a>
           </p>
         </div>
