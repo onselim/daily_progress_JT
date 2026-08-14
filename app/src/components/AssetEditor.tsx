@@ -4,6 +4,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useWorkItemsConfig, type WorkItemConfig } from '../lib/useProjectConfig';
 import { useAssetPhotos, type AssetPhoto } from '../lib/useAssetPhotos';
 import { uploadAssetPhoto } from '../lib/uploadAssetPhoto';
+import { deleteAssetPhoto } from '../lib/deleteAssetPhoto';
 
 type WorkItemStatus = 'not_started' | 'in_progress' | 'completed';
 
@@ -44,13 +45,38 @@ function groupColor(items: WorkItemConfig[], statusByKey: Record<string, WorkIte
   return '#3d4259';
 }
 
-function PhotoThumbs({ photos }: { photos: AssetPhoto[] }) {
+function PhotoThumbs({
+  photos,
+  editable,
+  deletingIds,
+  onDelete,
+  inline,
+}: {
+  photos: AssetPhoto[];
+  editable: boolean;
+  deletingIds: Set<string>;
+  onDelete: (photo: AssetPhoto) => void;
+  inline?: boolean;
+}) {
   return (
-    <div className="photo-grid photo-grid-inline">
+    <div className={`photo-grid${inline ? ' photo-grid-inline' : ''}`}>
       {photos.map((p) => (
-        <a key={p.id} href={p.file_url} target="_blank" rel="noreferrer" className="photo-thumb">
-          <img src={p.file_url} alt="" />
-        </a>
+        <div key={p.id} className="photo-thumb-wrap">
+          <a href={p.file_url} target="_blank" rel="noreferrer" className="photo-thumb">
+            <img src={p.file_url} alt="" />
+          </a>
+          {editable && (
+            <button
+              type="button"
+              className="photo-delete-btn"
+              disabled={deletingIds.has(p.id)}
+              onClick={() => onDelete(p)}
+              title="Delete photo"
+            >
+              ×
+            </button>
+          )}
+        </div>
       ))}
     </div>
   );
@@ -80,6 +106,7 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
   const [message, setMessage] = useState<string | null>(null);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [expandedPhotoKey, setExpandedPhotoKey] = useState<string | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -189,6 +216,23 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
     } finally {
       setUploadingKey(null);
       e.target.value = '';
+    }
+  }
+
+  async function handleDeletePhoto(photo: AssetPhoto) {
+    setDeletingIds((prev) => new Set(prev).add(photo.id));
+    setMessage(null);
+    try {
+      await deleteAssetPhoto(photo.id, photo.file_url);
+      await refreshPhotos();
+    } catch (err) {
+      setMessage(`Delete failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setDeletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(photo.id);
+        return next;
+      });
     }
   }
 
@@ -316,7 +360,13 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
                     {isExpanded && (
                       <div className="item-photo-panel">
                         {itemPhotos.length === 0 && <p className="accordion-empty">No photos for {item.label} yet.</p>}
-                        <PhotoThumbs photos={itemPhotos} />
+                        <PhotoThumbs
+                          photos={itemPhotos}
+                          editable={editable}
+                          deletingIds={deletingIds}
+                          onDelete={handleDeletePhoto}
+                          inline
+                        />
                         {editable && (
                           <label className="photo-upload-label photo-upload-label-sm">
                             {uploadingKey === item.key ? 'Uploading…' : `+ Add ${item.label} photo`}
@@ -373,15 +423,14 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
 
       <fieldset>
         <legend>Location</legend>
-        <div className="photo-grid">
-          {photosLoading && <p>Loading photos…</p>}
-          {!photosLoading && locationPhotos.length === 0 && <p className="readonly-field">No location photos yet.</p>}
-          {locationPhotos.map((p) => (
-            <a key={p.id} href={p.file_url} target="_blank" rel="noreferrer" className="photo-thumb">
-              <img src={p.file_url} alt="" />
-            </a>
-          ))}
-        </div>
+        {photosLoading && <p>Loading photos…</p>}
+        {!photosLoading && locationPhotos.length === 0 && <p className="readonly-field">No location photos yet.</p>}
+        <PhotoThumbs
+          photos={locationPhotos}
+          editable={editable}
+          deletingIds={deletingIds}
+          onDelete={handleDeletePhoto}
+        />
         {editable && (
           <label className="photo-upload-label">
             {uploadingKey === 'location' ? 'Uploading…' : '+ Add location photo'}
