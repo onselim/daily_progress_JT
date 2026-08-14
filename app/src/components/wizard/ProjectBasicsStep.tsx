@@ -3,6 +3,16 @@ import { useAuth } from '../../lib/AuthContext';
 import { createProject } from '../../lib/wizard/createProject';
 import type { ProjectRow } from '../../lib/useProject';
 
+const TOWER_HEAD_OPTIONS = [
+  { value: 'delta', label: 'Delta' },
+  { value: 'cat_head', label: 'Cat-head / Portal' },
+  { value: 'vertical_staggered', label: 'Vertical (Danube) — staggered' },
+  { value: 'guyed_v', label: 'Guyed V' },
+  { value: 'single_ground_peak', label: 'Single ground-wire peak' },
+  { value: 'double_ground_peak', label: 'Double ground-wire peak' },
+  { value: 'other', label: 'Other…' },
+];
+
 interface ProjectBasicsStepProps {
   onComplete: (project: ProjectRow) => void;
 }
@@ -19,9 +29,14 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
   const [isPublic, setIsPublic] = useState(true);
   const [voltage, setVoltage] = useState('');
   const [circuitType, setCircuitType] = useState('single');
+  const [towerHeadType, setTowerHeadType] = useState('delta');
+  const [towerHeadCustom, setTowerHeadCustom] = useState('');
   const [conductorCount, setConductorCount] = useState(3);
+  const [conductorType, setConductorType] = useState('');
   const [opgwCount, setOpgwCount] = useState(1);
+  const [opgwType, setOpgwType] = useState('');
   const [earthwireCount, setEarthwireCount] = useState(1);
+  const [ewType, setEwType] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,9 +58,13 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
         isPublic,
         voltage,
         circuitType,
+        towerHeadType: towerHeadType === 'other' ? towerHeadCustom : towerHeadType,
         conductorCount,
+        conductorType,
         opgwCount,
+        opgwType,
         earthwireCount,
+        ewType,
         createdBy: user.id,
       });
       onComplete(project);
@@ -111,6 +130,9 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
       </label>
 
       <h3>Line parameters</h3>
+      <p className="wizard-hint">
+        These are project-wide defaults. Individual towers/spans can still be recorded differently later.
+      </p>
 
       <div className="wizard-form-row">
         <label>
@@ -126,9 +148,26 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
         </label>
       </div>
 
+      <label>
+        Tower head configuration
+        <select value={towerHeadType} onChange={(e) => setTowerHeadType(e.target.value)}>
+          {TOWER_HEAD_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {towerHeadType === 'other' && (
+        <label>
+          Describe the tower head configuration
+          <input value={towerHeadCustom} onChange={(e) => setTowerHeadCustom(e.target.value)} />
+        </label>
+      )}
+
       <div className="wizard-form-row">
         <label>
-          Conductors per phase
+          Conductors per phase (bundle)
           <input
             type="number"
             min={1}
@@ -137,9 +176,27 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
           />
         </label>
         <label>
+          Conductor type
+          <input
+            value={conductorType}
+            onChange={(e) => setConductorType(e.target.value)}
+            placeholder="e.g. ACSR 400/51"
+          />
+        </label>
+      </div>
+
+      <div className="wizard-form-row">
+        <label>
           OPGW count
           <input type="number" min={0} value={opgwCount} onChange={(e) => setOpgwCount(Number(e.target.value))} />
         </label>
+        <label>
+          OPGW type
+          <input value={opgwType} onChange={(e) => setOpgwType(e.target.value)} placeholder="e.g. OPGW 24F 95mm²" />
+        </label>
+      </div>
+
+      <div className="wizard-form-row">
         <label>
           Earthwire count
           <input
@@ -148,6 +205,10 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
             value={earthwireCount}
             onChange={(e) => setEarthwireCount(Number(e.target.value))}
           />
+        </label>
+        <label>
+          Earthwire type
+          <input value={ewType} onChange={(e) => setEwType(e.target.value)} placeholder="e.g. EHS 73mm²" />
         </label>
       </div>
 

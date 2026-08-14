@@ -30,9 +30,13 @@ export interface ProjectBasicsInput {
   isPublic: boolean;
   voltage: string;
   circuitType: string;
+  towerHeadType: string;
   conductorCount: number;
+  conductorType: string;
   opgwCount: number;
+  opgwType: string;
   earthwireCount: number;
+  ewType: string;
   createdBy: string;
 }
 
@@ -60,7 +64,11 @@ export async function createProject(input: ProjectBasicsInput) {
   const { error: configError } = await supabase.from('project_config').insert([
     { project_id: project.id, key: 'voltage', value: input.voltage },
     { project_id: project.id, key: 'circuit_type', value: input.circuitType },
+    { project_id: project.id, key: 'tower_head_type', value: input.towerHeadType },
     { project_id: project.id, key: 'conductor_count', value: input.conductorCount },
+    { project_id: project.id, key: 'conductor_type', value: input.conductorType },
+    { project_id: project.id, key: 'opgw_type', value: input.opgwType },
+    { project_id: project.id, key: 'earthwire_type', value: input.ewType },
     {
       project_id: project.id,
       key: 'ground_wire_config',
