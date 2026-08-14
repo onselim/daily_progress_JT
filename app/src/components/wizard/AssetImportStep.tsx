@@ -1,16 +1,30 @@
 import { useMemo, useState, type ChangeEvent } from 'react';
 import * as XLSX from 'xlsx';
+import { supabase } from '../../lib/supabase';
 import { importAssets, type AssetImportRow } from '../../lib/wizard/importAssets';
 
 type FieldKey = 'asset_code' | 'asset_type' | 'x' | 'y' | 'z' | 'station';
 
 const FIELDS: { key: FieldKey; label: string; required: boolean; guesses: string[] }[] = [
-  { key: 'asset_code', label: 'Asset code', required: true, guesses: ['code', 'no', 'tower', 'construction'] },
-  { key: 'asset_type', label: 'Asset type', required: false, guesses: ['type'] },
-  { key: 'x', label: 'X coordinate', required: true, guesses: ['x coord', ' x', 'x('] },
-  { key: 'y', label: 'Y coordinate', required: true, guesses: ['y coord', ' y', 'y('] },
-  { key: 'z', label: 'Z coordinate / elevation', required: false, guesses: ['z coord', ' z', 'elev'] },
+  {
+    key: 'asset_code',
+    label: 'Asset code',
+    required: true,
+    guesses: ['construction no', 'construction', 'tower no', 'tower code', 'structure no', 'code'],
+  },
+  { key: 'asset_type', label: 'Asset type', required: false, guesses: ['tower type', 'type'] },
+  { key: 'x', label: 'X coordinate', required: true, guesses: ['x coord', 'x-coord', ' x', 'x(', 'easting'] },
+  { key: 'y', label: 'Y coordinate', required: true, guesses: ['y coord', 'y-coord', ' y', 'y(', 'northing'] },
+  { key: 'z', label: 'Z coordinate / elevation', required: false, guesses: ['z coord', 'z-coord', ' z', 'elev'] },
   { key: 'station', label: 'Station / chainage', required: false, guesses: ['station', 'chainage', 'sta'] },
+];
+
+const TYPE_CATEGORY_OPTIONS = [
+  { value: 'suspension', label: 'Suspension' },
+  { value: 'tension', label: 'Tension / Angle' },
+  { value: 'terminal', label: 'Terminal / Dead-end' },
+  { value: 'gantry', label: 'Gantry' },
+  { value: 'other', label: 'Other' },
 ];
 
 function guessColumn(headers: string[], guesses: string[]): number {
@@ -20,6 +34,44 @@ function guessColumn(headers: string[], guesses: string[]): number {
     if (idx !== -1) return idx;
   }
   return -1;
+}
+
+function sampleNumericColumn(rows: unknown[][], idx: number, limit = 20): number[] {
+  if (idx === -1) return [];
+  const vals: number[] = [];
+  for (const row of rows) {
+    if (vals.length >= limit) break;
+    const v = Number(row[idx]);
+    if (Number.isFinite(v) && v !== 0) vals.push(Math.abs(v));
+  }
+  return vals;
+}
+
+/** Integer-part digit count of the median sample value (e.g. 428562.18 -> 6). */
+function medianDigits(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  if (median <= 0) return null;
+  return Math.floor(Math.log10(median)) + 1;
+}
+
+/**
+ * UTM eastings are conventionally 6 digits, northings 7 — if the header-based
+ * guess put them backwards, swap based on the actual data.
+ */
+function verifyUtmAxes(
+  xIdx: number,
+  yIdx: number,
+  body: unknown[][],
+): { x: number; y: number; corrected: boolean } {
+  if (xIdx === -1 || yIdx === -1) return { x: xIdx, y: yIdx, corrected: false };
+  const xDigits = medianDigits(sampleNumericColumn(body, xIdx));
+  const yDigits = medianDigits(sampleNumericColumn(body, yIdx));
+  if (xDigits === 7 && yDigits === 6) {
+    return { x: yIdx, y: xIdx, corrected: true };
+  }
+  return { x: xIdx, y: yIdx, corrected: false };
 }
 
 interface AssetImportStepProps {
@@ -39,6 +91,8 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
     z: -1,
     station: -1,
   });
+  const [autoCorrectedXY, setAutoCorrectedXY] = useState(false);
+  const [typeCategories, setTypeCategories] = useState<Record<string, string>>({});
   const [parseError, setParseError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -64,13 +118,19 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
       const headerRow = rows[0].map((h) => String(h ?? ''));
       const body = rows.slice(1).filter((r) => r.some((cell) => cell !== '' && cell != null));
 
+      const guessedX = guessColumn(headerRow, FIELDS[2].guesses);
+      const guessedY = guessColumn(headerRow, FIELDS[3].guesses);
+      const { x, y, corrected } = verifyUtmAxes(guessedX, guessedY, body);
+
       setHeaders(headerRow);
       setDataRows(body);
+      setAutoCorrectedXY(corrected);
+      setTypeCategories({});
       setMapping({
         asset_code: guessColumn(headerRow, FIELDS[0].guesses),
         asset_type: guessColumn(headerRow, FIELDS[1].guesses),
-        x: guessColumn(headerRow, FIELDS[2].guesses),
-        y: guessColumn(headerRow, FIELDS[3].guesses),
+        x,
+        y,
         z: guessColumn(headerRow, FIELDS[4].guesses),
         station: guessColumn(headerRow, FIELDS[5].guesses),
       });
@@ -101,7 +161,16 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
     };
   }
 
-  const previewRows = useMemo(() => dataRows.slice(0, 10).map(resolveRow), [dataRows, mapping]);
+  const resolvedRows = useMemo(() => dataRows.map(resolveRow), [dataRows, mapping]);
+  const previewRows = resolvedRows.slice(0, 10);
+
+  const uniqueTypes = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of resolvedRows) {
+      if (r?.asset_type) set.add(r.asset_type);
+    }
+    return Array.from(set).sort();
+  }, [resolvedRows]);
 
   const canImport =
     mapping.asset_code !== -1 && mapping.x !== -1 && mapping.y !== -1 && dataRows.length > 0 && !importing;
@@ -110,10 +179,21 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
     setImporting(true);
     setImportError(null);
 
-    const rows = dataRows.map(resolveRow).filter((r): r is AssetImportRow => r !== null);
+    const rows = resolvedRows.filter((r): r is AssetImportRow => r !== null);
 
     try {
       await importAssets(projectId, rows);
+
+      if (uniqueTypes.length > 0) {
+        const categories = Object.fromEntries(uniqueTypes.map((t) => [t, typeCategories[t] ?? 'other']));
+        await supabase
+          .from('project_config')
+          .upsert(
+            { project_id: projectId, key: 'asset_type_categories', value: categories },
+            { onConflict: 'project_id,key' },
+          );
+      }
+
       onComplete();
     } catch (err) {
       setImportError(err instanceof Error ? err.message : String(err));
@@ -139,6 +219,13 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
 
       {headers.length > 0 && (
         <>
+          {autoCorrectedXY && (
+            <p className="wizard-hint">
+              Auto-corrected: the X and Y columns looked swapped (based on typical UTM digit counts — eastings
+              ~6 digits, northings ~7), so they were flipped automatically. Double-check the preview below.
+            </p>
+          )}
+
           <fieldset className="wizard-fieldset">
             <legend>Map columns</legend>
             {FIELDS.map((field) => (
@@ -195,6 +282,30 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
               </table>
             </div>
           </fieldset>
+
+          {uniqueTypes.length > 0 && (
+            <fieldset className="wizard-fieldset">
+              <legend>Classify tower types ({uniqueTypes.length})</legend>
+              <p className="wizard-hint">
+                Used to compute suspension/tension ratios later — not required to import.
+              </p>
+              {uniqueTypes.map((t) => (
+                <div key={t} className="wizard-work-item-row">
+                  <span>{t}</span>
+                  <select
+                    value={typeCategories[t] ?? 'other'}
+                    onChange={(e) => setTypeCategories((prev) => ({ ...prev, [t]: e.target.value }))}
+                  >
+                    {TYPE_CATEGORY_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </fieldset>
+          )}
         </>
       )}
 
