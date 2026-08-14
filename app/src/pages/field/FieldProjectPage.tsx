@@ -21,6 +21,11 @@ export default function FieldProjectPage() {
         <div className="project-topbar-left">
           <Link to="/field">← Projects</Link>
           <h1>{project.name}</h1>
+          <p>
+            <a href={`/reports/${project.slug}`} target="_blank" rel="noreferrer">
+              View report
+            </a>
+          </p>
         </div>
         <div className="project-topbar-stats">
           <span className="stat-pill">
