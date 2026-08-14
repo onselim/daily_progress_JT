@@ -1405,3 +1405,143 @@ button:disabled {
     margin: 10mm;
   }
 }
+
+/* ============ New project wizard ============ */
+
+.wizard-page {
+  max-width: 720px;
+  margin: 24px auto;
+  padding: 0 20px 60px;
+  overflow-y: auto;
+  height: calc(100% - 24px);
+}
+
+.wizard-steps {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.wizard-steps .active {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.wizard-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.wizard-form h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.wizard-form h3 {
+  margin: 8px 0 -4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.wizard-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  flex: 1;
+}
+
+.wizard-form input,
+.wizard-form select {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.wizard-form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.wizard-checkbox-label {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.wizard-hint {
+  font-size: 12px;
+  color: var(--text);
+  margin: -6px 0 0;
+}
+
+.wizard-fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wizard-fieldset legend {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 4px;
+}
+
+.wizard-work-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wizard-work-item-row select {
+  flex: 1;
+  max-width: 220px;
+}
+
+.wizard-weight-input {
+  width: 64px;
+}
+
+.wizard-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wizard-secondary-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.wizard-preview-scroll {
+  overflow-x: auto;
+}
+
+.wizard-preview-scroll .pd-table {
+  color: var(--text-h);
+}
+
+.wizard-preview-scroll .pd-table th {
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.wizard-preview-scroll .pd-table td {
+  border-color: var(--border);
+}

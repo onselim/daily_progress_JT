@@ -13,12 +13,16 @@ export default function ProjectPickerPage({ basePath, allowedRoles, title }: Pro
   const { roles, loading } = useProjectRoles();
 
   const visible = roles.filter((r) => allowedRoles.includes(r.role));
+  const isAdminSomewhere = roles.some((r) => r.role === 'admin');
 
   return (
     <div className="panel-shell">
       <header className="panel-header">
         <h1>{title}</h1>
-        <button onClick={signOut}>Sign out</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {basePath === '/admin' && isAdminSomewhere && <Link to="/admin/new">+ New project</Link>}
+          <button onClick={signOut}>Sign out</button>
+        </div>
       </header>
 
       {loading && <p>Loading your projects…</p>}

@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import ProjectPickerPage from './pages/ProjectPickerPage';
 import AdminProjectPage from './pages/admin/AdminProjectPage';
+import NewProjectPage from './pages/admin/NewProjectPage';
 import FieldProjectPage from './pages/field/FieldProjectPage';
 import PublicViewerPage from './pages/PublicViewerPage';
 import PrintReportPage from './pages/PrintReportPage';
@@ -24,6 +25,7 @@ export default function App() {
               <ProjectPickerPage basePath="/admin" allowedRoles={['admin']} title="Admin — your projects" />
             }
           />
+          <Route path="/admin/new" element={<NewProjectPage />} />
           <Route path="/admin/:slug" element={<AdminProjectPage />} />
 
           <Route
