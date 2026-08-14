@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import { importAssets, type AssetImportRow } from '../../lib/wizard/importAssets';
@@ -27,13 +27,48 @@ const TYPE_CATEGORY_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
+const MAX_HEADER_SCAN_ROWS = 25;
+
+function cellText(cell: unknown): string {
+  return (cell ?? '').toString().trim();
+}
+
 function guessColumn(headers: string[], guesses: string[]): number {
-  const lower = headers.map((h) => (h ?? '').toString().toLowerCase());
+  const lower = headers.map((h) => h.toLowerCase());
   for (const guess of guesses) {
     const idx = lower.findIndex((h) => h.includes(guess));
     if (idx !== -1) return idx;
   }
   return -1;
+}
+
+/** How many of our known field keywords appear anywhere in this row's cells — a proxy for "this looks like the real header row." */
+function scoreHeaderRow(row: unknown[]): number {
+  const cells = row.map((c) => cellText(c).toLowerCase());
+  let score = 0;
+  for (const field of FIELDS) {
+    if (field.guesses.some((g) => cells.some((c) => c.includes(g)))) score += 1;
+  }
+  return score;
+}
+
+function detectHeaderRowIndex(allRows: unknown[][]): number {
+  let bestIdx = 0;
+  let bestScore = -1;
+  const limit = Math.min(allRows.length, MAX_HEADER_SCAN_ROWS);
+  for (let i = 0; i < limit; i++) {
+    const score = scoreHeaderRow(allRows[i]);
+    if (score > bestScore) {
+      bestScore = score;
+      bestIdx = i;
+    }
+  }
+  return bestIdx;
+}
+
+function rowPreview(row: unknown[]): string {
+  const cells = row.map(cellText).filter(Boolean);
+  return cells.length > 0 ? cells.slice(0, 6).join(' | ') : '(empty row)';
 }
 
 function sampleNumericColumn(rows: unknown[][], idx: number, limit = 20): number[] {
@@ -81,8 +116,8 @@ interface AssetImportStepProps {
 }
 
 export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportStepProps) {
-  const [headers, setHeaders] = useState<string[]>([]);
-  const [dataRows, setDataRows] = useState<unknown[][]>([]);
+  const [allRows, setAllRows] = useState<unknown[][]>([]);
+  const [headerRowIndex, setHeaderRowIndex] = useState(-1);
   const [mapping, setMapping] = useState<Record<FieldKey, number>>({
     asset_code: -1,
     asset_type: -1,
@@ -98,11 +133,43 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
   const [importError, setImportError] = useState<string | null>(null);
   const [fileName, setFileName] = useState('');
 
+  const headers = useMemo(
+    () => (headerRowIndex >= 0 && allRows[headerRowIndex] ? allRows[headerRowIndex].map(cellText) : []),
+    [allRows, headerRowIndex],
+  );
+
+  const dataRows = useMemo(() => {
+    if (headerRowIndex < 0) return [];
+    return allRows.slice(headerRowIndex + 1).filter((r) => r.some((cell) => cellText(cell) !== ''));
+  }, [allRows, headerRowIndex]);
+
+  // Re-guess the column mapping whenever the header row (or which file/sheet) changes.
+  useEffect(() => {
+    if (headers.length === 0) return;
+
+    const guessedX = guessColumn(headers, FIELDS[2].guesses);
+    const guessedY = guessColumn(headers, FIELDS[3].guesses);
+    const { x, y, corrected } = verifyUtmAxes(guessedX, guessedY, dataRows);
+
+    setAutoCorrectedXY(corrected);
+    setMapping({
+      asset_code: guessColumn(headers, FIELDS[0].guesses),
+      asset_type: guessColumn(headers, FIELDS[1].guesses),
+      x,
+      y,
+      z: guessColumn(headers, FIELDS[4].guesses),
+      station: guessColumn(headers, FIELDS[5].guesses),
+    });
+    // Only re-run when the header row itself changes, not on every dataRows re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headers]);
+
   async function handleFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setParseError(null);
     setFileName(file.name);
+    setTypeCategories({});
 
     try {
       const buffer = await file.arrayBuffer();
@@ -115,25 +182,8 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
         return;
       }
 
-      const headerRow = rows[0].map((h) => String(h ?? ''));
-      const body = rows.slice(1).filter((r) => r.some((cell) => cell !== '' && cell != null));
-
-      const guessedX = guessColumn(headerRow, FIELDS[2].guesses);
-      const guessedY = guessColumn(headerRow, FIELDS[3].guesses);
-      const { x, y, corrected } = verifyUtmAxes(guessedX, guessedY, body);
-
-      setHeaders(headerRow);
-      setDataRows(body);
-      setAutoCorrectedXY(corrected);
-      setTypeCategories({});
-      setMapping({
-        asset_code: guessColumn(headerRow, FIELDS[0].guesses),
-        asset_type: guessColumn(headerRow, FIELDS[1].guesses),
-        x,
-        y,
-        z: guessColumn(headerRow, FIELDS[4].guesses),
-        station: guessColumn(headerRow, FIELDS[5].guesses),
-      });
+      setAllRows(rows);
+      setHeaderRowIndex(detectHeaderRowIndex(rows));
     } catch (err) {
       setParseError(err instanceof Error ? err.message : String(err));
     }
@@ -202,6 +252,8 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
     }
   }
 
+  const headerCandidates = allRows.slice(0, Math.min(allRows.length, MAX_HEADER_SCAN_ROWS));
+
   return (
     <div className="wizard-form">
       <h2>3. Import structure list</h2>
@@ -217,8 +269,19 @@ export function AssetImportStep({ projectId, onComplete, onBack }: AssetImportSt
 
       {parseError && <p className="form-message">{parseError}</p>}
 
-      {headers.length > 0 && (
+      {allRows.length > 0 && (
         <>
+          <label>
+            Header row (the row with column titles like "Construction No", "X Coordinate"…)
+            <select value={headerRowIndex} onChange={(e) => setHeaderRowIndex(Number(e.target.value))}>
+              {headerCandidates.map((row, i) => (
+                <option key={i} value={i}>
+                  Row {i + 1}: {rowPreview(row)}
+                </option>
+              ))}
+            </select>
+          </label>
+
           {autoCorrectedXY && (
             <p className="wizard-hint">
               Auto-corrected: the X and Y columns looked swapped (based on typical UTM digit counts — eastings
