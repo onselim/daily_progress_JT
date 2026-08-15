@@ -162,7 +162,7 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
             ))}
           </select>
         </label>
-        <TowerHeadPreview type={towerHeadType} />
+        <TowerHeadPreview type={towerHeadType} circuitType={circuitType} />
       </div>
       {towerHeadType === 'other' && (
         <label>
