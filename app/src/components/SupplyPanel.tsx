@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { SUPPLY_STATUS_PERCENT, type SupplyItemBreakdown, type SupplyStatus } from '../lib/useSupplyBreakdown';
 import { updateProjectWorkItem } from '../lib/updateProjectWorkItem';
@@ -19,18 +20,28 @@ interface SupplyPanelProps {
 
 export function SupplyPanel({ projectId, editable, items, overallPercent, loading, onSaved }: SupplyPanelProps) {
   const { user } = useAuth();
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [errorKey, setErrorKey] = useState<{ key: string; message: string } | null>(null);
 
   async function handleSetStatus(itemKey: string, status: SupplyStatus) {
     if (!user) return;
-    await updateProjectWorkItem({
-      projectId,
-      category: 'supply',
-      workItemKey: itemKey,
-      percentComplete: SUPPLY_STATUS_PERCENT[status],
-      status,
-      updatedBy: user.id,
-    });
-    onSaved();
+    setSavingKey(itemKey);
+    setErrorKey(null);
+    try {
+      await updateProjectWorkItem({
+        projectId,
+        category: 'supply',
+        workItemKey: itemKey,
+        percentComplete: SUPPLY_STATUS_PERCENT[status],
+        status,
+        updatedBy: user.id,
+      });
+      onSaved();
+    } catch (err) {
+      setErrorKey({ key: itemKey, message: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setSavingKey(null);
+    }
   }
 
   if (loading) return <p className="accordion-empty">Loading…</p>;
@@ -45,20 +56,24 @@ export function SupplyPanel({ projectId, editable, items, overallPercent, loadin
             <span className="pw-item-percent">{item.percentComplete.toFixed(1)}%</span>
           </div>
           {editable ? (
-            <div className="status-toggle" role="group" aria-label={item.label}>
-              {STATUS_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className={`status-btn status-btn-${
-                    opt.value === 'not_started' ? 'not_started' : opt.value === 'manufactured' ? 'in_progress' : 'completed'
-                  }${item.status === opt.value ? ' active' : ''}`}
-                  onClick={() => handleSetStatus(item.key, opt.value)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="status-toggle" role="group" aria-label={item.label}>
+                {STATUS_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    className={`status-btn status-btn-${
+                      opt.value === 'not_started' ? 'not_started' : opt.value === 'manufactured' ? 'in_progress' : 'completed'
+                    }${item.status === opt.value ? ' active' : ''}`}
+                    disabled={savingKey === item.key}
+                    onClick={() => handleSetStatus(item.key, opt.value)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {errorKey?.key === item.key && <p className="pw-save-error">Save failed: {errorKey.message}</p>}
+            </>
           ) : (
             <span className="pw-item-status">{STATUS_OPTIONS.find((o) => o.value === item.status)?.label}</span>
           )}

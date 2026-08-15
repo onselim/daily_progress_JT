@@ -17,6 +17,7 @@ export function DesignPanel({ projectId, editable, items, overallPercent, loadin
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savedKey, setSavedKey] = useState<string | null>(null);
+  const [errorKey, setErrorKey] = useState<{ key: string; message: string } | null>(null);
 
   useEffect(() => {
     setDrafts(Object.fromEntries(items.map((item) => [item.key, String(item.percentComplete)])));
@@ -27,6 +28,7 @@ export function DesignPanel({ projectId, editable, items, overallPercent, loadin
     const raw = Number(drafts[itemKey]);
     const percent = Number.isFinite(raw) ? Math.min(100, Math.max(0, raw)) : 0;
     setSavingKey(itemKey);
+    setErrorKey(null);
     try {
       await updateProjectWorkItem({
         projectId,
@@ -39,6 +41,8 @@ export function DesignPanel({ projectId, editable, items, overallPercent, loadin
       onSaved();
       setSavedKey(itemKey);
       setTimeout(() => setSavedKey((k) => (k === itemKey ? null : k)), 1500);
+    } catch (err) {
+      setErrorKey({ key: itemKey, message: err instanceof Error ? err.message : String(err) });
     } finally {
       setSavingKey(null);
     }
@@ -53,22 +57,25 @@ export function DesignPanel({ projectId, editable, items, overallPercent, loadin
         <div key={item.key} className="pw-item-row">
           <span className="pw-item-label">{item.label}</span>
           {editable ? (
-            <div className="pw-percent-input">
-              {savingKey === item.key && <span className="pw-save-indicator">Saving…</span>}
-              {savedKey === item.key && <span className="pw-save-indicator pw-save-ok">✓ Saved</span>}
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={drafts[item.key] ?? ''}
-                onChange={(e) => setDrafts((prev) => ({ ...prev, [item.key]: e.target.value }))}
-                onBlur={() => handleSave(item.key)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                }}
-                disabled={savingKey === item.key}
-              />
-              <span>%</span>
+            <div className="pw-percent-input-wrap">
+              <div className="pw-percent-input">
+                {savingKey === item.key && <span className="pw-save-indicator">Saving…</span>}
+                {savedKey === item.key && <span className="pw-save-indicator pw-save-ok">✓ Saved</span>}
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={drafts[item.key] ?? ''}
+                  onChange={(e) => setDrafts((prev) => ({ ...prev, [item.key]: e.target.value }))}
+                  onBlur={() => handleSave(item.key)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                  }}
+                  disabled={savingKey === item.key}
+                />
+                <span>%</span>
+              </div>
+              {errorKey?.key === item.key && <p className="pw-save-error">Save failed: {errorKey.message}</p>}
             </div>
           ) : (
             <span className="pw-item-percent">{item.percentComplete.toFixed(1)}%</span>

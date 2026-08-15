@@ -1224,6 +1224,20 @@ button:disabled {
   color: #00d4aa;
 }
 
+.pw-percent-input-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.pw-save-error {
+  margin: 0;
+  font-size: 10px;
+  color: #ef4444;
+  text-align: right;
+}
+
 .pw-subtotal {
   display: flex;
   justify-content: space-between;
