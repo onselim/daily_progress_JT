@@ -870,6 +870,11 @@ button:disabled {
   letter-spacing: 0.04em;
 }
 
+.pgb-tab-static {
+  cursor: default;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
 .pgb-detail {
   position: absolute;
   top: 100%;
@@ -886,6 +891,12 @@ button:disabled {
   padding: 12px 14px;
   z-index: 600;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.pgb-detail-construction {
+  left: auto;
+  right: 0;
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 .pgb-overall-summary {

@@ -7,9 +7,9 @@ import { computeOverallPercent } from '../lib/overallProgress';
 import { DesignPanel } from './DesignPanel';
 import { SupplyPanel } from './SupplyPanel';
 
-type Tab = 'overall' | 'design' | 'supply' | 'construction';
+type Tab = 'overall' | 'design' | 'supply';
 
-const TAB_COLOR: Record<Tab, string> = {
+const TAB_COLOR = {
   overall: '#00d4aa',
   design: '#9333ea',
   supply: '#2563eb',
@@ -61,9 +61,7 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
   const design = useDesignBreakdown(projectId);
   const supply = useSupplyBreakdown(projectId);
   const overallPercent = computeOverallPercent(design.overallPercent, construction.overallPercent, supply.overallPercent);
-  // Construction is read-only here (it's driven by per-tower data) so it's shown open by default;
-  // Design and Supply involve manual entry, so they stay collapsed until picked.
-  const [activeTab, setActiveTab] = useState<Tab | null>('construction');
+  const [activeTab, setActiveTab] = useState<Tab | null>(null);
 
   function toggle(tab: Tab) {
     setActiveTab((prev) => (prev === tab ? null : tab));
@@ -105,16 +103,15 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
           </span>
           <span className="pgb-tab-lbl">Supply</span>
         </button>
-        <button
-          type="button"
-          className={`pgb-tab${activeTab === 'construction' ? ' active' : ''}`}
-          onClick={() => toggle('construction')}
-        >
+
+        {/* Construction is what this report is fundamentally about, and it's read-only here
+            (driven by per-tower data) — so it's always expanded, not part of the click-to-toggle group. */}
+        <div className="pgb-tab pgb-tab-static">
           <span className="pgb-tab-val" style={{ color: TAB_COLOR.construction }}>
             {construction.overallPercent.toFixed(1)}%
           </span>
           <span className="pgb-tab-lbl">Construction</span>
-        </button>
+        </div>
       </div>
 
       {activeTab && (
@@ -173,10 +170,12 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
               onSaved={supply.refresh}
             />
           )}
-
-          {activeTab === 'construction' && <ConstructionGroups groups={constructionGroups} color={TAB_COLOR.construction} />}
         </div>
       )}
+
+      <div className="pgb-detail pgb-detail-construction">
+        <ConstructionGroups groups={constructionGroups} color={TAB_COLOR.construction} />
+      </div>
     </div>
   );
 }

@@ -34,17 +34,23 @@ export default function PublicViewerPage() {
         <div className="project-topbar-stats">
           <span className="stat-pill">
             <span className="stat-pill-dot" style={{ background: '#00d4aa' }} />
-            <span className="stat-pill-val">{stats.inProgress}</span>
+            <span className="stat-pill-val">
+              {stats.inProgress}/{stats.total}
+            </span>
             <span className="stat-pill-lbl">Active</span>
           </span>
           <span className="stat-pill">
             <span className="stat-pill-dot" style={{ background: '#ef4444' }} />
-            <span className="stat-pill-val">{restrictedAssetIds.size}</span>
+            <span className="stat-pill-val">
+              {restrictedAssetIds.size}/{stats.total}
+            </span>
             <span className="stat-pill-lbl">No Access</span>
           </span>
           <span className="stat-pill">
             <span className="stat-pill-dot" style={{ background: '#3b82f6' }} />
-            <span className="stat-pill-val">{stats.completed}</span>
+            <span className="stat-pill-val">
+              {stats.completed}/{stats.total}
+            </span>
             <span className="stat-pill-lbl">Completed</span>
           </span>
           <span className="stat-pill">
