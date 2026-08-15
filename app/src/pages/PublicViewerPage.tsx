@@ -2,6 +2,11 @@ import { useParams } from 'react-router-dom';
 import { useProjectBySlug } from '../lib/useProject';
 import { useAssetStats } from '../lib/useAssetStats';
 import { useRestrictedToday } from '../lib/useRestrictedToday';
+import { useWorkItemsConfig } from '../lib/useProjectConfig';
+import { useConstructionBreakdown } from '../lib/useConstructionBreakdown';
+import { useDesignBreakdown } from '../lib/useDesignBreakdown';
+import { useSupplyBreakdown } from '../lib/useSupplyBreakdown';
+import { computeOverallPercent } from '../lib/overallProgress';
 import { AssetWorkspace } from '../components/AssetWorkspace';
 
 export default function PublicViewerPage() {
@@ -9,6 +14,11 @@ export default function PublicViewerPage() {
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
   const restrictedAssetIds = useRestrictedToday(project?.id);
+  const { workItems } = useWorkItemsConfig(project?.id);
+  const { overallPercent: constructionPercent } = useConstructionBreakdown(project?.id, workItems);
+  const { overallPercent: designPercent } = useDesignBreakdown(project?.id);
+  const { overallPercent: supplyPercent } = useSupplyBreakdown(project?.id);
+  const overallPercent = computeOverallPercent(designPercent, constructionPercent, supplyPercent);
 
   if (loading) return <div className="page-loading">Loading…</div>;
 
@@ -28,6 +38,10 @@ export default function PublicViewerPage() {
           {project.client && <p>{project.client}</p>}
         </div>
         <div className="project-topbar-stats">
+          <span className="stat-pill stat-pill-overall">
+            <span className="stat-pill-val">{overallPercent.toFixed(1)}%</span>
+            <span className="stat-pill-lbl">Overall</span>
+          </span>
           <span className="stat-pill">
             <span className="stat-pill-dot" style={{ background: '#00d4aa' }} />
             <span className="stat-pill-val">{stats.inProgress}</span>

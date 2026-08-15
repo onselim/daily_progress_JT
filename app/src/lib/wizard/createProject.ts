@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { DEFAULT_DESIGN_ITEMS, DEFAULT_SUPPLY_ITEMS } from './defaultDesignSupplyItems';
 
 function slugify(name: string): string {
   return name
@@ -74,6 +75,8 @@ export async function createProject(input: ProjectBasicsInput) {
       key: 'ground_wire_config',
       value: { opgw: input.opgwCount, earthwire: input.earthwireCount },
     },
+    { project_id: project.id, key: 'design_items', value: DEFAULT_DESIGN_ITEMS },
+    { project_id: project.id, key: 'supply_items', value: DEFAULT_SUPPLY_ITEMS },
   ]);
   if (configError) throw configError;
 

@@ -6,6 +6,9 @@ import { useRestrictedAssetCodes } from '../lib/useRestrictedAssetCodes';
 import { useAssets } from '../lib/useAssets';
 import { useWorkItemsConfig } from '../lib/useProjectConfig';
 import { useConstructionBreakdown } from '../lib/useConstructionBreakdown';
+import { useDesignBreakdown } from '../lib/useDesignBreakdown';
+import { useSupplyBreakdown } from '../lib/useSupplyBreakdown';
+import { computeOverallPercent } from '../lib/overallProgress';
 import { useDailyLogEntries } from '../lib/useDailyLogEntries';
 import { useWeatherForecast } from '../lib/useWeatherForecast';
 import { utmToLatLng } from '../lib/utmToLatLng';
@@ -27,6 +30,9 @@ export default function PrintReportPage() {
   const { assets } = useAssets(project?.id);
   const { workItems } = useWorkItemsConfig(project?.id);
   const { items, overallPercent: constructionPercent } = useConstructionBreakdown(project?.id, workItems);
+  const { items: designItems, overallPercent: designPercent } = useDesignBreakdown(project?.id);
+  const { items: supplyItems, overallPercent: supplyPercent } = useSupplyBreakdown(project?.id);
+  const overallPercent = computeOverallPercent(designPercent, constructionPercent, supplyPercent);
   const { entries } = useDailyLogEntries(project?.id);
 
   const [weatherLat, weatherLng] = useMemo((): [number | null, number | null] => {
@@ -97,10 +103,10 @@ export default function PrintReportPage() {
 
         <div className="pd-stat-row">
           <div className="pd-stat-main">
-            <div className="pd-stat-main-val">{constructionPercent.toFixed(2)}%</div>
+            <div className="pd-stat-main-val">{overallPercent.toFixed(2)}%</div>
             <div className="pd-stat-lbl">OVERALL PROJECT COMPLETION</div>
             <div className="pd-stat-bar">
-              <div className="pd-stat-bar-fill" style={{ width: `${Math.min(constructionPercent, 100)}%` }} />
+              <div className="pd-stat-bar-fill" style={{ width: `${Math.min(overallPercent, 100)}%` }} />
             </div>
           </div>
           <div className="pd-stat pd-stat-green">
@@ -115,12 +121,16 @@ export default function PrintReportPage() {
             <div className="pd-stat-val">{stats.total}</div>
             <div className="pd-stat-lbl">Total towers</div>
           </div>
+          <div className="pd-stat pd-stat-purple">
+            <div className="pd-stat-val">{designPercent.toFixed(1)}%</div>
+            <div className="pd-stat-lbl">Design</div>
+          </div>
           <div className="pd-stat pd-stat-green">
-            <div className="pd-stat-val">{constructionPercent.toFixed(2)}%</div>
+            <div className="pd-stat-val">{constructionPercent.toFixed(1)}%</div>
             <div className="pd-stat-lbl">Construction</div>
           </div>
           <div className="pd-stat pd-stat-blue">
-            <div className="pd-stat-val pd-stat-val-sm">Not tracked</div>
+            <div className="pd-stat-val">{supplyPercent.toFixed(1)}%</div>
             <div className="pd-stat-lbl">Supply</div>
           </div>
         </div>
@@ -156,12 +166,52 @@ export default function PrintReportPage() {
               <span className="pd-dot" style={{ background: '#2563eb' }} />
               Supply status
             </div>
-            <p className="pd-muted">
-              Not tracked yet — this project has no material/supply delivery data source configured.
-            </p>
+            {supplyItems.map((item) => (
+              <div key={item.key} className="pd-bar-row">
+                <span className={`pd-bar-lbl${item.percentComplete <= 0 ? ' pd-bar-lbl-muted' : ''}`}>
+                  {item.label}
+                </span>
+                <div className="pd-bar-track">
+                  <div
+                    className="pd-bar-fill2"
+                    style={{ width: `${Math.min(item.percentComplete, 100)}%`, background: '#2563eb' }}
+                  />
+                </div>
+                <span className="pd-bar-val">{item.percentComplete.toFixed(1)}%</span>
+              </div>
+            ))}
+            <div className="pd-subtotal">
+              <span>Overall</span>
+              <span style={{ color: '#2563eb' }}>{supplyPercent.toFixed(2)}%</span>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="pd-box">
+              <div className="pd-box-title">
+                <span className="pd-dot" style={{ background: '#9333ea' }} />
+                Design status
+              </div>
+              {designItems.map((item) => (
+                <div key={item.key} className="pd-bar-row">
+                  <span className={`pd-bar-lbl${item.percentComplete <= 0 ? ' pd-bar-lbl-muted' : ''}`}>
+                    {item.label}
+                  </span>
+                  <div className="pd-bar-track">
+                    <div
+                      className="pd-bar-fill2"
+                      style={{ width: `${Math.min(item.percentComplete, 100)}%`, background: '#9333ea' }}
+                    />
+                  </div>
+                  <span className="pd-bar-val">{item.percentComplete.toFixed(1)}%</span>
+                </div>
+              ))}
+              <div className="pd-subtotal">
+                <span>Overall</span>
+                <span style={{ color: '#9333ea' }}>{designPercent.toFixed(2)}%</span>
+              </div>
+            </div>
+
             <div className="pd-box">
               <div className="pd-box-title">
                 <span className="pd-dot" style={{ background: '#f59e0b' }} />

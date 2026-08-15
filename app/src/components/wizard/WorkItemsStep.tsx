@@ -3,21 +3,22 @@ import { supabase } from '../../lib/supabase';
 import type { WorkItemConfig } from '../../lib/useProjectConfig';
 
 export const DEFAULT_WORK_ITEM_TEMPLATE: WorkItemConfig[] = [
-  { group: 'Access Road', key: 'ar', label: 'Access Road', weight: 4 },
-  { group: 'Soil Investigation', key: 'si_sw', label: 'Site Work', weight: 3 },
-  { group: 'Soil Investigation', key: 'si_ft', label: 'Foundation Type', weight: 2 },
-  { group: 'Foundation', key: 'fn_ex', label: 'Excavation', weight: 5 },
-  { group: 'Foundation', key: 'fn_lc', label: 'Lean Concrete', weight: 1 },
-  { group: 'Foundation', key: 'fn_ss', label: 'Stub Setting', weight: 2 },
-  { group: 'Foundation', key: 'fn_rf', label: 'Reinforcement', weight: 3 },
-  { group: 'Foundation', key: 'fn_fw', label: 'Formwork', weight: 2 },
-  { group: 'Foundation', key: 'fn_co', label: 'Concrete', weight: 15 },
-  { group: 'Foundation', key: 'fn_bf', label: 'Backfilling', weight: 2 },
-  { group: 'Erection', key: 'er_ge', label: 'Ground Erection', weight: 4 },
-  { group: 'Erection', key: 'er_te', label: 'Tower Erection', weight: 5 },
-  { group: 'Stringing', key: 'st_cd', label: 'Conductor', weight: 10 },
-  { group: 'Stringing', key: 'st_op', label: 'OPGW', weight: 4 },
-  { group: 'Stringing', key: 'st_ew', label: 'EW', weight: 4 },
+  { group: 'PRE-CONSTRUCTION WORKS', key: 'ar', label: 'Access Road', weight: 8 },
+  { group: 'PRE-CONSTRUCTION WORKS', key: 'pc_tc', label: 'Tree Cutting', weight: 5 },
+  { group: 'PRE-CONSTRUCTION WORKS', key: 'si_sw', label: 'Soil Investigation', weight: 4 },
+  { group: 'FOUNDATION', key: 'fn_ex', label: 'Excavation', weight: 8 },
+  { group: 'FOUNDATION', key: 'fn_lc', label: 'Lean Concrete', weight: 2 },
+  { group: 'FOUNDATION', key: 'fn_ss', label: 'Stub Settings', weight: 3 },
+  { group: 'FOUNDATION', key: 'fn_rf', label: 'Reinforcement', weight: 4 },
+  { group: 'FOUNDATION', key: 'fn_fw', label: 'Formwork', weight: 4 },
+  { group: 'FOUNDATION', key: 'fn_co', label: 'Concreting', weight: 26 },
+  { group: 'FOUNDATION', key: 'fn_bf', label: 'Backfilling', weight: 4 },
+  { group: 'ERECTION', key: 'er_ge', label: 'Ground Assembly', weight: 8 },
+  { group: 'ERECTION', key: 'er_te', label: 'Erection of Towers', weight: 8 },
+  { group: 'STRINGING', key: 'st_cd', label: 'Stringing of Conductor', weight: 10 },
+  { group: 'STRINGING', key: 'st_sg', label: 'Sagging + Conductor Accessories', weight: 2 },
+  { group: 'STRINGING', key: 'st_op', label: 'Stringing of OPGW', weight: 2 },
+  { group: 'STRINGING', key: 'st_ew', label: 'Stringing of EW', weight: 2 },
 ];
 
 function mergeTemplate(initialItems: WorkItemConfig[] | undefined): WorkItemConfig[] {
@@ -108,8 +109,9 @@ export function WorkItemsStep({
     <div className="wizard-form">
       <h2>{title}</h2>
       <p className="wizard-hint">
-        Uncheck anything that doesn't apply to this project (e.g. skip Soil Investigation if you only track
-        foundation type). Weights feed the Construction% formula.
+        Uncheck anything that doesn't apply to this project — its weight is automatically redistributed to the
+        other items in the same group, so that group's overall share doesn't shrink. Weights feed the
+        Construction% formula.
       </p>
 
       {groups.map((group) => (
@@ -121,7 +123,25 @@ export function WorkItemsStep({
                 <input
                   type="checkbox"
                   checked={enabled[item.key]}
-                  onChange={(e) => setEnabled((prev) => ({ ...prev, [item.key]: e.target.checked }))}
+                  onChange={(e) => {
+                    const isEnabling = e.target.checked;
+                    setEnabled((prev) => ({ ...prev, [item.key]: isEnabling }));
+
+                    if (!isEnabling) {
+                      const freed = weights[item.key] || 0;
+                      const siblings = group.items.filter((sib) => sib.key !== item.key && enabled[sib.key]);
+                      const siblingSum = siblings.reduce((sum, sib) => sum + (weights[sib.key] || 0), 0);
+                      if (freed > 0 && siblingSum > 0) {
+                        setWeights((prev) => {
+                          const next = { ...prev };
+                          for (const sib of siblings) {
+                            next[sib.key] = Math.round((prev[sib.key] + (prev[sib.key] / siblingSum) * freed) * 10) / 10;
+                          }
+                          return next;
+                        });
+                      }
+                    }
+                  }}
                 />
                 {item.label}
               </label>
