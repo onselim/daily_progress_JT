@@ -162,9 +162,9 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
         ) : (
           <div className="pgb-construction-groups-grid">
             {constructionGroups.map((group) => (
-              <div key={group.name} className="pgb-construction-group">
-                <span className="pgb-construction-group-name">{group.name}</span>
-                <div className="pgb-construction-chip-row">
+              <div key={group.name} className="pgb-construction-card">
+                <div className="pgb-construction-card-title">{group.name}</div>
+                <div className="pgb-construction-card-items">
                   {group.items.map((item) => (
                     <span key={item.key} className={`pgb-chip${item.percentComplete <= 0 ? ' pgb-chip-muted' : ''}`}>
                       {item.label} <strong>{item.percentComplete.toFixed(1)}%</strong>

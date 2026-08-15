@@ -938,9 +938,8 @@ button:disabled {
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  padding: 6px 0 10px;
-  margin-top: -4px;
-  border-top: 1px solid var(--border);
+  padding: 8px 0 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .pgb-construction-strip-title {
@@ -959,39 +958,31 @@ button:disabled {
   color: #4b5563;
 }
 
-/* Two columns instead of one long stack of 4 rows — cuts the strip's height roughly in
-   half so it stays compact even though every item is still listed. */
+/* Four side-by-side cards, one per phase — each a little section with its own heading
+   and items stacked below it, instead of writing the phase name out inline per row. */
 .pgb-construction-groups-grid {
   width: 100%;
-  max-width: 820px;
+  max-width: 960px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px 28px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0 20px;
 }
 
-.pgb-construction-group {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 2px 12px;
-  padding: 1px 0;
-}
-
-.pgb-construction-group-name {
-  flex: 0 0 125px;
+.pgb-construction-card-title {
   font-size: 10px;
   font-weight: 700;
   color: #7a8099;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  margin-bottom: 3px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--border);
 }
 
-.pgb-construction-chip-row {
+.pgb-construction-card-items {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  flex: 1;
-  min-width: 200px;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .pgb-chip {
@@ -1078,7 +1069,8 @@ button:disabled {
   }
 
   .pgb-construction-groups-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 14px;
   }
 }
 
