@@ -1203,6 +1203,19 @@ button:disabled {
   color: var(--text);
 }
 
+.pw-supply-stages {
+  display: flex;
+  gap: 14px;
+}
+
+.pw-supply-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--text);
+}
+
 .pw-percent-input {
   display: flex;
   align-items: center;

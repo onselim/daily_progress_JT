@@ -2,20 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import type { WorkItemConfig } from './useProjectConfig';
 
-export type SupplyStatus = 'not_started' | 'manufactured' | 'delivered';
-
-/** Manufactured = 2/3 of an item's weight, Delivered = the remaining 1/3 (3/3 total). */
-export const SUPPLY_STATUS_PERCENT: Record<SupplyStatus, number> = {
-  not_started: 0,
-  manufactured: (2 / 3) * 100,
-  delivered: 100,
-};
+const MANUFACTURED_SHARE = 2 / 3;
+const DELIVERED_SHARE = 1 / 3;
 
 export interface SupplyItemBreakdown {
   key: string;
   label: string;
   weight: number;
-  status: SupplyStatus;
+  manufacturedPercent: number;
+  deliveredPercent: number;
   percentComplete: number;
 }
 
@@ -30,17 +25,19 @@ export function useSupplyBreakdown(projectId: string | undefined) {
 
     return Promise.all([
       supabase.from('project_config').select('value').eq('project_id', projectId).eq('key', 'supply_items').maybeSingle(),
-      supabase.from('project_work_items').select('work_item_key, status').eq('project_id', projectId).eq('category', 'supply'),
+      supabase.from('project_work_items').select('work_item_key, percent_complete').eq('project_id', projectId).eq('category', 'supply'),
     ]).then(([configRes, progressRes]) => {
       const config = (configRes.data?.value as WorkItemConfig[] | undefined) ?? [];
-      const statusByKey: Record<string, SupplyStatus> = {};
+      const percentByKey: Record<string, number> = {};
       for (const row of progressRes.data ?? []) {
-        statusByKey[row.work_item_key] = row.status as SupplyStatus;
+        percentByKey[row.work_item_key] = Number(row.percent_complete);
       }
 
       const breakdown: SupplyItemBreakdown[] = config.map((item) => {
-        const status = statusByKey[item.key] ?? 'not_started';
-        return { key: item.key, label: item.label, weight: item.weight, status, percentComplete: SUPPLY_STATUS_PERCENT[status] };
+        const manufacturedPercent = percentByKey[`${item.key}__mfg`] ?? 0;
+        const deliveredPercent = percentByKey[`${item.key}__del`] ?? 0;
+        const percentComplete = manufacturedPercent * MANUFACTURED_SHARE + deliveredPercent * DELIVERED_SHARE;
+        return { key: item.key, label: item.label, weight: item.weight, manufacturedPercent, deliveredPercent, percentComplete };
       });
 
       const totalWeight = config.reduce((sum, item) => sum + item.weight, 0);
