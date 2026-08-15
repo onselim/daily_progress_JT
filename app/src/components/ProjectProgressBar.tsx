@@ -154,9 +154,6 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
       </div>
 
       <div className="pgb-construction-strip">
-        <div className="pgb-construction-strip-title" style={{ color: TAB_COLOR.construction }}>
-          Construction
-        </div>
         {constructionGroups.length === 0 ? (
           <span className="pgb-construction-strip-empty">No construction items configured for this project.</span>
         ) : (
