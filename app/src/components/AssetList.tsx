@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAssets } from '../lib/useAssets';
 import type { WorkItemConfig } from '../lib/useProjectConfig';
+import { computeGroupStatus } from '../lib/groupStatus';
 
 const STATUS_COLOR: Record<string, string> = {
   not_started: '#3d4259',
@@ -8,6 +9,15 @@ const STATUS_COLOR: Record<string, string> = {
   completed: '#3b82f6',
   on_hold: '#ef4444',
 };
+
+// Same headline phases as the topbar stats — quick filters for "what's left to do".
+const FILTER_GROUPS = [
+  { key: 'FOUNDATION', label: 'Foundation' },
+  { key: 'ERECTION', label: 'Erection' },
+  { key: 'STRINGING', label: 'Stringing' },
+];
+
+type Filter = 'all' | 'active' | 'noAccess' | string;
 
 function groupSegments(
   workItems: WorkItemConfig[],
@@ -54,10 +64,21 @@ export function AssetList({
 }: AssetListProps) {
   const { assets, loading } = useAssets(projectId);
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<Filter>('all');
 
-  const filtered = search.trim()
-    ? assets.filter((a) => a.asset_code.toLowerCase().includes(search.trim().toLowerCase()))
-    : assets;
+  let filtered = assets;
+  if (filter === 'active') {
+    filtered = filtered.filter((a) => a.status === 'in_progress');
+  } else if (filter === 'noAccess') {
+    filtered = filtered.filter((a) => restrictedAssetIds.has(a.id));
+  } else if (filter !== 'all') {
+    const itemKeys = workItems.filter((w) => w.group === filter).map((w) => w.key);
+    filtered = filtered.filter((a) => computeGroupStatus(itemKeys, percentByAssetAndKey[a.id]) !== 'not_started');
+  }
+  if (search.trim()) {
+    const q = search.trim().toLowerCase();
+    filtered = filtered.filter((a) => a.asset_code.toLowerCase().includes(q));
+  }
 
   return (
     <div className="asset-list-panel">
@@ -68,6 +89,39 @@ export function AssetList({
         onChange={(e) => setSearch(e.target.value)}
         className="asset-search"
       />
+      <div className="asset-filter-row">
+        <button
+          type="button"
+          className={`asset-filter-btn${filter === 'all' ? ' on' : ''}`}
+          onClick={() => setFilter('all')}
+        >
+          All
+        </button>
+        <button
+          type="button"
+          className={`asset-filter-btn${filter === 'active' ? ' on' : ''}`}
+          onClick={() => setFilter('active')}
+        >
+          Active
+        </button>
+        <button
+          type="button"
+          className={`asset-filter-btn asset-filter-btn-danger${filter === 'noAccess' ? ' on' : ''}`}
+          onClick={() => setFilter('noAccess')}
+        >
+          ⛔ No Access
+        </button>
+        {FILTER_GROUPS.map((g) => (
+          <button
+            key={g.key}
+            type="button"
+            className={`asset-filter-btn${filter === g.key ? ' on' : ''}`}
+            onClick={() => setFilter(g.key)}
+          >
+            {g.label}
+          </button>
+        ))}
+      </div>
       {loading && <p>Loading assets…</p>}
       <ul className="asset-list">
         {filtered.map((a) => {

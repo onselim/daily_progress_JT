@@ -3,11 +3,14 @@ import { useWorkItemsConfig } from '../lib/useProjectConfig';
 import { useConstructionBreakdown } from '../lib/useConstructionBreakdown';
 import { useDesignBreakdown } from '../lib/useDesignBreakdown';
 import { useSupplyBreakdown } from '../lib/useSupplyBreakdown';
+import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress';
+import { useAssetStats } from '../lib/useAssetStats';
 import { computeOverallPercent } from '../lib/overallProgress';
+import { computeGroupStatus } from '../lib/groupStatus';
 import { DesignPanel } from './DesignPanel';
 import { SupplyPanel } from './SupplyPanel';
 
-type Tab = 'overall' | 'design' | 'supply';
+type Tab = 'overall' | 'design' | 'supply' | 'construction';
 
 const TAB_COLOR = {
   overall: '#00d4aa',
@@ -15,6 +18,16 @@ const TAB_COLOR = {
   supply: '#2563eb',
   construction: '#10b981',
 };
+
+// Headline phases shown as tower-count stats (mirrors the validated prototype's topbar) —
+// "how many of the 201 towers have fully finished this phase", not an averaged percentage.
+// Pre-construction/soil-investigation items still count toward Construction% but aren't
+// prominent enough on their own to earn a topbar stat.
+const HEADLINE_GROUPS: { name: string; label: string; color: string }[] = [
+  { name: 'FOUNDATION', label: 'Foundation', color: '#3b82f6' },
+  { name: 'ERECTION', label: 'Erection', color: '#8b5cf6' },
+  { name: 'STRINGING', label: 'Stringing', color: '#f59e0b' },
+];
 
 interface ItemRow {
   key: string;
@@ -34,6 +47,22 @@ function ItemBar({ item, color }: { item: ItemRow; color: string }) {
   );
 }
 
+function ConstructionGroups({ groups, color }: { groups: { name: string; items: ItemRow[] }[]; color: string }) {
+  if (groups.length === 0) return <p className="accordion-empty">No construction items configured for this project.</p>;
+  return (
+    <>
+      {groups.map((group) => (
+        <div key={group.name} className="pgb-group">
+          <div className="pgb-group-name">{group.name}</div>
+          {group.items.map((item) => (
+            <ItemBar key={item.key} item={item} color={color} />
+          ))}
+        </div>
+      ))}
+    </>
+  );
+}
+
 interface ProjectProgressBarProps {
   projectId: string;
   editable: boolean;
@@ -44,6 +73,8 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
   const construction = useConstructionBreakdown(projectId, workItems);
   const design = useDesignBreakdown(projectId);
   const supply = useSupplyBreakdown(projectId);
+  const { percentByAssetAndKey } = useProjectWorkItemsProgress(projectId);
+  const { stats } = useAssetStats(projectId);
   const overallPercent = computeOverallPercent(design.overallPercent, construction.overallPercent, supply.overallPercent);
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
 
@@ -61,6 +92,14 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
     }
     group.items.push(item);
   }
+
+  const headlineCounts = HEADLINE_GROUPS.map((hg) => {
+    const itemKeys = workItems.filter((w) => w.group === hg.name).map((w) => w.key);
+    const done = Object.values(percentByAssetAndKey).filter(
+      (percentByKey) => computeGroupStatus(itemKeys, percentByKey) === 'completed',
+    ).length;
+    return { ...hg, done };
+  });
 
   return (
     <>
@@ -88,12 +127,16 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
             </span>
             <span className="pgb-tab-lbl">Supply</span>
           </button>
-          <div className="pgb-tab pgb-tab-static">
+          <button
+            type="button"
+            className={`pgb-tab${activeTab === 'construction' ? ' active' : ''}`}
+            onClick={() => toggle('construction')}
+          >
             <span className="pgb-tab-val" style={{ color: TAB_COLOR.construction }}>
               {construction.overallPercent.toFixed(1)}%
             </span>
             <span className="pgb-tab-lbl">Construction</span>
-          </div>
+          </button>
         </div>
 
         {activeTab && (
@@ -112,6 +155,13 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
                 </div>
 
                 <div className="pgb-overall-section">
+                  <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.construction }}>
+                    Construction — {construction.overallPercent.toFixed(1)}%
+                  </div>
+                  <ConstructionGroups groups={constructionGroups} color={TAB_COLOR.construction} />
+                </div>
+
+                <div className="pgb-overall-section">
                   <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.supply }}>
                     Supply — {supply.overallPercent.toFixed(1)}%
                   </div>
@@ -121,10 +171,6 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
                     supply.items.map((item) => <ItemBar key={item.key} item={item} color={TAB_COLOR.supply} />)
                   )}
                 </div>
-
-                <p className="pgb-overall-note">
-                  Construction — {construction.overallPercent.toFixed(1)}% (see the full breakdown next to the tabs)
-                </p>
               </div>
             )}
 
@@ -149,25 +195,22 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
                 onSaved={supply.refresh}
               />
             )}
+
+            {activeTab === 'construction' && <ConstructionGroups groups={constructionGroups} color={TAB_COLOR.construction} />}
           </div>
         )}
       </div>
 
-      <div className="pgb-construction-inline">
-        {constructionGroups.length === 0 ? (
-          <span className="pgb-construction-strip-empty">No construction items configured for this project.</span>
-        ) : (
-          constructionGroups.map((group) => (
-            <div key={group.name} className="pgb-construction-inline-group">
-              <span className="pgb-construction-inline-group-name">{group.name}</span>
-              {group.items.map((item) => (
-                <span key={item.key} className={`pgb-chip${item.percentComplete <= 0 ? ' pgb-chip-muted' : ''}`}>
-                  {item.label} <strong>{item.percentComplete.toFixed(1)}%</strong>
-                </span>
-              ))}
-            </div>
-          ))
-        )}
+      <div className="pgb-headline-stats">
+        {headlineCounts.map((hg) => (
+          <span key={hg.name} className="stat-pill">
+            <span className="stat-pill-dot" style={{ background: hg.color }} />
+            <span className="stat-pill-val">
+              {hg.done}/{stats.total}
+            </span>
+            <span className="stat-pill-lbl">{hg.label}</span>
+          </span>
+        ))}
       </div>
     </>
   );

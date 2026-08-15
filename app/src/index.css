@@ -335,6 +335,45 @@ button:disabled {
   margin-bottom: 10px;
 }
 
+.asset-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.asset-filter-btn {
+  font: inherit;
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.asset-filter-btn:hover {
+  color: var(--text-h);
+}
+
+.asset-filter-btn.on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0, 212, 170, 0.08);
+}
+
+.asset-filter-btn-danger {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.asset-filter-btn-danger.on {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
 .asset-list {
   list-style: none;
   margin: 0;
@@ -750,7 +789,7 @@ button:disabled {
   overflow: hidden;
 }
 
-.project-shell button:not(.status-btn):not(.asset-list-item):not(.basemap-btn):not(.accordion-header) {
+.project-shell button:not(.status-btn):not(.asset-list-item):not(.basemap-btn):not(.accordion-header):not(.asset-filter-btn) {
   color: #0f1117;
 }
 
@@ -927,69 +966,28 @@ button:disabled {
   color: var(--text);
 }
 
-/* Construction breakdown — squeezed into the same row as the tabs/stats (not its own
-   row) as one horizontally-scrollable strip, so the whole topbar stays a single compact
-   line. Grouped by phase (PRE-CONSTRUCTION WORKS / FOUNDATION / ERECTION / STRINGING),
-   each group separated by a thin divider, items in reading order within their group. */
-.pgb-construction-inline {
-  flex: 1 1 0;
-  min-width: 0;
-  align-self: stretch;
+.pgb-group {
+  margin-bottom: 10px;
+}
+
+.pgb-group-name {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7a8099;
+  margin-bottom: 6px;
+}
+
+/* Headline tower-count stats (Foundation/Erection/Stringing) — how many of the 201
+   towers have fully finished that phase, styled exactly like the Active/No Access/
+   Completed/Towers stat pills so they read as one continuous row of facts. */
+.pgb-headline-stats {
   display: flex;
   align-items: center;
-  gap: 14px;
-  overflow-x: auto;
-  white-space: nowrap;
-  padding: 0 4px;
-}
-
-.pgb-construction-strip-empty {
-  font-size: 11px;
-  color: #4b5563;
-}
-
-.pgb-construction-inline-group {
-  flex-shrink: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding-right: 14px;
-  border-right: 1px solid var(--border);
-}
-
-.pgb-construction-inline-group:last-child {
-  border-right: none;
-  padding-right: 0;
-}
-
-.pgb-construction-inline-group-name {
-  flex-shrink: 0;
-  font-size: 9px;
-  font-weight: 700;
-  color: #7a8099;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.pgb-chip {
-  flex-shrink: 0;
-  font-size: 10.5px;
-  color: var(--text);
-  white-space: nowrap;
-}
-
-.pgb-chip strong {
-  color: var(--text-h);
-  font-family: var(--mono);
-  font-weight: 600;
-}
-
-.pgb-chip-muted {
-  color: #5b6274;
-}
-
-.pgb-chip-muted strong {
-  color: #5b6274;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 4px 0;
 }
 
 .pgb-item-row {
@@ -1045,17 +1043,53 @@ button:disabled {
     flex-direction: column;
   }
 
-  /* Safety net: the topbar shouldn't grow tall now that construction is an inline,
-     horizontally-scrollable strip (not a stacked block) — but cap and scroll it just
-     in case, so the map below always keeps a real, usable chunk of the screen. */
+  /* Safety net: cap and scroll the topbar so the map below always keeps a real,
+     usable chunk of the screen, no matter how much it wraps on a narrow phone. */
   .project-topbar {
     max-height: 30vh;
     overflow-y: auto;
     align-items: flex-start;
   }
 
-  .pgb-construction-inline {
-    flex-basis: 100%;
+  /* Smaller text throughout the topbar on phones — the desktop sizes were eating
+     far more vertical space than the content needed once everything had to wrap. */
+  .project-topbar-left h1 {
+    font-size: 12px;
+  }
+
+  .project-topbar-left p {
+    font-size: 9px;
+  }
+
+  .pgb-tab {
+    padding: 3px 8px;
+  }
+
+  .pgb-tab-val {
+    font-size: 11px;
+  }
+
+  .pgb-tab-overall .pgb-tab-val {
+    font-size: 13px;
+  }
+
+  .pgb-tab-lbl {
+    font-size: 8px;
+  }
+
+  .stat-pill,
+  .pgb-headline-stats .stat-pill {
+    font-size: 9px;
+    gap: 4px;
+  }
+
+  .stat-pill-val {
+    font-size: 9px;
+  }
+
+  .project-topbar-stats,
+  .pgb-headline-stats {
+    gap: 10px;
   }
 }
 
