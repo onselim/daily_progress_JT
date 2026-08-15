@@ -61,7 +61,9 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
   const design = useDesignBreakdown(projectId);
   const supply = useSupplyBreakdown(projectId);
   const overallPercent = computeOverallPercent(design.overallPercent, construction.overallPercent, supply.overallPercent);
-  const [activeTab, setActiveTab] = useState<Tab | null>(null);
+  // Construction is read-only here (it's driven by per-tower data) so it's shown open by default;
+  // Design and Supply involve manual entry, so they stay collapsed until picked.
+  const [activeTab, setActiveTab] = useState<Tab | null>('construction');
 
   function toggle(tab: Tab) {
     setActiveTab((prev) => (prev === tab ? null : tab));

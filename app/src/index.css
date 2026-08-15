@@ -1214,6 +1214,16 @@ button:disabled {
   text-align: right;
 }
 
+.pw-save-indicator {
+  font-size: 10px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.pw-save-ok {
+  color: #00d4aa;
+}
+
 .pw-subtotal {
   display: flex;
   justify-content: space-between;

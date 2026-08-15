@@ -16,6 +16,7 @@ export function DesignPanel({ projectId, editable, items, overallPercent, loadin
   const { user } = useAuth();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [savedKey, setSavedKey] = useState<string | null>(null);
 
   useEffect(() => {
     setDrafts(Object.fromEntries(items.map((item) => [item.key, String(item.percentComplete)])));
@@ -36,6 +37,8 @@ export function DesignPanel({ projectId, editable, items, overallPercent, loadin
         updatedBy: user.id,
       });
       onSaved();
+      setSavedKey(itemKey);
+      setTimeout(() => setSavedKey((k) => (k === itemKey ? null : k)), 1500);
     } finally {
       setSavingKey(null);
     }
@@ -51,6 +54,8 @@ export function DesignPanel({ projectId, editable, items, overallPercent, loadin
           <span className="pw-item-label">{item.label}</span>
           {editable ? (
             <div className="pw-percent-input">
+              {savingKey === item.key && <span className="pw-save-indicator">Saving…</span>}
+              {savedKey === item.key && <span className="pw-save-indicator pw-save-ok">✓ Saved</span>}
               <input
                 type="number"
                 min={0}
@@ -58,6 +63,9 @@ export function DesignPanel({ projectId, editable, items, overallPercent, loadin
                 value={drafts[item.key] ?? ''}
                 onChange={(e) => setDrafts((prev) => ({ ...prev, [item.key]: e.target.value }))}
                 onBlur={() => handleSave(item.key)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                }}
                 disabled={savingKey === item.key}
               />
               <span>%</span>
