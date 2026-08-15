@@ -123,7 +123,7 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
                 </div>
 
                 <p className="pgb-overall-note">
-                  Construction — {construction.overallPercent.toFixed(1)}% (see the full breakdown below the tabs)
+                  Construction — {construction.overallPercent.toFixed(1)}% (see the full breakdown next to the tabs)
                 </p>
               </div>
             )}
@@ -153,24 +153,20 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
         )}
       </div>
 
-      <div className="pgb-construction-strip">
+      <div className="pgb-construction-inline">
         {constructionGroups.length === 0 ? (
           <span className="pgb-construction-strip-empty">No construction items configured for this project.</span>
         ) : (
-          <div className="pgb-construction-groups-grid">
-            {constructionGroups.map((group) => (
-              <div key={group.name} className="pgb-construction-card">
-                <div className="pgb-construction-card-title">{group.name}</div>
-                <div className="pgb-construction-card-items">
-                  {group.items.map((item) => (
-                    <span key={item.key} className={`pgb-chip${item.percentComplete <= 0 ? ' pgb-chip-muted' : ''}`}>
-                      {item.label} <strong>{item.percentComplete.toFixed(1)}%</strong>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          constructionGroups.map((group) => (
+            <div key={group.name} className="pgb-construction-inline-group">
+              <span className="pgb-construction-inline-group-name">{group.name}</span>
+              {group.items.map((item) => (
+                <span key={item.key} className={`pgb-chip${item.percentComplete <= 0 ? ' pgb-chip-muted' : ''}`}>
+                  {item.label} <strong>{item.percentComplete.toFixed(1)}%</strong>
+                </span>
+              ))}
+            </div>
+          ))
         )}
       </div>
     </>

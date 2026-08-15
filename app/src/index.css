@@ -927,30 +927,20 @@ button:disabled {
   color: var(--text);
 }
 
-/* Construction breakdown — always visible, in normal page flow (not a floating overlay),
-   forced onto its own full-width line below the rest of the topbar. Grouped by phase
-   (PRE-CONSTRUCTION WORKS / FOUNDATION / ERECTION / STRINGING) so each group's items
-   sit together on their own row, in order, instead of wrapping unevenly all mixed together. */
-.pgb-construction-strip {
-  order: 100;
-  flex-basis: 100%;
+/* Construction breakdown — squeezed into the same row as the tabs/stats (not its own
+   row) as one horizontally-scrollable strip, so the whole topbar stays a single compact
+   line. Grouped by phase (PRE-CONSTRUCTION WORKS / FOUNDATION / ERECTION / STRINGING),
+   each group separated by a thin divider, items in reading order within their group. */
+.pgb-construction-inline {
+  flex: 1 1 0;
+  min-width: 0;
+  align-self: stretch;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 0 0 6px;
-  margin-top: -6px;
-}
-
-.pgb-construction-strip-title {
-  width: 100%;
-  max-width: 760px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 2px;
-  text-align: center;
+  gap: 14px;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 0 4px;
 }
 
 .pgb-construction-strip-empty {
@@ -958,35 +948,32 @@ button:disabled {
   color: #4b5563;
 }
 
-/* Four side-by-side cards, one per phase — each a little section with its own heading
-   and items stacked below it, instead of writing the phase name out inline per row. */
-.pgb-construction-groups-grid {
-  width: 100%;
-  max-width: 960px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0 20px;
+.pgb-construction-inline-group {
+  flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-right: 14px;
+  border-right: 1px solid var(--border);
 }
 
-.pgb-construction-card-title {
-  font-size: 10px;
+.pgb-construction-inline-group:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+.pgb-construction-inline-group-name {
+  flex-shrink: 0;
+  font-size: 9px;
   font-weight: 700;
   color: #7a8099;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 3px;
-  padding-bottom: 3px;
-  border-bottom: 1px solid var(--border);
-}
-
-.pgb-construction-card-items {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  letter-spacing: 0.03em;
 }
 
 .pgb-chip {
-  font-size: 11px;
+  flex-shrink: 0;
+  font-size: 10.5px;
   color: var(--text);
   white-space: nowrap;
 }
@@ -1058,19 +1045,17 @@ button:disabled {
     flex-direction: column;
   }
 
-  /* The topbar can grow tall (progress tabs + construction breakdown) — on a phone
-     screen that would otherwise push the map fully off-screen. Cap it hard and let it
-     scroll internally so the map (and the asset list below it) always keep a real,
-     usable chunk of the screen. */
+  /* Safety net: the topbar shouldn't grow tall now that construction is an inline,
+     horizontally-scrollable strip (not a stacked block) — but cap and scroll it just
+     in case, so the map below always keeps a real, usable chunk of the screen. */
   .project-topbar {
-    max-height: 26vh;
+    max-height: 30vh;
     overflow-y: auto;
     align-items: flex-start;
   }
 
-  .pgb-construction-groups-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 4px 14px;
+  .pgb-construction-inline {
+    flex-basis: 100%;
   }
 }
 
