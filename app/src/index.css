@@ -859,6 +859,10 @@ button:disabled {
   font-size: 13px;
 }
 
+.pgb-tab-overall .pgb-tab-val {
+  font-size: 17px;
+}
+
 .pgb-tab-lbl {
   font-size: 10px;
   color: var(--text);

@@ -83,7 +83,11 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
   return (
     <div className="pgb">
       <div className="pgb-tabs">
-        <button type="button" className={`pgb-tab${activeTab === 'overall' ? ' active' : ''}`} onClick={() => toggle('overall')}>
+        <button
+          type="button"
+          className={`pgb-tab pgb-tab-overall${activeTab === 'overall' ? ' active' : ''}`}
+          onClick={() => toggle('overall')}
+        >
           <span className="pgb-tab-val" style={{ color: TAB_COLOR.overall }}>
             {overallPercent.toFixed(1)}%
           </span>
