@@ -9,7 +9,8 @@ import type { ProjectRow } from '../../lib/useProject';
 const TOWER_HEAD_OPTIONS = [
   { value: 'delta', label: 'Delta' },
   { value: 'cat_head', label: 'Cat-head / Portal' },
-  { value: 'vertical_staggered', label: 'Vertical (Danube) — staggered' },
+  { value: 'vertical_staggered_no_peak', label: 'Vertical (Danube) — staggered, no EW peak' },
+  { value: 'vertical_staggered', label: 'Vertical (Danube) — staggered, single EW peak' },
   { value: 'vertical_staggered_double_peak', label: 'Vertical (Danube) — staggered, double EW peak' },
   { value: 'guyed_v', label: 'Guyed V' },
   { value: 'single_ground_peak', label: 'Single ground-wire peak' },

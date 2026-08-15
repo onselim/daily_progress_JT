@@ -31,7 +31,7 @@ function Line({
   );
 }
 
-/** Flat horizontal crossarm, 3 evenly spaced conductors — used by cat-head and the ground-peak types. */
+/** Flat horizontal crossarm, 3 evenly spaced conductors — delta, cat-head, ground-peak types. */
 function flatTier(y: number) {
   return (
     <g key={y}>
@@ -39,20 +39,6 @@ function flatTier(y: number) {
       <Dot x={24} y={y} />
       <Dot x={50} y={y} />
       <Dot x={76} y={y} />
-    </g>
-  );
-}
-
-/** Triangular (delta) crossarm — the 2 outer conductors sit lower, the center one higher, forming a Δ. */
-function deltaTier(y: number) {
-  const apexY = y - 20;
-  return (
-    <g key={y}>
-      <Line x1={50} y1={apexY} x2={26} y2={y} />
-      <Line x1={50} y1={apexY} x2={74} y2={y} />
-      <Dot x={26} y={y} />
-      <Dot x={74} y={y} />
-      <Dot x={50} y={apexY} />
     </g>
   );
 }
@@ -70,20 +56,10 @@ function vTier(y: number) {
   );
 }
 
-/** Vertical (Danube) staggered conductors, single-side per level; mirrored to both sides for double circuit. */
-function staggeredTiers(levels: number[], mirrored: boolean) {
-  return levels.map((y, i) => {
-    if (mirrored) {
-      return (
-        <g key={y}>
-          <Line x1={50} y1={y} x2={28} y2={y} />
-          <Line x1={50} y1={y} x2={72} y2={y} />
-          <Dot x={28} y={y} />
-          <Dot x={72} y={y} />
-        </g>
-      );
-    }
-    const x = 50 + (i % 2 === 0 ? 22 : -22);
+/** Vertical (Danube) staggered, single circuit — 3 conductors zigzagging between sides at 3 heights. */
+function staggeredSingleCircuit() {
+  return [34, 54, 74].map((y, i) => {
+    const x = i % 2 === 0 ? 72 : 28;
     return (
       <g key={y}>
         <Line x1={50} y1={y} x2={x} y2={y} />
@@ -93,22 +69,52 @@ function staggeredTiers(levels: number[], mirrored: boolean) {
   });
 }
 
-function earthWires(double: boolean) {
-  if (double) {
+/** Vertical (Danube) staggered, double circuit — one circuit's 3 conductors on each side, same 3 heights. */
+function staggeredDoubleCircuit() {
+  return [34, 54, 74].map((y) => (
+    <g key={y}>
+      <Line x1={50} y1={y} x2={28} y2={y} />
+      <Line x1={50} y1={y} x2={72} y2={y} />
+      <Dot x={28} y={y} />
+      <Dot x={72} y={y} />
+    </g>
+  ));
+}
+
+function earthWires(count: 0 | 1 | 2) {
+  if (count === 0) return null;
+  if (count === 1) {
     return (
       <>
-        <Line x1={50} y1={20} x2={40} y2={12} />
-        <Line x1={50} y1={20} x2={60} y2={12} />
-        <Dot x={40} y={12} />
-        <Dot x={60} y={12} />
+        <Line x1={50} y1={20} x2={50} y2={12} />
+        <Dot x={50} y={12} />
       </>
     );
   }
   return (
     <>
-      <Line x1={50} y1={20} x2={50} y2={12} />
-      <Dot x={50} y={12} />
+      <Line x1={50} y1={20} x2={40} y2={12} />
+      <Line x1={50} y1={20} x2={60} y2={12} />
+      <Dot x={40} y={12} />
+      <Dot x={60} y={12} />
     </>
+  );
+}
+
+const EARTH_WIRE_COUNT: Record<string, 0 | 1 | 2> = {
+  delta: 2,
+  cat_head: 1,
+  guyed_v: 1,
+  single_ground_peak: 1,
+  double_ground_peak: 2,
+  vertical_staggered_no_peak: 0,
+  vertical_staggered: 1,
+  vertical_staggered_double_peak: 2,
+};
+
+function isVerticalStaggered(type: string) {
+  return (
+    type === 'vertical_staggered_no_peak' || type === 'vertical_staggered' || type === 'vertical_staggered_double_peak'
   );
 }
 
@@ -124,25 +130,14 @@ function diagramFor(type: string, isDoubleCircuit: boolean) {
     );
   }
 
-  const tierYs = isDoubleCircuit ? [40, 68] : [50];
-  let tiers: React.ReactNode;
+  const ewCount = EARTH_WIRE_COUNT[type] ?? 1;
 
-  switch (type) {
-    case 'delta':
-      tiers = tierYs.map((y) => deltaTier(y));
-      break;
-    case 'guyed_v':
-      tiers = tierYs.map((y) => vTier(y));
-      break;
-    case 'vertical_staggered':
-    case 'vertical_staggered_double_peak':
-      tiers = staggeredTiers(isDoubleCircuit ? [30, 46, 62, 78] : [32, 52, 72], isDoubleCircuit);
-      break;
-    case 'cat_head':
-    case 'single_ground_peak':
-    case 'double_ground_peak':
-    default:
-      tiers = tierYs.map((y) => flatTier(y));
+  let tiers: React.ReactNode;
+  if (isVerticalStaggered(type)) {
+    tiers = isDoubleCircuit ? staggeredDoubleCircuit() : staggeredSingleCircuit();
+  } else {
+    const tierYs = isDoubleCircuit ? [40, 68] : [50];
+    tiers = type === 'guyed_v' ? tierYs.map((y) => vTier(y)) : tierYs.map((y) => flatTier(y));
   }
 
   return (
@@ -154,7 +149,7 @@ function diagramFor(type: string, isDoubleCircuit: boolean) {
           <Line x1={50} y1={55} x2={82} y2={92} dashed />
         </>
       )}
-      {earthWires(type === 'double_ground_peak' || type === 'vertical_staggered_double_peak')}
+      {earthWires(ewCount)}
       {tiers}
     </>
   );
