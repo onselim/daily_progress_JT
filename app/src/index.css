@@ -821,16 +821,127 @@ button:disabled {
   color: var(--text);
 }
 
-.stat-pill-overall {
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: rgba(0, 212, 170, 0.12);
-  border: 1px solid rgba(0, 212, 170, 0.4);
+.pgb {
+  position: relative;
 }
 
-.stat-pill-overall .stat-pill-val {
-  color: #00d4aa;
+.pgb-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pgb-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font: inherit;
+}
+
+.pgb-tab:hover {
+  border-color: var(--accent);
+}
+
+.pgb-tab.active {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--accent);
+}
+
+.pgb-tab-val {
+  font-family: var(--mono);
+  font-weight: 700;
   font-size: 13px;
+}
+
+.pgb-tab-lbl {
+  font-size: 10px;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pgb-detail {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  width: 340px;
+  max-width: min(90vw, 400px);
+  max-height: 70vh;
+  overflow-y: auto;
+  background: rgba(15, 17, 23, 0.98);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  z-index: 600;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.pgb-overall-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pgb-group {
+  margin-bottom: 10px;
+}
+
+.pgb-group-name {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7a8099;
+  margin-bottom: 6px;
+}
+
+.pgb-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+
+.pgb-item-lbl {
+  flex: 0 0 auto;
+  width: 130px;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pgb-item-lbl-muted {
+  color: #6b7280;
+}
+
+.pgb-item-track {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.pgb-item-fill {
+  height: 100%;
+}
+
+.pgb-item-val {
+  flex: 0 0 auto;
+  width: 42px;
+  text-align: right;
+  font-family: var(--mono);
+  color: var(--text);
 }
 
 .project-body {

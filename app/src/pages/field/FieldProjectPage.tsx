@@ -4,6 +4,7 @@ import { useProjectBySlug } from '../../lib/useProject';
 import { useAssetStats } from '../../lib/useAssetStats';
 import { useRestrictedToday } from '../../lib/useRestrictedToday';
 import { AssetWorkspace } from '../../components/AssetWorkspace';
+import { ProjectProgressBar } from '../../components/ProjectProgressBar';
 
 export default function FieldProjectPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -27,6 +28,9 @@ export default function FieldProjectPage() {
             </a>
           </p>
         </div>
+
+        <ProjectProgressBar projectId={project.id} editable />
+
         <div className="project-topbar-stats">
           <span className="stat-pill">
             <span className="stat-pill-dot" style={{ background: '#00d4aa' }} />

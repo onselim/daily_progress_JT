@@ -4,12 +4,8 @@ import { useAuth } from '../../lib/AuthContext';
 import { useProjectBySlug } from '../../lib/useProject';
 import { useAssetStats } from '../../lib/useAssetStats';
 import { useRestrictedToday } from '../../lib/useRestrictedToday';
-import { useWorkItemsConfig } from '../../lib/useProjectConfig';
-import { useConstructionBreakdown } from '../../lib/useConstructionBreakdown';
-import { useDesignBreakdown } from '../../lib/useDesignBreakdown';
-import { useSupplyBreakdown } from '../../lib/useSupplyBreakdown';
-import { computeOverallPercent } from '../../lib/overallProgress';
 import { AssetWorkspace } from '../../components/AssetWorkspace';
+import { ProjectProgressBar } from '../../components/ProjectProgressBar';
 import { DeleteProjectDialog } from '../../components/DeleteProjectDialog';
 
 export default function AdminProjectPage() {
@@ -19,11 +15,6 @@ export default function AdminProjectPage() {
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
   const restrictedAssetIds = useRestrictedToday(project?.id);
-  const { workItems } = useWorkItemsConfig(project?.id);
-  const { overallPercent: constructionPercent } = useConstructionBreakdown(project?.id, workItems);
-  const { overallPercent: designPercent } = useDesignBreakdown(project?.id);
-  const { overallPercent: supplyPercent } = useSupplyBreakdown(project?.id);
-  const overallPercent = computeOverallPercent(designPercent, constructionPercent, supplyPercent);
   const [showDelete, setShowDelete] = useState(false);
 
   if (loading) return <div className="page-loading">Loading…</div>;
@@ -41,11 +32,10 @@ export default function AdminProjectPage() {
             </a>
           </p>
         </div>
+
+        <ProjectProgressBar projectId={project.id} editable />
+
         <div className="project-topbar-stats">
-          <span className="stat-pill stat-pill-overall">
-            <span className="stat-pill-val">{overallPercent.toFixed(1)}%</span>
-            <span className="stat-pill-lbl">Overall</span>
-          </span>
           <span className="stat-pill">
             <span className="stat-pill-dot" style={{ background: '#00d4aa' }} />
             <span className="stat-pill-val">{stats.inProgress}</span>
