@@ -307,6 +307,8 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
       lat: a.lat,
       lng: a.lng,
       z: a.elevation,
+      asset_type: a.assetType,
+      station: a.station,
     }));
 
     try {
@@ -356,8 +358,10 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
       ) : (
         <>
           <p className="wizard-hint">
-            For a quick, geometry-only setup: upload a .kml or .kmz with one Point placemark per tower. No column
-            mapping needed — placemark names become asset codes, coordinates are read directly as lat/lng.
+            For a quick setup: upload a .kml or .kmz with one Point placemark per tower. No column mapping needed —
+            placemark names become asset codes, coordinates are read directly as lat/lng. PLS-CADD's "Structure
+            locations" folder is detected automatically (route/tour placemarks elsewhere in the file are skipped),
+            and its tower type + station text is read from each placemark's description.
           </p>
 
           <label className="photo-upload-label">
@@ -377,6 +381,8 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
                   <thead>
                     <tr>
                       <th>Code</th>
+                      <th>Type</th>
+                      <th>Station</th>
                       <th>Lat</th>
                       <th>Lng</th>
                       <th>Elevation</th>
@@ -386,6 +392,8 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
                     {kmlAssets.slice(0, 10).map((a, i) => (
                       <tr key={i}>
                         <td>{a.code}</td>
+                        <td>{a.assetType ?? '—'}</td>
+                        <td>{a.station ?? '—'}</td>
                         <td>{a.lat}</td>
                         <td>{a.lng}</td>
                         <td>{a.elevation ?? '—'}</td>
