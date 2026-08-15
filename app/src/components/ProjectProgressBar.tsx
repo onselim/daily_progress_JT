@@ -160,18 +160,20 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
         {constructionGroups.length === 0 ? (
           <span className="pgb-construction-strip-empty">No construction items configured for this project.</span>
         ) : (
-          constructionGroups.map((group) => (
-            <div key={group.name} className="pgb-construction-group">
-              <span className="pgb-construction-group-name">{group.name}</span>
-              <div className="pgb-construction-chip-row">
-                {group.items.map((item) => (
-                  <span key={item.key} className={`pgb-chip${item.percentComplete <= 0 ? ' pgb-chip-muted' : ''}`}>
-                    {item.label} <strong>{item.percentComplete.toFixed(1)}%</strong>
-                  </span>
-                ))}
+          <div className="pgb-construction-groups-grid">
+            {constructionGroups.map((group) => (
+              <div key={group.name} className="pgb-construction-group">
+                <span className="pgb-construction-group-name">{group.name}</span>
+                <div className="pgb-construction-chip-row">
+                  {group.items.map((item) => (
+                    <span key={item.key} className={`pgb-chip${item.percentComplete <= 0 ? ' pgb-chip-muted' : ''}`}>
+                      {item.label} <strong>{item.percentComplete.toFixed(1)}%</strong>
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </>

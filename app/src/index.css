@@ -762,7 +762,7 @@ button:disabled {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 16px;
   padding: 0 20px;
   min-height: 60px;
@@ -794,6 +794,7 @@ button:disabled {
   gap: 16px;
   flex-wrap: wrap;
   padding: 8px 0;
+  margin-left: auto;
 }
 
 /* Action buttons (Edit work items / Print PDF / Delete / Sign out) are secondary to the
@@ -958,18 +959,26 @@ button:disabled {
   color: #4b5563;
 }
 
-.pgb-construction-group {
+/* Two columns instead of one long stack of 4 rows — cuts the strip's height roughly in
+   half so it stays compact even though every item is still listed. */
+.pgb-construction-groups-grid {
   width: 100%;
-  max-width: 760px;
+  max-width: 820px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px 28px;
+}
+
+.pgb-construction-group {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 3px 16px;
-  padding: 2px 0;
+  gap: 2px 12px;
+  padding: 1px 0;
 }
 
 .pgb-construction-group-name {
-  flex: 0 0 150px;
+  flex: 0 0 125px;
   font-size: 10px;
   font-weight: 700;
   color: #7a8099;
@@ -1059,12 +1068,17 @@ button:disabled {
   }
 
   /* The topbar can grow tall (progress tabs + construction breakdown) — on a phone
-     screen that would otherwise push the map fully off-screen. Cap it and let it
-     scroll internally so the map always keeps a guaranteed, visible chunk of height. */
+     screen that would otherwise push the map fully off-screen. Cap it hard and let it
+     scroll internally so the map (and the asset list below it) always keep a real,
+     usable chunk of the screen. */
   .project-topbar {
-    max-height: 45vh;
+    max-height: 26vh;
     overflow-y: auto;
     align-items: flex-start;
+  }
+
+  .pgb-construction-groups-grid {
+    grid-template-columns: 1fr;
   }
 }
 
