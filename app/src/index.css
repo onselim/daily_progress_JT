@@ -1569,6 +1569,46 @@ button:disabled {
   border: 1px solid var(--border);
 }
 
+.wizard-tower-head-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.wizard-tower-head-row label {
+  flex: 1;
+}
+
+.tower-head-preview {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.wizard-weight-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.wizard-weight-total.ok {
+  border-color: #00d4aa;
+  color: #00d4aa;
+}
+
+.wizard-weight-total.warn {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
 .wizard-preview-scroll {
   overflow-x: auto;
 }

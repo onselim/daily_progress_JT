@@ -3,6 +3,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { createProject } from '../../lib/wizard/createProject';
 import { utmZoneToEpsg } from '../../lib/utmToLatLng';
 import { UtmZoneSelect } from './UtmZoneSelect';
+import { TowerHeadPreview } from './TowerHeadPreview';
 import type { ProjectRow } from '../../lib/useProject';
 
 const TOWER_HEAD_OPTIONS = [
@@ -150,16 +151,19 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
         </label>
       </div>
 
-      <label>
-        Tower head configuration
-        <select value={towerHeadType} onChange={(e) => setTowerHeadType(e.target.value)}>
-          {TOWER_HEAD_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="wizard-tower-head-row">
+        <label>
+          Tower head configuration
+          <select value={towerHeadType} onChange={(e) => setTowerHeadType(e.target.value)}>
+            {TOWER_HEAD_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <TowerHeadPreview type={towerHeadType} />
+      </div>
       {towerHeadType === 'other' && (
         <label>
           Describe the tower head configuration

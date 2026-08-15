@@ -59,6 +59,21 @@ export function WorkItemsStep({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const activeItems = allItems.filter((item) => enabled[item.key]);
+  const totalWeight = activeItems.reduce((sum, item) => sum + (weights[item.key] || 0), 0);
+  const totalRounded = Math.round(totalWeight * 10) / 10;
+
+  function handleAutoDistribute() {
+    if (totalWeight <= 0) return;
+    setWeights((prev) => {
+      const next = { ...prev };
+      for (const item of activeItems) {
+        next[item.key] = Math.round(((prev[item.key] || 0) / totalWeight) * 1000) / 10;
+      }
+      return next;
+    });
+  }
+
   const groups: { name: string; items: WorkItemConfig[] }[] = [];
   for (const item of allItems) {
     let group = groups.find((g) => g.name === item.group);
@@ -122,6 +137,16 @@ export function WorkItemsStep({
           ))}
         </fieldset>
       ))}
+
+      <div className={`wizard-weight-total${totalRounded === 100 ? ' ok' : ' warn'}`}>
+        <span>
+          Total weight: <strong>{totalRounded}</strong> / 100
+          {totalRounded === 100 ? ' ✓' : ''}
+        </span>
+        <button type="button" className="wizard-secondary-btn" onClick={handleAutoDistribute}>
+          Auto-distribute
+        </button>
+      </div>
 
       {error && <p className="form-message">{error}</p>}
 
