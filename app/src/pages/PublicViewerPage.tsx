@@ -59,9 +59,11 @@ export default function PublicViewerPage() {
             <span className="stat-pill-lbl">Towers</span>
           </span>
         </div>
-        <button type="button" onClick={() => window.open(`/print/${project.slug}`, '_blank')}>
-          Print PDF
-        </button>
+        <div className="project-topbar-actions">
+          <button type="button" onClick={() => window.open(`/print/${project.slug}`, '_blank')}>
+            Print PDF
+          </button>
+        </div>
       </header>
 
       <AssetWorkspace projectId={project.id} coordinateSystem={project.coordinate_system} editable={false} />

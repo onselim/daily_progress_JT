@@ -316,9 +316,12 @@ button:disabled {
 }
 
 @media (max-width: 720px) {
+  /* The map is the primary thing a phone user needs — topbar + asset list together
+     are capped to leave it at least ~70% of the screen. */
   .asset-list-panel {
     width: 100%;
-    height: 220px;
+    height: 15vh;
+    min-height: 90px;
     border-right: none;
     border-bottom: 1px solid var(--border);
   }
@@ -833,18 +836,20 @@ button:disabled {
   gap: 16px;
   flex-wrap: wrap;
   padding: 4px 0;
-  margin-left: auto;
 }
 
 /* Action buttons (Edit work items / Print PDF / Delete / Sign out) are secondary to the
-   progress overview, so they get pushed onto their own row below everything else. */
+   progress overview, so they're shrunk down and pushed to the far right — everything
+   else packs tightly on the left, keeping the whole topbar a single thin line. */
 .project-topbar-actions {
-  order: 200;
-  flex-basis: 100%;
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-top: 6px;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.project-topbar-actions button {
+  padding: 4px 10px;
+  font-size: 11px;
 }
 
 .stat-pill {
@@ -1043,12 +1048,16 @@ button:disabled {
     flex-direction: column;
   }
 
-  /* Safety net: cap and scroll the topbar so the map below always keeps a real,
-     usable chunk of the screen, no matter how much it wraps on a narrow phone. */
+  /* Cap and scroll the topbar so the map below always keeps the lion's share of the
+     screen — together with the asset list's own cap, this leaves the map ~70%+. */
   .project-topbar {
-    max-height: 30vh;
+    max-height: 15vh;
     overflow-y: auto;
     align-items: flex-start;
+  }
+
+  .project-topbar-actions {
+    margin-left: 0;
   }
 
   /* Smaller text throughout the topbar on phones — the desktop sizes were eating
