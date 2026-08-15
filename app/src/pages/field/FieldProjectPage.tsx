@@ -59,7 +59,7 @@ export default function FieldProjectPage() {
             <span className="stat-pill-lbl">Towers</span>
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="project-topbar-actions">
           <button type="button" onClick={() => window.open(`/print/${project.slug}`, '_blank')}>
             Print PDF
           </button>

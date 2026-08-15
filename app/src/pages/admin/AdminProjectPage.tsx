@@ -63,7 +63,7 @@ export default function AdminProjectPage() {
             <span className="stat-pill-lbl">Towers</span>
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="project-topbar-actions">
           <button type="button" onClick={() => navigate(`/admin/${project.slug}/work-items`)}>
             Edit work items
           </button>

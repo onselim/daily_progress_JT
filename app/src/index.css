@@ -796,6 +796,17 @@ button:disabled {
   padding: 8px 0;
 }
 
+/* Action buttons (Edit work items / Print PDF / Delete / Sign out) are secondary to the
+   progress overview, so they get pushed onto their own row below everything else. */
+.project-topbar-actions {
+  order: 200;
+  flex-basis: 100%;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 6px;
+}
+
 .stat-pill {
   display: flex;
   align-items: center;
@@ -924,6 +935,7 @@ button:disabled {
   flex-basis: 100%;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 3px;
   padding: 6px 0 10px;
   margin-top: -4px;
@@ -931,11 +943,14 @@ button:disabled {
 }
 
 .pgb-construction-strip-title {
+  width: 100%;
+  max-width: 760px;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 2px;
+  text-align: center;
 }
 
 .pgb-construction-strip-empty {
@@ -944,6 +959,8 @@ button:disabled {
 }
 
 .pgb-construction-group {
+  width: 100%;
+  max-width: 760px;
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
@@ -1039,6 +1056,15 @@ button:disabled {
 @media (max-width: 720px) {
   .project-body {
     flex-direction: column;
+  }
+
+  /* The topbar can grow tall (progress tabs + construction breakdown) — on a phone
+     screen that would otherwise push the map fully off-screen. Cap it and let it
+     scroll internally so the map always keeps a guaranteed, visible chunk of height. */
+  .project-topbar {
+    max-height: 45vh;
+    overflow-y: auto;
+    align-items: flex-start;
   }
 }
 
