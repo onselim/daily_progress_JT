@@ -43,15 +43,16 @@ function flatTier(y: number) {
   );
 }
 
-/** Triangular crossarm — 2 conductors at the arm ends + 1 raised above center. */
+/** Triangular (delta) crossarm — the 2 outer conductors sit lower, the center one higher, forming a Δ. */
 function deltaTier(y: number) {
+  const apexY = y - 20;
   return (
     <g key={y}>
-      <Line x1={24} y1={y} x2={76} y2={y} />
-      <Line x1={50} y1={y} x2={50} y2={y - 14} />
-      <Dot x={24} y={y} />
-      <Dot x={76} y={y} />
-      <Dot x={50} y={y - 14} />
+      <Line x1={50} y1={apexY} x2={26} y2={y} />
+      <Line x1={50} y1={apexY} x2={74} y2={y} />
+      <Dot x={26} y={y} />
+      <Dot x={74} y={y} />
+      <Dot x={50} y={apexY} />
     </g>
   );
 }
@@ -134,6 +135,7 @@ function diagramFor(type: string, isDoubleCircuit: boolean) {
       tiers = tierYs.map((y) => vTier(y));
       break;
     case 'vertical_staggered':
+    case 'vertical_staggered_double_peak':
       tiers = staggeredTiers(isDoubleCircuit ? [30, 46, 62, 78] : [32, 52, 72], isDoubleCircuit);
       break;
     case 'cat_head':
@@ -152,7 +154,7 @@ function diagramFor(type: string, isDoubleCircuit: boolean) {
           <Line x1={50} y1={55} x2={82} y2={92} dashed />
         </>
       )}
-      {earthWires(type === 'double_ground_peak')}
+      {earthWires(type === 'double_ground_peak' || type === 'vertical_staggered_double_peak')}
       {tiers}
     </>
   );
