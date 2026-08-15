@@ -871,8 +871,8 @@ button:disabled {
   top: 100%;
   left: 0;
   margin-top: 8px;
-  width: 340px;
-  max-width: min(90vw, 400px);
+  width: 380px;
+  max-width: min(90vw, 440px);
   max-height: 70vh;
   overflow-y: auto;
   background: rgba(15, 17, 23, 0.98);
@@ -887,7 +887,17 @@ button:disabled {
 .pgb-overall-summary {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
+}
+
+.pgb-overall-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
 }
 
 .pgb-group {

@@ -34,6 +34,22 @@ function ItemBar({ item, color }: { item: ItemRow; color: string }) {
   );
 }
 
+function ConstructionGroups({ groups, color }: { groups: { name: string; items: ItemRow[] }[]; color: string }) {
+  if (groups.length === 0) return <p className="accordion-empty">No construction items configured for this project.</p>;
+  return (
+    <>
+      {groups.map((group) => (
+        <div key={group.name} className="pgb-group">
+          <div className="pgb-group-name">{group.name}</div>
+          {group.items.map((item) => (
+            <ItemBar key={item.key} item={item} color={color} />
+          ))}
+        </div>
+      ))}
+    </>
+  );
+}
+
 interface ProjectProgressBarProps {
   projectId: string;
   editable: boolean;
@@ -99,12 +115,34 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
         <div className="pgb-detail">
           {activeTab === 'overall' && (
             <div className="pgb-overall-summary">
-              <ItemBar item={{ key: 'design', label: 'Design (5%)', percentComplete: design.overallPercent }} color={TAB_COLOR.design} />
-              <ItemBar
-                item={{ key: 'construction', label: 'Construction (37.5%)', percentComplete: construction.overallPercent }}
-                color={TAB_COLOR.construction}
-              />
-              <ItemBar item={{ key: 'supply', label: 'Supply (57.5%)', percentComplete: supply.overallPercent }} color={TAB_COLOR.supply} />
+              <div className="pgb-overall-section">
+                <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.design }}>
+                  Design — {design.overallPercent.toFixed(1)}%
+                </div>
+                {design.items.length === 0 ? (
+                  <p className="accordion-empty">No design items configured for this project.</p>
+                ) : (
+                  design.items.map((item) => <ItemBar key={item.key} item={item} color={TAB_COLOR.design} />)
+                )}
+              </div>
+
+              <div className="pgb-overall-section">
+                <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.construction }}>
+                  Construction — {construction.overallPercent.toFixed(1)}%
+                </div>
+                <ConstructionGroups groups={constructionGroups} color={TAB_COLOR.construction} />
+              </div>
+
+              <div className="pgb-overall-section">
+                <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.supply }}>
+                  Supply — {supply.overallPercent.toFixed(1)}%
+                </div>
+                {supply.items.length === 0 ? (
+                  <p className="accordion-empty">No supply items configured for this project.</p>
+                ) : (
+                  supply.items.map((item) => <ItemBar key={item.key} item={item} color={TAB_COLOR.supply} />)
+                )}
+              </div>
             </div>
           )}
 
@@ -130,19 +168,7 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
             />
           )}
 
-          {activeTab === 'construction' &&
-            (constructionGroups.length === 0 ? (
-              <p className="accordion-empty">No construction items configured for this project.</p>
-            ) : (
-              constructionGroups.map((group) => (
-                <div key={group.name} className="pgb-group">
-                  <div className="pgb-group-name">{group.name}</div>
-                  {group.items.map((item) => (
-                    <ItemBar key={item.key} item={item} color={TAB_COLOR.construction} />
-                  ))}
-                </div>
-              ))
-            ))}
+          {activeTab === 'construction' && <ConstructionGroups groups={constructionGroups} color={TAB_COLOR.construction} />}
         </div>
       )}
     </div>
