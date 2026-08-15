@@ -34,22 +34,6 @@ function ItemBar({ item, color }: { item: ItemRow; color: string }) {
   );
 }
 
-function ConstructionGroups({ groups, color }: { groups: { name: string; items: ItemRow[] }[]; color: string }) {
-  if (groups.length === 0) return <p className="accordion-empty">No construction items configured for this project.</p>;
-  return (
-    <>
-      {groups.map((group) => (
-        <div key={group.name} className="pgb-group">
-          <div className="pgb-group-name">{group.name}</div>
-          {group.items.map((item) => (
-            <ItemBar key={item.key} item={item} color={color} />
-          ))}
-        </div>
-      ))}
-    </>
-  );
-}
-
 interface ProjectProgressBarProps {
   projectId: string;
   editable: boolean;
@@ -67,115 +51,111 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
     setActiveTab((prev) => (prev === tab ? null : tab));
   }
 
-  const constructionGroups: { name: string; items: ItemRow[] }[] = [];
-  for (const item of construction.items) {
-    const name = workItems.find((w) => w.key === item.key)?.group ?? 'Work items';
-    let group = constructionGroups.find((g) => g.name === name);
-    if (!group) {
-      group = { name, items: [] };
-      constructionGroups.push(group);
-    }
-    group.items.push(item);
-  }
-
   return (
-    <div className="pgb">
-      <div className="pgb-tabs">
-        <button
-          type="button"
-          className={`pgb-tab pgb-tab-overall${activeTab === 'overall' ? ' active' : ''}`}
-          onClick={() => toggle('overall')}
-        >
-          <span className="pgb-tab-val" style={{ color: TAB_COLOR.overall }}>
-            {overallPercent.toFixed(1)}%
-          </span>
-          <span className="pgb-tab-lbl">Overall</span>
-        </button>
-        <button type="button" className={`pgb-tab${activeTab === 'design' ? ' active' : ''}`} onClick={() => toggle('design')}>
-          <span className="pgb-tab-val" style={{ color: TAB_COLOR.design }}>
-            {design.overallPercent.toFixed(1)}%
-          </span>
-          <span className="pgb-tab-lbl">Design</span>
-        </button>
-        <button type="button" className={`pgb-tab${activeTab === 'supply' ? ' active' : ''}`} onClick={() => toggle('supply')}>
-          <span className="pgb-tab-val" style={{ color: TAB_COLOR.supply }}>
-            {supply.overallPercent.toFixed(1)}%
-          </span>
-          <span className="pgb-tab-lbl">Supply</span>
-        </button>
-
-        {/* Construction is what this report is fundamentally about, and it's read-only here
-            (driven by per-tower data) — so it's always expanded, not part of the click-to-toggle group. */}
-        <div className="pgb-tab pgb-tab-static">
-          <span className="pgb-tab-val" style={{ color: TAB_COLOR.construction }}>
-            {construction.overallPercent.toFixed(1)}%
-          </span>
-          <span className="pgb-tab-lbl">Construction</span>
+    <>
+      <div className="pgb">
+        <div className="pgb-tabs">
+          <button
+            type="button"
+            className={`pgb-tab pgb-tab-overall${activeTab === 'overall' ? ' active' : ''}`}
+            onClick={() => toggle('overall')}
+          >
+            <span className="pgb-tab-val" style={{ color: TAB_COLOR.overall }}>
+              {overallPercent.toFixed(1)}%
+            </span>
+            <span className="pgb-tab-lbl">Overall</span>
+          </button>
+          <button type="button" className={`pgb-tab${activeTab === 'design' ? ' active' : ''}`} onClick={() => toggle('design')}>
+            <span className="pgb-tab-val" style={{ color: TAB_COLOR.design }}>
+              {design.overallPercent.toFixed(1)}%
+            </span>
+            <span className="pgb-tab-lbl">Design</span>
+          </button>
+          <button type="button" className={`pgb-tab${activeTab === 'supply' ? ' active' : ''}`} onClick={() => toggle('supply')}>
+            <span className="pgb-tab-val" style={{ color: TAB_COLOR.supply }}>
+              {supply.overallPercent.toFixed(1)}%
+            </span>
+            <span className="pgb-tab-lbl">Supply</span>
+          </button>
+          <div className="pgb-tab pgb-tab-static">
+            <span className="pgb-tab-val" style={{ color: TAB_COLOR.construction }}>
+              {construction.overallPercent.toFixed(1)}%
+            </span>
+            <span className="pgb-tab-lbl">Construction</span>
+          </div>
         </div>
+
+        {activeTab && (
+          <div className="pgb-detail">
+            {activeTab === 'overall' && (
+              <div className="pgb-overall-summary">
+                <div className="pgb-overall-section">
+                  <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.design }}>
+                    Design — {design.overallPercent.toFixed(1)}%
+                  </div>
+                  {design.items.length === 0 ? (
+                    <p className="accordion-empty">No design items configured for this project.</p>
+                  ) : (
+                    design.items.map((item) => <ItemBar key={item.key} item={item} color={TAB_COLOR.design} />)
+                  )}
+                </div>
+
+                <div className="pgb-overall-section">
+                  <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.supply }}>
+                    Supply — {supply.overallPercent.toFixed(1)}%
+                  </div>
+                  {supply.items.length === 0 ? (
+                    <p className="accordion-empty">No supply items configured for this project.</p>
+                  ) : (
+                    supply.items.map((item) => <ItemBar key={item.key} item={item} color={TAB_COLOR.supply} />)
+                  )}
+                </div>
+
+                <p className="pgb-overall-note">
+                  Construction — {construction.overallPercent.toFixed(1)}% (see the full breakdown below the tabs)
+                </p>
+              </div>
+            )}
+
+            {activeTab === 'design' && (
+              <DesignPanel
+                projectId={projectId}
+                editable={editable}
+                items={design.items}
+                overallPercent={design.overallPercent}
+                loading={design.loading}
+                onSaved={design.refresh}
+              />
+            )}
+
+            {activeTab === 'supply' && (
+              <SupplyPanel
+                projectId={projectId}
+                editable={editable}
+                items={supply.items}
+                overallPercent={supply.overallPercent}
+                loading={supply.loading}
+                onSaved={supply.refresh}
+              />
+            )}
+          </div>
+        )}
       </div>
 
-      {activeTab && (
-        <div className="pgb-detail">
-          {activeTab === 'overall' && (
-            <div className="pgb-overall-summary">
-              <div className="pgb-overall-section">
-                <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.design }}>
-                  Design — {design.overallPercent.toFixed(1)}%
-                </div>
-                {design.items.length === 0 ? (
-                  <p className="accordion-empty">No design items configured for this project.</p>
-                ) : (
-                  design.items.map((item) => <ItemBar key={item.key} item={item} color={TAB_COLOR.design} />)
-                )}
-              </div>
-
-              <div className="pgb-overall-section">
-                <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.construction }}>
-                  Construction — {construction.overallPercent.toFixed(1)}%
-                </div>
-                <ConstructionGroups groups={constructionGroups} color={TAB_COLOR.construction} />
-              </div>
-
-              <div className="pgb-overall-section">
-                <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.supply }}>
-                  Supply — {supply.overallPercent.toFixed(1)}%
-                </div>
-                {supply.items.length === 0 ? (
-                  <p className="accordion-empty">No supply items configured for this project.</p>
-                ) : (
-                  supply.items.map((item) => <ItemBar key={item.key} item={item} color={TAB_COLOR.supply} />)
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'design' && (
-            <DesignPanel
-              projectId={projectId}
-              editable={editable}
-              items={design.items}
-              overallPercent={design.overallPercent}
-              loading={design.loading}
-              onSaved={design.refresh}
-            />
-          )}
-
-          {activeTab === 'supply' && (
-            <SupplyPanel
-              projectId={projectId}
-              editable={editable}
-              items={supply.items}
-              overallPercent={supply.overallPercent}
-              loading={supply.loading}
-              onSaved={supply.refresh}
-            />
-          )}
-        </div>
-      )}
-
-      <div className="pgb-detail pgb-detail-construction">
-        <ConstructionGroups groups={constructionGroups} color={TAB_COLOR.construction} />
+      <div className="pgb-construction-strip">
+        <span className="pgb-construction-strip-title" style={{ color: TAB_COLOR.construction }}>
+          Construction
+        </span>
+        {construction.items.length === 0 ? (
+          <span className="pgb-construction-strip-empty">No construction items configured for this project.</span>
+        ) : (
+          construction.items.map((item) => (
+            <span key={item.key} className={`pgb-chip${item.percentComplete <= 0 ? ' pgb-chip-muted' : ''}`}>
+              {item.label} <strong>{item.percentComplete.toFixed(1)}%</strong>
+            </span>
+          ))
+        )}
       </div>
-    </div>
+    </>
   );
 }

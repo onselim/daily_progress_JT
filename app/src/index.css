@@ -893,14 +893,6 @@ button:disabled {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
 }
 
-.pgb-detail-construction {
-  left: 0;
-  width: 460px;
-  max-width: min(90vw, 560px);
-  border-color: rgba(16, 185, 129, 0.4);
-  z-index: 550;
-}
-
 .pgb-overall-summary {
   display: flex;
   flex-direction: column;
@@ -917,17 +909,57 @@ button:disabled {
   border-bottom: 1px solid var(--border);
 }
 
-.pgb-group {
-  margin-bottom: 10px;
+.pgb-overall-note {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text);
 }
 
-.pgb-group-name {
+/* Construction breakdown — always visible, in normal page flow (not a floating overlay),
+   forced onto its own full-width line below the rest of the topbar. */
+.pgb-construction-strip {
+  order: 100;
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 6px 0 10px;
+  margin-top: -4px;
+  border-top: 1px solid var(--border);
+}
+
+.pgb-construction-strip-title {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #7a8099;
-  margin-bottom: 6px;
+  white-space: nowrap;
+}
+
+.pgb-construction-strip-empty {
+  font-size: 11px;
+  color: #4b5563;
+}
+
+.pgb-chip {
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.pgb-chip strong {
+  color: var(--text-h);
+  font-family: var(--mono);
+  font-weight: 600;
+}
+
+.pgb-chip-muted {
+  color: #5b6274;
+}
+
+.pgb-chip-muted strong {
+  color: #5b6274;
 }
 
 .pgb-item-row {
