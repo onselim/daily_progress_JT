@@ -894,9 +894,11 @@ button:disabled {
 }
 
 .pgb-detail-construction {
-  left: auto;
-  right: 0;
+  left: 0;
+  width: 460px;
+  max-width: min(90vw, 560px);
   border-color: rgba(16, 185, 129, 0.4);
+  z-index: 550;
 }
 
 .pgb-overall-summary {
