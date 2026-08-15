@@ -51,6 +51,17 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
     setActiveTab((prev) => (prev === tab ? null : tab));
   }
 
+  const constructionGroups: { name: string; items: ItemRow[] }[] = [];
+  for (const item of construction.items) {
+    const name = workItems.find((w) => w.key === item.key)?.group ?? 'Work items';
+    let group = constructionGroups.find((g) => g.name === name);
+    if (!group) {
+      group = { name, items: [] };
+      constructionGroups.push(group);
+    }
+    group.items.push(item);
+  }
+
   return (
     <>
       <div className="pgb">
@@ -143,16 +154,23 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
       </div>
 
       <div className="pgb-construction-strip">
-        <span className="pgb-construction-strip-title" style={{ color: TAB_COLOR.construction }}>
+        <div className="pgb-construction-strip-title" style={{ color: TAB_COLOR.construction }}>
           Construction
-        </span>
-        {construction.items.length === 0 ? (
+        </div>
+        {constructionGroups.length === 0 ? (
           <span className="pgb-construction-strip-empty">No construction items configured for this project.</span>
         ) : (
-          construction.items.map((item) => (
-            <span key={item.key} className={`pgb-chip${item.percentComplete <= 0 ? ' pgb-chip-muted' : ''}`}>
-              {item.label} <strong>{item.percentComplete.toFixed(1)}%</strong>
-            </span>
+          constructionGroups.map((group) => (
+            <div key={group.name} className="pgb-construction-group">
+              <span className="pgb-construction-group-name">{group.name}</span>
+              <div className="pgb-construction-chip-row">
+                {group.items.map((item) => (
+                  <span key={item.key} className={`pgb-chip${item.percentComplete <= 0 ? ' pgb-chip-muted' : ''}`}>
+                    {item.label} <strong>{item.percentComplete.toFixed(1)}%</strong>
+                  </span>
+                ))}
+              </div>
+            </div>
           ))
         )}
       </div>

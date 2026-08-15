@@ -916,14 +916,15 @@ button:disabled {
 }
 
 /* Construction breakdown — always visible, in normal page flow (not a floating overlay),
-   forced onto its own full-width line below the rest of the topbar. */
+   forced onto its own full-width line below the rest of the topbar. Grouped by phase
+   (PRE-CONSTRUCTION WORKS / FOUNDATION / ERECTION / STRINGING) so each group's items
+   sit together on their own row, in order, instead of wrapping unevenly all mixed together. */
 .pgb-construction-strip {
   order: 100;
   flex-basis: 100%;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 16px;
+  flex-direction: column;
+  gap: 3px;
   padding: 6px 0 10px;
   margin-top: -4px;
   border-top: 1px solid var(--border);
@@ -934,12 +935,37 @@ button:disabled {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  white-space: nowrap;
+  margin-bottom: 2px;
 }
 
 .pgb-construction-strip-empty {
   font-size: 11px;
   color: #4b5563;
+}
+
+.pgb-construction-group {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 3px 16px;
+  padding: 2px 0;
+}
+
+.pgb-construction-group-name {
+  flex: 0 0 150px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #7a8099;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pgb-construction-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  flex: 1;
+  min-width: 200px;
 }
 
 .pgb-chip {
