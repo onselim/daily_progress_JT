@@ -46,6 +46,31 @@ function bearingDeg(aLat: number, aLng: number, bLat: number, bLng: number): num
   return (Math.atan2(dLon, dLat) * 180) / Math.PI;
 }
 
+/** Where offset lines on the inside of a bend converge (cross each other in the raw
+ * per-span rendering) and lines on the outside of a bend diverge (leave a gap), the
+ * intersection of the two infinite lines is a single miter point that simultaneously
+ * trims the inside and fillets/joins the outside — a standard stroke miter-join. */
+function lineIntersect(
+  p1: [number, number],
+  d1: [number, number],
+  p2: [number, number],
+  d2: [number, number],
+): [number, number] | null {
+  const det = d1[0] * d2[1] - d1[1] * d2[0];
+  if (Math.abs(det) < 1e-12) return null;
+  const t = ((p2[0] - p1[0]) * d2[1] - (p2[1] - p1[1]) * d2[0]) / det;
+  return [p1[0] + t * d1[0], p1[1] + t * d1[1]];
+}
+
+interface SpanChannel {
+  sign: number;
+  baseDeg: number;
+  color: string;
+  weight: number;
+  statusKey: string;
+  enabled: boolean;
+}
+
 const BASEMAPS: Record<string, { label: string; url: string; options: L.TileLayerOptions }> = {
   satellite: {
     label: 'Google Satellite',
@@ -240,37 +265,98 @@ export function MapView({
 
     const pctFor = (assetId: string, key: string) => percentByAssetAndKey[assetId]?.[key] ?? 0;
 
+    const channels: SpanChannel[] = [
+      { sign: 1, baseDeg: 0.00009, color: SPAN_COLOR.conductor, weight: 3, statusKey: STRINGING_KEYS.conductor, enabled: true },
+      { sign: -1, baseDeg: 0.00009, color: SPAN_COLOR.conductor, weight: 3, statusKey: STRINGING_KEYS.conductor, enabled: true },
+      {
+        sign: 1,
+        baseDeg: 0.000045,
+        color: SPAN_COLOR.earthwire,
+        weight: 2.5,
+        statusKey: STRINGING_KEYS.earthwire,
+        enabled: groundWireConfig.earthwire > 0,
+      },
+      {
+        sign: groundWireConfig.earthwire > 0 ? -1 : 0,
+        baseDeg: 0.000045,
+        color: SPAN_COLOR.opgw,
+        weight: 2.5,
+        statusKey: STRINGING_KEYS.opgw,
+        enabled: groundWireConfig.opgw > 0,
+      },
+    ];
+
+    const spanGeos: ({ geo: SpanGeometry; cosLat: number } | null)[] = [];
     for (let i = 0; i < points.length - 1; i++) {
       const a = points[i];
       const b = points[i + 1];
       const geo = spanGeometry(a.lat, a.lng, b.lat, b.lng);
-      if (!geo || !spansGroup) continue;
-
       const cosLat = Math.cos(((a.lat + b.lat) / 2) * (Math.PI / 180));
-      const o10l = 0.00009;
-      const o10n = 0.00009 / cosLat;
-      const o5l = 0.000045;
-      const o5n = 0.000045 / cosLat;
+      spanGeos.push(geo ? { geo, cosLat } : null);
+    }
+
+    const channelOffset = (ch: SpanChannel, sg: { geo: SpanGeometry; cosLat: number }): [number, number] => [
+      (ch.sign * ch.baseDeg) / sg.cosLat,
+      ch.sign * ch.baseDeg,
+    ];
+
+    // Junctions at each interior tower, per channel: the point where the incoming and
+    // outgoing span's offset line for that channel should meet. Trims the inside of a
+    // bend (where offset lines would otherwise cross) and fillets the outside (where
+    // they would otherwise leave a gap). Null = fall back to each span's own raw offset
+    // endpoint (nearly-straight spans, or a miter so extreme it'd spike).
+    const MITER_LIMIT_FACTOR = 8;
+    const junctions: ([number, number] | null)[][] = points.map(() => channels.map(() => null));
+    for (let j = 1; j < points.length - 1; j++) {
+      const sgIn = spanGeos[j - 1];
+      const sgOut = spanGeos[j];
+      if (!sgIn || !sgOut) continue;
+      const cur = points[j];
+      const prev = points[j - 1];
+      const next = points[j + 1];
+      const dir1: [number, number] = [cur.lng - prev.lng, cur.lat - prev.lat];
+      const dir2: [number, number] = [next.lng - cur.lng, next.lat - cur.lat];
+
+      channels.forEach((ch, chIdx) => {
+        if (!ch.enabled) return;
+        const [snIn, sl] = channelOffset(ch, sgIn);
+        const [snOut] = channelOffset(ch, sgOut);
+        const endIn = offsetLatLng(cur.lat, cur.lng, sgIn.geo, snIn, sl);
+        const startOut = offsetLatLng(cur.lat, cur.lng, sgOut.geo, snOut, sl);
+        const p1: [number, number] = [endIn[1], endIn[0]];
+        const p2: [number, number] = [startOut[1], startOut[0]];
+        const hit = lineIntersect(p1, dir1, p2, dir2);
+        if (!hit) return;
+        const dist = Math.hypot(hit[0] - cur.lng, hit[1] - cur.lat);
+        if (dist > ch.baseDeg * MITER_LIMIT_FACTOR) return;
+        junctions[j][chIdx] = [hit[1], hit[0]];
+      });
+    }
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i];
+      const b = points[i + 1];
+      const sg = spanGeos[i];
+      if (!sg || !spansGroup) continue;
 
       const cdDone = pctFor(a.id, STRINGING_KEYS.conductor) >= 100 && pctFor(b.id, STRINGING_KEYS.conductor) >= 100;
       const ewDone = pctFor(a.id, STRINGING_KEYS.earthwire) >= 100 && pctFor(b.id, STRINGING_KEYS.earthwire) >= 100;
       const opDone = pctFor(a.id, STRINGING_KEYS.opgw) >= 100 && pctFor(b.id, STRINGING_KEYS.opgw) >= 100;
-
-      const drawSpanLine = (sn: number, sl: number, color: string, weight: number, done: boolean) => {
-        L.polyline(
-          [offsetLatLng(a.lat, a.lng, geo, sn, sl), offsetLatLng(b.lat, b.lng, geo, sn, sl)],
-          { color, weight, opacity: done ? 1 : 0.45 },
-        ).addTo(spansGroup);
+      const doneByStatusKey: Record<string, boolean> = {
+        [STRINGING_KEYS.conductor]: cdDone,
+        [STRINGING_KEYS.earthwire]: ewDone,
+        [STRINGING_KEYS.opgw]: opDone,
       };
 
-      drawSpanLine(o10n, o10l, SPAN_COLOR.conductor, 3, cdDone);
-      drawSpanLine(-o10n, -o10l, SPAN_COLOR.conductor, 3, cdDone);
-      if (groundWireConfig.earthwire > 0) drawSpanLine(o5n, o5l, SPAN_COLOR.earthwire, 2.5, ewDone);
-      if (groundWireConfig.opgw > 0) {
-        const opSn = groundWireConfig.earthwire > 0 ? -o5n : 0;
-        const opSl = groundWireConfig.earthwire > 0 ? -o5l : 0;
-        drawSpanLine(opSn, opSl, SPAN_COLOR.opgw, 2.5, opDone);
-      }
+      channels.forEach((ch, chIdx) => {
+        if (!ch.enabled) return;
+        const [sn, sl] = channelOffset(ch, sg);
+        const start = junctions[i][chIdx] ?? offsetLatLng(a.lat, a.lng, sg.geo, sn, sl);
+        const end = junctions[i + 1][chIdx] ?? offsetLatLng(b.lat, b.lng, sg.geo, sn, sl);
+        L.polyline([start, end], { color: ch.color, weight: ch.weight, opacity: doneByStatusKey[ch.statusKey] ? 1 : 0.45 }).addTo(
+          spansGroup,
+        );
+      });
     }
 
     for (let i = 1; i < points.length - 1; i++) {
