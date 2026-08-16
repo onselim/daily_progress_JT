@@ -202,7 +202,7 @@ export function MapView({ assets, coordinateSystem, selectedAssetId, onSelect, r
               <button
                 key={key}
                 type="button"
-                className={key === basemap ? 'active' : ''}
+                className={`basemap-menu-btn${key === basemap ? ' active' : ''}`}
                 onClick={() => {
                   setBasemap(key as keyof typeof BASEMAPS);
                   setBasemapMenuOpen(false);

@@ -29,7 +29,7 @@ export default function FieldProjectPage() {
           </p>
         </div>
 
-        <ProjectProgressBar projectId={project.id} editable />
+        <ProjectProgressBar projectId={project.id} projectSlug={project.slug} editable isAdmin={false} />
 
         <div className="project-topbar-stats">
           <span className="stat-pill">

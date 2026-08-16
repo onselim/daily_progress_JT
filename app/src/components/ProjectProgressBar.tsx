@@ -65,10 +65,12 @@ function ConstructionGroups({ groups, color }: { groups: { name: string; items: 
 
 interface ProjectProgressBarProps {
   projectId: string;
+  projectSlug: string;
   editable: boolean;
+  isAdmin: boolean;
 }
 
-export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarProps) {
+export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }: ProjectProgressBarProps) {
   const { workItems } = useWorkItemsConfig(projectId);
   const construction = useConstructionBreakdown(projectId, workItems);
   const design = useDesignBreakdown(projectId);
@@ -177,7 +179,9 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
             {activeTab === 'design' && (
               <DesignPanel
                 projectId={projectId}
+                projectSlug={projectSlug}
                 editable={editable}
+                isAdmin={isAdmin}
                 items={design.items}
                 overallPercent={design.overallPercent}
                 loading={design.loading}
@@ -188,7 +192,9 @@ export function ProjectProgressBar({ projectId, editable }: ProjectProgressBarPr
             {activeTab === 'supply' && (
               <SupplyPanel
                 projectId={projectId}
+                projectSlug={projectSlug}
                 editable={editable}
+                isAdmin={isAdmin}
                 items={supply.items}
                 overallPercent={supply.overallPercent}
                 loading={supply.loading}

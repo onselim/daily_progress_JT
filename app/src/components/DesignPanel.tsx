@@ -1,18 +1,30 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { updateProjectWorkItem } from '../lib/updateProjectWorkItem';
 import type { DesignItemBreakdown } from '../lib/useDesignBreakdown';
 
 interface DesignPanelProps {
   projectId: string;
+  projectSlug: string;
   editable: boolean;
+  isAdmin: boolean;
   items: DesignItemBreakdown[];
   overallPercent: number;
   loading: boolean;
   onSaved: () => void;
 }
 
-export function DesignPanel({ projectId, editable, items, overallPercent, loading, onSaved }: DesignPanelProps) {
+export function DesignPanel({
+  projectId,
+  projectSlug,
+  editable,
+  isAdmin,
+  items,
+  overallPercent,
+  loading,
+  onSaved,
+}: DesignPanelProps) {
   const { user } = useAuth();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
@@ -48,11 +60,25 @@ export function DesignPanel({ projectId, editable, items, overallPercent, loadin
     }
   }
 
+  const editItemsLink = isAdmin && (
+    <Link to={`/admin/${projectSlug}/design-items`} className="pw-edit-items-link">
+      Edit items
+    </Link>
+  );
+
   if (loading) return <p className="accordion-empty">Loading…</p>;
-  if (items.length === 0) return <p className="accordion-empty">No design items configured for this project.</p>;
+  if (items.length === 0) {
+    return (
+      <div className="pw-item-list">
+        <p className="accordion-empty">No design items configured for this project.</p>
+        {editItemsLink}
+      </div>
+    );
+  }
 
   return (
     <div className="pw-item-list">
+      {editItemsLink}
       {items.map((item) => (
         <div key={item.key} className="pw-item-row">
           <span className="pw-item-label">{item.label}</span>

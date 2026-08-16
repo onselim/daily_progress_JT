@@ -29,7 +29,7 @@ export default function PublicViewerPage() {
           {project.client && <p>{project.client}</p>}
         </div>
 
-        <ProjectProgressBar projectId={project.id} editable={false} />
+        <ProjectProgressBar projectId={project.id} projectSlug={project.slug} editable={false} isAdmin={false} />
 
         <div className="project-topbar-stats">
           <span className="stat-pill">

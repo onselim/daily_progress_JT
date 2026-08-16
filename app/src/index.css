@@ -792,7 +792,7 @@ button:disabled {
   overflow: hidden;
 }
 
-.project-shell button:not(.status-btn):not(.asset-list-item):not(.basemap-btn):not(.accordion-header):not(.asset-filter-btn) {
+.project-shell button:not(.status-btn):not(.asset-list-item):not(.basemap-btn):not(.basemap-menu-btn):not(.accordion-header):not(.asset-filter-btn):not(.items-editor-remove-btn) {
   color: #0f1117;
 }
 
@@ -1207,14 +1207,15 @@ button:disabled {
   position: absolute;
   bottom: calc(100% + 4px);
   left: 0;
-  background: rgba(23, 27, 38, 0.97);
-  border: 1px solid var(--border);
+  background: #171b26;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
   overflow: hidden;
-  min-width: 140px;
+  min-width: 150px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
 }
 
-.basemap-menu button {
+.basemap-menu-btn {
   display: block;
   width: 100%;
   text-align: left;
@@ -1222,14 +1223,20 @@ button:disabled {
   color: var(--text-h);
   border: none;
   border-radius: 0;
-  padding: 8px 12px;
+  padding: 9px 12px;
   font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
 }
 
-.basemap-menu button:hover,
-.basemap-menu button.active {
-  background: rgba(255, 255, 255, 0.06);
+.basemap-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.basemap-menu-btn.active {
+  background: rgba(0, 212, 170, 0.16);
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .right-panel-stack {
@@ -1360,6 +1367,17 @@ button:disabled {
 .pw-percent-input input {
   width: 56px;
   text-align: right;
+  font: inherit;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.pw-percent-input input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .pw-save-indicator {
@@ -1935,6 +1953,47 @@ button:disabled {
 
 .wizard-weight-input {
   width: 64px;
+}
+
+.wizard-label-input {
+  flex: 1;
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.items-editor-remove-btn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.items-editor-remove-btn:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+a.pw-edit-items-link {
+  align-self: flex-end;
+  font-size: 10px;
+  color: var(--accent);
+  text-decoration: none;
+  margin-bottom: 2px;
+}
+
+.pw-edit-items-link:hover {
+  text-decoration: underline;
 }
 
 .wizard-actions {

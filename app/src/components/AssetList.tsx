@@ -84,7 +84,7 @@ export function AssetList({
     <div className="asset-list-panel">
       <input
         type="search"
-        placeholder="Search asset code…"
+        placeholder="Search tower…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="asset-search"

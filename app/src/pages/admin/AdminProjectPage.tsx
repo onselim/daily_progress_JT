@@ -33,7 +33,7 @@ export default function AdminProjectPage() {
           </p>
         </div>
 
-        <ProjectProgressBar projectId={project.id} editable />
+        <ProjectProgressBar projectId={project.id} projectSlug={project.slug} editable isAdmin />
 
         <div className="project-topbar-stats">
           <span className="stat-pill">

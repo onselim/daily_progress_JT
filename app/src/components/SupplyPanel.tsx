@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import type { SupplyItemBreakdown } from '../lib/useSupplyBreakdown';
 import { updateProjectWorkItem } from '../lib/updateProjectWorkItem';
@@ -7,14 +8,25 @@ type Stage = 'mfg' | 'del';
 
 interface SupplyPanelProps {
   projectId: string;
+  projectSlug: string;
   editable: boolean;
+  isAdmin: boolean;
   items: SupplyItemBreakdown[];
   overallPercent: number;
   loading: boolean;
   onSaved: () => void;
 }
 
-export function SupplyPanel({ projectId, editable, items, overallPercent, loading, onSaved }: SupplyPanelProps) {
+export function SupplyPanel({
+  projectId,
+  projectSlug,
+  editable,
+  isAdmin,
+  items,
+  overallPercent,
+  loading,
+  onSaved,
+}: SupplyPanelProps) {
   const { user } = useAuth();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
@@ -56,11 +68,25 @@ export function SupplyPanel({ projectId, editable, items, overallPercent, loadin
     }
   }
 
+  const editItemsLink = isAdmin && (
+    <Link to={`/admin/${projectSlug}/supply-items`} className="pw-edit-items-link">
+      Edit items
+    </Link>
+  );
+
   if (loading) return <p className="accordion-empty">Loading…</p>;
-  if (items.length === 0) return <p className="accordion-empty">No supply items configured for this project.</p>;
+  if (items.length === 0) {
+    return (
+      <div className="pw-item-list">
+        <p className="accordion-empty">No supply items configured for this project.</p>
+        {editItemsLink}
+      </div>
+    );
+  }
 
   return (
     <div className="pw-item-list">
+      {editItemsLink}
       {items.map((item) => {
         const mfgKey = `${item.key}__mfg`;
         const delKey = `${item.key}__del`;
