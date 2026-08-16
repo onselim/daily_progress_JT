@@ -7,6 +7,7 @@ import { useAssets } from '../lib/useAssets';
 import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress';
 import { useRestrictedToday } from '../lib/useRestrictedToday';
 import { useWorkItemsConfig } from '../lib/useProjectConfig';
+import { useGroundWireConfig } from '../lib/useGroundWireConfig';
 import { utmToLatLng } from '../lib/utmToLatLng';
 
 interface AssetWorkspaceProps {
@@ -21,6 +22,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true }:
   const { progressByAsset, percentByAssetAndKey } = useProjectWorkItemsProgress(projectId);
   const restrictedAssetIds = useRestrictedToday(projectId);
   const { workItems } = useWorkItemsConfig(projectId);
+  const groundWireConfig = useGroundWireConfig(projectId);
 
   const [weatherLat, weatherLng] = useMemo((): [number | null, number | null] => {
     if (!coordinateSystem || assets.length === 0) return [null, null];
@@ -55,6 +57,8 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true }:
           selectedAssetId={selectedAssetId}
           onSelect={setSelectedAssetId}
           restrictedAssetIds={restrictedAssetIds}
+          percentByAssetAndKey={percentByAssetAndKey}
+          groundWireConfig={groundWireConfig}
         />
         <RightPanelStack
           projectId={projectId}
