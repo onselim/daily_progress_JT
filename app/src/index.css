@@ -792,7 +792,7 @@ button:disabled {
   overflow: hidden;
 }
 
-.project-shell button:not(.status-btn):not(.asset-list-item):not(.basemap-btn):not(.basemap-menu-btn):not(.accordion-header):not(.asset-filter-btn):not(.items-editor-remove-btn) {
+.project-shell button:not(.status-btn):not(.asset-list-item):not(.basemap-btn):not(.basemap-menu-btn):not(.accordion-header):not(.asset-filter-btn):not(.items-editor-remove-btn):not(.doc-folder-header):not(.doc-folder-add-btn):not(.doc-form-btn) {
   color: #0f1117;
 }
 
@@ -1493,6 +1493,114 @@ button:disabled {
 
 .doc-row:last-child {
   border-bottom: none;
+}
+
+.doc-folder {
+  border-bottom: 1px solid var(--border);
+  padding: 2px 0;
+}
+
+.doc-folder-header-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.doc-folder-header {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 6px 0;
+  cursor: pointer;
+  color: var(--text-h);
+  font: inherit;
+  text-align: left;
+}
+
+.doc-folder-header .accordion-chevron {
+  color: #7a8099;
+}
+
+.doc-folder-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.doc-folder-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #7a8099;
+}
+
+.doc-folder-body {
+  padding: 2px 0 8px 18px;
+}
+
+.doc-folder-root {
+  padding-top: 4px;
+}
+
+.doc-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.doc-actions-row .photo-upload-label {
+  margin-top: 0;
+}
+
+.doc-folder-add-btn {
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.doc-folder-add-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.doc-folder-add-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.doc-folder-add-form input[type='text'] {
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  width: 140px;
+}
+
+.doc-form-btn {
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.doc-form-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .weather-day-row {

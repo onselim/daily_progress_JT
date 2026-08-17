@@ -7,10 +7,11 @@ export async function uploadProjectDocument(params: {
   file: File;
   uploadedBy: string;
   slotName?: string;
+  folderId?: string | null;
 }) {
-  const { projectId, file, uploadedBy, slotName } = params;
+  const { projectId, file, uploadedBy, slotName, folderId } = params;
   const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-  const path = `${projectId}/_documents/${Date.now()}-${safeName}`;
+  const path = `${projectId}/_documents/${folderId ?? 'root'}/${Date.now()}-${safeName}`;
 
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file);
   if (uploadError) throw uploadError;
@@ -22,6 +23,7 @@ export async function uploadProjectDocument(params: {
     slot_name: slotName ?? file.name,
     file_url: urlData.publicUrl,
     uploaded_by: uploadedBy,
+    folder_id: folderId ?? null,
   });
   if (insertError) throw insertError;
 }

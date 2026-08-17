@@ -6,24 +6,40 @@ export interface ProjectDocument {
   slot_name: string;
   file_url: string;
   uploaded_at: string;
+  folder_id: string | null;
+}
+
+export interface DocumentFolder {
+  id: string;
+  name: string;
+  created_at: string;
 }
 
 export function useProjectDocuments(projectId: string | undefined) {
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
+  const [folders, setFolders] = useState<DocumentFolder[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback(async () => {
     if (!projectId) return;
     setLoading(true);
-    return supabase
-      .from('documents')
-      .select('id, slot_name, file_url, uploaded_at')
-      .eq('project_id', projectId)
-      .order('uploaded_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (!error && data) setDocuments(data);
-        setLoading(false);
-      });
+
+    const [documentsResult, foldersResult] = await Promise.all([
+      supabase
+        .from('documents')
+        .select('id, slot_name, file_url, uploaded_at, folder_id')
+        .eq('project_id', projectId)
+        .order('uploaded_at', { ascending: false }),
+      supabase
+        .from('document_folders')
+        .select('id, name, created_at')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: true }),
+    ]);
+
+    if (!documentsResult.error && documentsResult.data) setDocuments(documentsResult.data);
+    if (!foldersResult.error && foldersResult.data) setFolders(foldersResult.data);
+    setLoading(false);
   }, [projectId]);
 
   useEffect(() => {
@@ -31,5 +47,5 @@ export function useProjectDocuments(projectId: string | undefined) {
     refresh();
   }, [projectId, refresh]);
 
-  return { documents, loading, refresh };
+  return { documents, folders, loading, refresh };
 }
