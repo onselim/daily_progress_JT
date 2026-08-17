@@ -1547,8 +1547,8 @@ button:disabled {
 
 .doc-folder-divider {
   height: 1px;
-  margin: 8px 0;
-  background: var(--border);
+  margin: 14px 0;
+  background: linear-gradient(90deg, transparent, var(--border) 15%, var(--border) 85%, transparent);
 }
 
 .doc-actions-row {
@@ -1609,6 +1609,65 @@ button:disabled {
 .doc-form-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+/* Project documents / Layers panels (both render via ProjectDocumentsPanel, scoped
+   here by its .doc-* classes) — shrunk by about half on phones, these lists can get
+   long and were eating too much vertical space at desktop sizing. */
+@media (max-width: 720px) {
+  .doc-folder-header {
+    gap: 4px;
+    padding: 3px 0;
+  }
+
+  .doc-folder-name {
+    font-size: 10px;
+  }
+
+  .doc-folder-count {
+    font-size: 8px;
+  }
+
+  .doc-folder-body {
+    padding: 1px 0 4px 9px;
+  }
+
+  .doc-folder-divider {
+    margin: 7px 0;
+  }
+
+  .doc-row {
+    padding: 3px 0;
+    font-size: 9px;
+  }
+
+  .doc-actions-row {
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .doc-actions-row .photo-upload-label,
+  .doc-folder-add-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .doc-folder-add-form input[type='text'] {
+    padding: 3px 6px;
+    font-size: 10px;
+    width: 100px;
+  }
+
+  .doc-form-btn {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+
+  .doc-folder .items-editor-remove-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+  }
 }
 
 .weather-day-row {

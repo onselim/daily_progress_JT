@@ -3,23 +3,15 @@ import { DEFAULT_DESIGN_ITEMS, DEFAULT_SUPPLY_ITEMS } from './defaultDesignSuppl
 
 // Pre-created "Project documents" folders every new project starts with — the admin can
 // still remove any of these or add more, this is just a convenient default set. Grouped
-// to match the row gap the client left between "Structure List" and "Tower Design" in
-// their spec — rendered as a visual divider between the two groups.
+// to match the row gaps the client left in their spec — rendered as visual dividers
+// between groups.
 export const DEFAULT_DOCUMENT_FOLDER_GROUPS: string[][] = [
   ['Line Route', 'Line Profile', 'Structure List'],
-  [
-    'Tower Design',
-    'Tower Drawings',
-    'Stub Drawings',
-    'Foundation Drawings',
-    'Conductor Drawings',
-    'OPGW Drawings',
-    'EW Drawings',
-    'Hardware-Insulator Set Drawings',
-    'Dampers',
-    'Other Line Materials',
-    'Sag Tension Charts',
-  ],
+  ['Tower Design', 'Tower Drawings', 'Stub Drawings', 'Foundation Drawings'],
+  ['Conductor Drawings', 'OPGW Drawings', 'EW Drawings'],
+  ['Hardware-Insulator Set Drawings', 'Dampers'],
+  ['Other Line Materials'],
+  ['Sag Tension Charts'],
 ];
 
 function slugify(name: string): string {
