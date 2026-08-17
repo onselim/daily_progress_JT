@@ -8,6 +8,7 @@ import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress'
 import { useRestrictedToday } from '../lib/useRestrictedToday';
 import { useWorkItemsConfig } from '../lib/useProjectConfig';
 import { useGroundWireConfig } from '../lib/useGroundWireConfig';
+import { useLineSummary } from '../lib/useLineSummary';
 import { utmToLatLng } from '../lib/utmToLatLng';
 
 interface AssetWorkspaceProps {
@@ -23,6 +24,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true }:
   const restrictedAssetIds = useRestrictedToday(projectId);
   const { workItems } = useWorkItemsConfig(projectId);
   const groundWireConfig = useGroundWireConfig(projectId);
+  const lineSummary = useLineSummary(projectId, assets, coordinateSystem);
 
   const [weatherLat, weatherLng] = useMemo((): [number | null, number | null] => {
     if (!coordinateSystem || assets.length === 0) return [null, null];
@@ -65,6 +67,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true }:
           editable={editable}
           weatherLat={weatherLat}
           weatherLng={weatherLng}
+          lineSummary={lineSummary}
         />
         {selectedAssetId && (
           <div className="floating-editor">

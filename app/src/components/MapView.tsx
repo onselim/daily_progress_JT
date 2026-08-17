@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { utmToLatLng } from '../lib/utmToLatLng';
+import { resolveLinePath, bearingDeg } from '../lib/lineGeometry';
 import type { AssetListItem } from '../lib/useAssets';
 import type { GroundWireConfig } from '../lib/useGroundWireConfig';
 
@@ -37,13 +38,6 @@ function spanGeometry(aLat: number, aLng: number, bLat: number, bLng: number): S
  * and `sl` (latitude-direction) along the given perpendicular unit vector. */
 function offsetLatLng(lat: number, lng: number, geo: SpanGeometry, sn: number, sl: number): [number, number] {
   return [lat + geo.ny * sl, lng + geo.nx * sn];
-}
-
-function bearingDeg(aLat: number, aLng: number, bLat: number, bLng: number): number {
-  const cosLat = Math.cos(((aLat + bLat) / 2) * (Math.PI / 180));
-  const dLon = (bLng - aLng) * cosLat;
-  const dLat = bLat - aLat;
-  return (Math.atan2(dLon, dLat) * 180) / Math.PI;
 }
 
 /** Where offset lines on the inside of a bend converge (cross each other in the raw
@@ -207,8 +201,6 @@ export function MapView({
     Object.values(markersRef.current).forEach((m) => m.remove());
     markersRef.current = {};
 
-    const points: { id: string; lat: number; lng: number }[] = [];
-
     for (const asset of assets) {
       let lat = asset.lat;
       let lng = asset.lng;
@@ -253,8 +245,11 @@ export function MapView({
         map.flyTo([lat as number, lng as number], Math.max(map.getZoom(), 17));
       });
       markersRef.current[asset.id] = marker;
-      points.push({ id: asset.id, lat, lng });
     }
+
+    // Ordered by station (chainage), not by asset_code — code sort order isn't guaranteed
+    // to follow the physical route, station is.
+    const points = resolveLinePath(assets, coordinateSystem);
 
     const spansGroup = spansGroupRef.current;
     const crossGroup = crossGroupRef.current;

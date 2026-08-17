@@ -1345,6 +1345,38 @@ button:disabled {
   padding: 8px 0;
 }
 
+.line-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  padding: 4px 0 2px;
+}
+
+.line-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.line-summary-value {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.line-summary-label {
+  font-size: 10px;
+  color: #7a8099;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.line-summary-note {
+  grid-column: 1 / -1;
+  padding: 6px 0 0;
+}
+
 .pw-item-list {
   display: flex;
   flex-direction: column;

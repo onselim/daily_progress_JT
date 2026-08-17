@@ -9,6 +9,7 @@ export interface AssetListItem {
   station: string | null;
   x: number | null;
   y: number | null;
+  z: number | null;
   lat: number | null;
   lng: number | null;
 }
@@ -24,7 +25,7 @@ export function useAssets(projectId: string | undefined) {
 
     supabase
       .from('assets')
-      .select('id, asset_code, asset_type, status, station, x, y, lat, lng')
+      .select('id, asset_code, asset_type, status, station, x, y, z, lat, lng')
       .eq('project_id', projectId)
       .then(({ data, error }) => {
         if (cancelled) return;
