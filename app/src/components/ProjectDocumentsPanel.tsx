@@ -8,11 +8,18 @@ import { createDocumentFolder, deleteDocumentFolder } from '../lib/documentFolde
 interface ProjectDocumentsPanelProps {
   projectId: string;
   editable: boolean;
+  section?: string;
+  emptyLabel?: string;
 }
 
-export function ProjectDocumentsPanel({ projectId, editable }: ProjectDocumentsPanelProps) {
+export function ProjectDocumentsPanel({
+  projectId,
+  editable,
+  section = 'documents',
+  emptyLabel = 'No documents uploaded yet.',
+}: ProjectDocumentsPanelProps) {
   const { user } = useAuth();
-  const { documents, folders, loading, refresh } = useProjectDocuments(projectId);
+  const { documents, folders, loading, refresh } = useProjectDocuments(projectId, section);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
   const [addingFolder, setAddingFolder] = useState(false);
@@ -24,7 +31,7 @@ export function ProjectDocumentsPanel({ projectId, editable }: ProjectDocumentsP
     if (!file || !user) return;
     setUploadingKey(folderId ?? 'root');
     try {
-      await uploadProjectDocument({ projectId, file, uploadedBy: user.id, folderId });
+      await uploadProjectDocument({ projectId, file, uploadedBy: user.id, folderId, section });
       await refresh();
     } finally {
       setUploadingKey(null);
@@ -42,7 +49,7 @@ export function ProjectDocumentsPanel({ projectId, editable }: ProjectDocumentsP
     if (!newFolderName.trim() || !user) return;
     setCreatingFolder(true);
     try {
-      await createDocumentFolder(projectId, newFolderName, user.id);
+      await createDocumentFolder(projectId, newFolderName, user.id, section);
       setNewFolderName('');
       setAddingFolder(false);
       await refresh();
@@ -63,9 +70,7 @@ export function ProjectDocumentsPanel({ projectId, editable }: ProjectDocumentsP
 
   return (
     <>
-      {folders.length === 0 && rootDocs.length === 0 && (
-        <p className="accordion-empty">No documents uploaded yet.</p>
-      )}
+      {folders.length === 0 && rootDocs.length === 0 && <p className="accordion-empty">{emptyLabel}</p>}
 
       {folders.map((folder) => {
         const folderDocs = documents.filter((d) => d.folder_id === folder.id);

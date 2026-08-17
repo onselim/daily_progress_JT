@@ -1,6 +1,25 @@
 import { supabase } from '../supabase';
 import { DEFAULT_DESIGN_ITEMS, DEFAULT_SUPPLY_ITEMS } from './defaultDesignSupplyItems';
 
+// Pre-created "Project documents" folders every new project starts with — the admin can
+// still remove any of these or add more, this is just a convenient default set.
+export const DEFAULT_DOCUMENT_FOLDERS = [
+  'Line Route',
+  'Line Profile',
+  'Structure List',
+  'Tower Design',
+  'Tower Drawings',
+  'Stub Drawings',
+  'Foundation Drawings',
+  'Conductor Drawings',
+  'OPGW Drawings',
+  'EW Drawings',
+  'Hardware-Insulator Set Drawings',
+  'Dampers',
+  'Other Line Materials',
+  'Sag Tension Charts',
+];
+
 function slugify(name: string): string {
   return name
     .trim()
@@ -79,6 +98,16 @@ export async function createProject(input: ProjectBasicsInput) {
     { project_id: project.id, key: 'supply_items', value: DEFAULT_SUPPLY_ITEMS },
   ]);
   if (configError) throw configError;
+
+  const { error: foldersError } = await supabase.from('document_folders').insert(
+    DEFAULT_DOCUMENT_FOLDERS.map((name) => ({
+      project_id: project.id,
+      name,
+      created_by: input.createdBy,
+      section: 'documents',
+    })),
+  );
+  if (foldersError) throw foldersError;
 
   return project;
 }

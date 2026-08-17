@@ -2,10 +2,10 @@ import { supabase } from './supabase';
 
 const BUCKET = 'project-media';
 
-export async function createDocumentFolder(projectId: string, name: string, createdBy: string) {
+export async function createDocumentFolder(projectId: string, name: string, createdBy: string, section: string) {
   const { error } = await supabase
     .from('document_folders')
-    .insert({ project_id: projectId, name: name.trim(), created_by: createdBy });
+    .insert({ project_id: projectId, name: name.trim(), created_by: createdBy, section });
   if (error) throw error;
 }
 

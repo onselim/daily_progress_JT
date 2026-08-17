@@ -5,8 +5,21 @@ import { useWorkItemsConfig, type WorkItemConfig } from '../lib/useProjectConfig
 import { useAssetPhotos, type AssetPhoto } from '../lib/useAssetPhotos';
 import { uploadAssetPhoto } from '../lib/uploadAssetPhoto';
 import { deleteAssetPhoto } from '../lib/deleteAssetPhoto';
+import { useAssetDocuments, type AssetDocument } from '../lib/useAssetDocuments';
+import { uploadAssetDocument } from '../lib/uploadAssetDocument';
+import { deleteAssetDocument } from '../lib/deleteAssetDocument';
 
 type WorkItemStatus = 'not_started' | 'in_progress' | 'completed';
+
+// Work items that get a per-tower test-report/certificate upload (in addition to photos),
+// per the client's "Menu eklemeleri" spec: Soil Investigation Report, Concrete Test Cube
+// results, Backfill test results, Earthing measurement results.
+const DOCUMENT_ENABLED_KEYS: Record<string, string> = {
+  si_sw: 'Soil Investigation Report',
+  fn_co: 'Concrete Test Cube results',
+  fn_bf: 'Backfill test results',
+  er_te: 'Earthing measurement results',
+};
 
 const STATUS_OPTIONS: { value: WorkItemStatus; label: string }[] = [
   { value: 'not_started', label: 'Not started' },
@@ -82,6 +95,41 @@ function PhotoThumbs({
   );
 }
 
+function DocumentLinks({
+  documents,
+  editable,
+  deletingIds,
+  onDelete,
+}: {
+  documents: AssetDocument[];
+  editable: boolean;
+  deletingIds: Set<string>;
+  onDelete: (doc: AssetDocument) => void;
+}) {
+  return (
+    <div className="doc-folder-body">
+      {documents.map((d) => (
+        <div key={d.id} className="doc-row">
+          <a href={d.file_url} target="_blank" rel="noreferrer">
+            {d.file_name}
+          </a>
+          {editable && (
+            <button
+              type="button"
+              className="items-editor-remove-btn"
+              disabled={deletingIds.has(d.id)}
+              onClick={() => onDelete(d)}
+              title="Delete document"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface AssetEditorProps {
   projectId: string;
   assetId: string;
@@ -92,6 +140,7 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
   const { user } = useAuth();
   const { workItems, loading: workItemsLoading } = useWorkItemsConfig(projectId);
   const { photos, loading: photosLoading, refresh: refreshPhotos } = useAssetPhotos(assetId);
+  const { documents: assetDocs, refresh: refreshAssetDocs } = useAssetDocuments(assetId);
 
   const [assetCode, setAssetCode] = useState('');
   const [assetType, setAssetType] = useState<string | null>(null);
@@ -107,6 +156,9 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [expandedPhotoKey, setExpandedPhotoKey] = useState<string | null>(null);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [expandedDocKey, setExpandedDocKey] = useState<string | null>(null);
+  const [uploadingDocKey, setUploadingDocKey] = useState<string | null>(null);
+  const [deletingDocIds, setDeletingDocIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -236,6 +288,40 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
     }
   }
 
+  async function handleDocumentUpload(e: ChangeEvent<HTMLInputElement>, workItemKey: string) {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingDocKey(workItemKey);
+    setMessage(null);
+
+    try {
+      await uploadAssetDocument({ projectId, assetCode, assetId, file, uploadedBy: user.id, workItemKey });
+      await refreshAssetDocs();
+    } catch (err) {
+      setMessage(`Document upload failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setUploadingDocKey(null);
+      e.target.value = '';
+    }
+  }
+
+  async function handleDeleteDocument(doc: AssetDocument) {
+    setDeletingDocIds((prev) => new Set(prev).add(doc.id));
+    setMessage(null);
+    try {
+      await deleteAssetDocument(doc.id, doc.file_url);
+      await refreshAssetDocs();
+    } catch (err) {
+      setMessage(`Delete failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setDeletingDocIds((prev) => {
+        const next = new Set(prev);
+        next.delete(doc.id);
+        return next;
+      });
+    }
+  }
+
   if (loading) return <p>Loading asset…</p>;
 
   const groups: { name: string; items: WorkItemConfig[] }[] = [];
@@ -319,6 +405,9 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
                 const itemColor = ITEM_STATUS_COLOR[current];
                 const itemPhotos = photosByKey[item.key] ?? [];
                 const isExpanded = expandedPhotoKey === item.key;
+                const docLabel = DOCUMENT_ENABLED_KEYS[item.key];
+                const itemDocs = docLabel ? assetDocs.filter((d) => d.work_item_key === item.key) : [];
+                const isDocExpanded = expandedDocKey === item.key;
 
                 return (
                   <div key={item.key} className="work-item-row">
@@ -340,6 +429,16 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
                       >
                         📷 {itemPhotos.length > 0 ? itemPhotos.length : ''}
                       </button>
+                      {docLabel && (
+                        <button
+                          type="button"
+                          className={`photo-toggle-btn${itemDocs.length > 0 ? ' has-photos' : ''}`}
+                          onClick={() => setExpandedDocKey(isDocExpanded ? null : item.key)}
+                          title={docLabel}
+                        >
+                          📄 {itemDocs.length > 0 ? itemDocs.length : ''}
+                        </button>
+                      )}
                     </div>
 
                     {editable && (
@@ -376,6 +475,28 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
                               multiple
                               onChange={(e) => handlePhotoUpload(e, item.key)}
                               disabled={uploadingKey === item.key}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    )}
+
+                    {docLabel && isDocExpanded && (
+                      <div className="item-photo-panel">
+                        {itemDocs.length === 0 && <p className="accordion-empty">No {docLabel} uploaded yet.</p>}
+                        <DocumentLinks
+                          documents={itemDocs}
+                          editable={editable}
+                          deletingIds={deletingDocIds}
+                          onDelete={handleDeleteDocument}
+                        />
+                        {editable && (
+                          <label className="photo-upload-label photo-upload-label-sm">
+                            {uploadingDocKey === item.key ? 'Uploading…' : `+ Add ${docLabel}`}
+                            <input
+                              type="file"
+                              onChange={(e) => handleDocumentUpload(e, item.key)}
+                              disabled={uploadingDocKey === item.key}
                             />
                           </label>
                         )}

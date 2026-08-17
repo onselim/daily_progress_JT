@@ -20,11 +20,16 @@ export function RightPanelStack({ projectId, editable, weatherLat, weatherLng, l
       </AccordionPanel>
 
       <AccordionPanel title="Project documents">
-        <ProjectDocumentsPanel projectId={projectId} editable={editable} />
+        <ProjectDocumentsPanel projectId={projectId} editable={editable} section="documents" />
       </AccordionPanel>
 
       <AccordionPanel title="Layers">
-        <p className="accordion-empty">No extra map layers configured yet.</p>
+        <ProjectDocumentsPanel
+          projectId={projectId}
+          editable={editable}
+          section="layers"
+          emptyLabel="No extra map layers configured yet."
+        />
       </AccordionPanel>
 
       <AccordionPanel title="Weather forecast">

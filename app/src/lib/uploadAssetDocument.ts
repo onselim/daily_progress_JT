@@ -2,30 +2,29 @@ import { supabase } from './supabase';
 
 const BUCKET = 'project-media';
 
-export async function uploadProjectDocument(params: {
+export async function uploadAssetDocument(params: {
   projectId: string;
+  assetCode: string;
+  assetId: string;
   file: File;
   uploadedBy: string;
-  section: string;
-  slotName?: string;
-  folderId?: string | null;
+  workItemKey: string;
 }) {
-  const { projectId, file, uploadedBy, section, slotName, folderId } = params;
+  const { projectId, assetCode, assetId, file, uploadedBy, workItemKey } = params;
   const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-  const path = `${projectId}/_documents/${section}/${folderId ?? 'root'}/${Date.now()}-${safeName}`;
+  const path = `${projectId}/${assetCode}/_documents/${workItemKey}/${Date.now()}-${safeName}`;
 
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file);
   if (uploadError) throw uploadError;
 
   const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
-  const { error: insertError } = await supabase.from('documents').insert({
-    project_id: projectId,
-    slot_name: slotName ?? file.name,
+  const { error: insertError } = await supabase.from('asset_documents').insert({
+    asset_id: assetId,
+    work_item_key: workItemKey,
+    file_name: file.name,
     file_url: urlData.publicUrl,
     uploaded_by: uploadedBy,
-    folder_id: folderId ?? null,
-    section,
   });
   if (insertError) throw insertError;
 }
