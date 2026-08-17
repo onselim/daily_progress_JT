@@ -13,6 +13,9 @@ export interface DocumentFolder {
   id: string;
   name: string;
   created_at: string;
+  parent_folder_id: string | null;
+  sort_order: number;
+  divider_after: boolean;
 }
 
 export function useProjectDocuments(projectId: string | undefined, section: string) {
@@ -33,9 +36,10 @@ export function useProjectDocuments(projectId: string | undefined, section: stri
         .order('uploaded_at', { ascending: false }),
       supabase
         .from('document_folders')
-        .select('id, name, created_at')
+        .select('id, name, created_at, parent_folder_id, sort_order, divider_after')
         .eq('project_id', projectId)
         .eq('section', section)
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true }),
     ]);
 

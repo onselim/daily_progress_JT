@@ -1545,6 +1545,12 @@ button:disabled {
   padding-top: 4px;
 }
 
+.doc-folder-divider {
+  height: 1px;
+  margin: 8px 0;
+  background: var(--border);
+}
+
 .doc-actions-row {
   display: flex;
   flex-wrap: wrap;

@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { useProjectDocuments } from '../lib/useProjectDocuments';
+import { useProjectDocuments, type DocumentFolder, type ProjectDocument } from '../lib/useProjectDocuments';
 import { uploadProjectDocument } from '../lib/uploadProjectDocument';
 import { deleteProjectDocument } from '../lib/deleteProjectDocument';
 import { createDocumentFolder, deleteDocumentFolder } from '../lib/documentFolders';
@@ -12,6 +12,156 @@ interface ProjectDocumentsPanelProps {
   emptyLabel?: string;
 }
 
+interface FolderNodeProps {
+  folder: DocumentFolder;
+  depth: number;
+  allFolders: DocumentFolder[];
+  allDocuments: ProjectDocument[];
+  editable: boolean;
+  uploadingKey: string | null;
+  onUpload: (e: ChangeEvent<HTMLInputElement>, folderId: string) => void;
+  onDeleteDocument: (docId: string, fileUrl: string) => void;
+  onCreateSubfolder: (name: string, parentFolderId: string) => Promise<void>;
+  onDeleteFolder: (folderId: string, folderName: string) => void;
+}
+
+function FolderNode({
+  folder,
+  depth,
+  allFolders,
+  allDocuments,
+  editable,
+  uploadingKey,
+  onUpload,
+  onDeleteDocument,
+  onCreateSubfolder,
+  onDeleteFolder,
+}: FolderNodeProps) {
+  const [open, setOpen] = useState(false);
+  const [addingSubfolder, setAddingSubfolder] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  const children = allFolders.filter((f) => f.parent_folder_id === folder.id);
+  const docs = allDocuments.filter((d) => d.folder_id === folder.id);
+
+  async function handleCreate(e: FormEvent) {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    setCreating(true);
+    try {
+      await onCreateSubfolder(newName, folder.id);
+      setNewName('');
+      setAddingSubfolder(false);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  return (
+    <div className="doc-folder" style={depth > 0 ? { marginLeft: 16 } : undefined}>
+      <div className="doc-folder-header-row">
+        <button type="button" className="doc-folder-header" onClick={() => setOpen((v) => !v)}>
+          <span className={`accordion-chevron${open ? ' open' : ''}`}>▸</span>
+          <span className="doc-folder-name">{folder.name}</span>
+          <span className="doc-folder-count">{docs.length}</span>
+        </button>
+        {editable && (
+          <button
+            type="button"
+            className="items-editor-remove-btn"
+            onClick={() => onDeleteFolder(folder.id, folder.name)}
+            title="Delete folder"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="doc-folder-body">
+          {children.map((child) => (
+            <FolderNode
+              key={child.id}
+              folder={child}
+              depth={depth + 1}
+              allFolders={allFolders}
+              allDocuments={allDocuments}
+              editable={editable}
+              uploadingKey={uploadingKey}
+              onUpload={onUpload}
+              onDeleteDocument={onDeleteDocument}
+              onCreateSubfolder={onCreateSubfolder}
+              onDeleteFolder={onDeleteFolder}
+            />
+          ))}
+
+          {docs.length === 0 && children.length === 0 && <p className="accordion-empty">Empty.</p>}
+
+          {docs.map((doc) => (
+            <div key={doc.id} className="doc-row">
+              <a href={doc.file_url} target="_blank" rel="noreferrer">
+                {doc.slot_name}
+              </a>
+              {editable && (
+                <button
+                  type="button"
+                  className="items-editor-remove-btn"
+                  onClick={() => onDeleteDocument(doc.id, doc.file_url)}
+                  title="Delete file"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
+
+          {editable && (
+            <div className="doc-actions-row">
+              <label className="photo-upload-label photo-upload-label-sm">
+                {uploadingKey === folder.id ? 'Uploading…' : '+ Add file'}
+                <input
+                  type="file"
+                  onChange={(e) => onUpload(e, folder.id)}
+                  disabled={uploadingKey === folder.id}
+                />
+              </label>
+
+              {addingSubfolder ? (
+                <form className="doc-folder-add-form" onSubmit={handleCreate}>
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Folder name"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                  />
+                  <button className="doc-form-btn" type="submit" disabled={creating || !newName.trim()}>
+                    {creating ? '…' : 'Create'}
+                  </button>
+                  <button
+                    className="doc-form-btn"
+                    type="button"
+                    onClick={() => {
+                      setAddingSubfolder(false);
+                      setNewName('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </form>
+              ) : (
+                <button type="button" className="doc-folder-add-btn" onClick={() => setAddingSubfolder(true)}>
+                  + Add subfolder
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ProjectDocumentsPanel({
   projectId,
   editable,
@@ -21,7 +171,6 @@ export function ProjectDocumentsPanel({
   const { user } = useAuth();
   const { documents, folders, loading, refresh } = useProjectDocuments(projectId, section);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
-  const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
   const [addingFolder, setAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -44,15 +193,20 @@ export function ProjectDocumentsPanel({
     await refresh();
   }
 
-  async function handleCreateFolder(e: FormEvent) {
+  async function handleCreateFolder(name: string, parentFolderId: string | null) {
+    if (!name.trim() || !user) return;
+    await createDocumentFolder(projectId, name, user.id, section, parentFolderId);
+    await refresh();
+  }
+
+  async function handleCreateRootFolder(e: FormEvent) {
     e.preventDefault();
-    if (!newFolderName.trim() || !user) return;
+    if (!newFolderName.trim()) return;
     setCreatingFolder(true);
     try {
-      await createDocumentFolder(projectId, newFolderName, user.id, section);
+      await handleCreateFolder(newFolderName, null);
       setNewFolderName('');
       setAddingFolder(false);
-      await refresh();
     } finally {
       setCreatingFolder(false);
     }
@@ -67,72 +221,29 @@ export function ProjectDocumentsPanel({
   if (loading) return <p className="accordion-empty">Loading…</p>;
 
   const rootDocs = documents.filter((d) => d.folder_id === null);
+  const rootFolders = folders.filter((f) => f.parent_folder_id === null);
 
   return (
     <>
       {folders.length === 0 && rootDocs.length === 0 && <p className="accordion-empty">{emptyLabel}</p>}
 
-      {folders.map((folder) => {
-        const folderDocs = documents.filter((d) => d.folder_id === folder.id);
-        const open = openFolders[folder.id] ?? false;
-        return (
-          <div key={folder.id} className="doc-folder">
-            <div className="doc-folder-header-row">
-              <button
-                type="button"
-                className="doc-folder-header"
-                onClick={() => setOpenFolders((prev) => ({ ...prev, [folder.id]: !open }))}
-              >
-                <span className={`accordion-chevron${open ? ' open' : ''}`}>▸</span>
-                <span className="doc-folder-name">{folder.name}</span>
-                <span className="doc-folder-count">{folderDocs.length}</span>
-              </button>
-              {editable && (
-                <button
-                  type="button"
-                  className="items-editor-remove-btn"
-                  onClick={() => handleDeleteFolder(folder.id, folder.name)}
-                  title="Delete folder"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-            {open && (
-              <div className="doc-folder-body">
-                {folderDocs.length === 0 && <p className="accordion-empty">No files in this folder yet.</p>}
-                {folderDocs.map((doc) => (
-                  <div key={doc.id} className="doc-row">
-                    <a href={doc.file_url} target="_blank" rel="noreferrer">
-                      {doc.slot_name}
-                    </a>
-                    {editable && (
-                      <button
-                        type="button"
-                        className="items-editor-remove-btn"
-                        onClick={() => handleDeleteDocument(doc.id, doc.file_url)}
-                        title="Delete file"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {editable && (
-                  <label className="photo-upload-label photo-upload-label-sm">
-                    {uploadingKey === folder.id ? 'Uploading…' : '+ Add file'}
-                    <input
-                      type="file"
-                      onChange={(e) => handleUpload(e, folder.id)}
-                      disabled={uploadingKey === folder.id}
-                    />
-                  </label>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {rootFolders.map((folder) => (
+        <div key={folder.id}>
+          <FolderNode
+            folder={folder}
+            depth={0}
+            allFolders={folders}
+            allDocuments={documents}
+            editable={editable}
+            uploadingKey={uploadingKey}
+            onUpload={handleUpload}
+            onDeleteDocument={handleDeleteDocument}
+            onCreateSubfolder={handleCreateFolder}
+            onDeleteFolder={handleDeleteFolder}
+          />
+          {folder.divider_after && <div className="doc-folder-divider" />}
+        </div>
+      ))}
 
       {rootDocs.length > 0 && (
         <div className="doc-folder-body doc-folder-root">
@@ -164,7 +275,7 @@ export function ProjectDocumentsPanel({
           </label>
 
           {addingFolder ? (
-            <form className="doc-folder-add-form" onSubmit={handleCreateFolder}>
+            <form className="doc-folder-add-form" onSubmit={handleCreateRootFolder}>
               <input
                 type="text"
                 autoFocus

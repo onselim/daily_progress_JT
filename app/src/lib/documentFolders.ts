@@ -2,20 +2,45 @@ import { supabase } from './supabase';
 
 const BUCKET = 'project-media';
 
-export async function createDocumentFolder(projectId: string, name: string, createdBy: string, section: string) {
-  const { error } = await supabase
-    .from('document_folders')
-    .insert({ project_id: projectId, name: name.trim(), created_by: createdBy, section });
+export async function createDocumentFolder(
+  projectId: string,
+  name: string,
+  createdBy: string,
+  section: string,
+  parentFolderId?: string | null,
+) {
+  const { error } = await supabase.from('document_folders').insert({
+    project_id: projectId,
+    name: name.trim(),
+    created_by: createdBy,
+    section,
+    parent_folder_id: parentFolderId ?? null,
+  });
   if (error) throw error;
 }
 
-/** Deletes a folder and everything in it: the Storage objects for every document inside,
- * then the folder row (whose `documents` rows cascade-delete via the FK). */
+/** Deletes a folder, every sub-folder beneath it (any depth), and every document in all
+ * of them: the Storage objects first, then the folder row (whose sub-folders and
+ * `documents` rows cascade-delete via FKs). */
 export async function deleteDocumentFolder(folderId: string) {
+  const folderIds = [folderId];
+  let frontier = [folderId];
+  while (frontier.length > 0) {
+    const { data: children, error } = await supabase
+      .from('document_folders')
+      .select('id')
+      .in('parent_folder_id', frontier);
+    if (error) throw error;
+    const childIds = (children ?? []).map((c) => c.id);
+    if (childIds.length === 0) break;
+    folderIds.push(...childIds);
+    frontier = childIds;
+  }
+
   const { data: docs, error: fetchError } = await supabase
     .from('documents')
     .select('file_url')
-    .eq('folder_id', folderId);
+    .in('folder_id', folderIds);
   if (fetchError) throw fetchError;
 
   const marker = `/storage/v1/object/public/${BUCKET}/`;

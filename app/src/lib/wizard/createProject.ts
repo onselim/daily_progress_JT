@@ -2,22 +2,24 @@ import { supabase } from '../supabase';
 import { DEFAULT_DESIGN_ITEMS, DEFAULT_SUPPLY_ITEMS } from './defaultDesignSupplyItems';
 
 // Pre-created "Project documents" folders every new project starts with — the admin can
-// still remove any of these or add more, this is just a convenient default set.
-export const DEFAULT_DOCUMENT_FOLDERS = [
-  'Line Route',
-  'Line Profile',
-  'Structure List',
-  'Tower Design',
-  'Tower Drawings',
-  'Stub Drawings',
-  'Foundation Drawings',
-  'Conductor Drawings',
-  'OPGW Drawings',
-  'EW Drawings',
-  'Hardware-Insulator Set Drawings',
-  'Dampers',
-  'Other Line Materials',
-  'Sag Tension Charts',
+// still remove any of these or add more, this is just a convenient default set. Grouped
+// to match the row gap the client left between "Structure List" and "Tower Design" in
+// their spec — rendered as a visual divider between the two groups.
+export const DEFAULT_DOCUMENT_FOLDER_GROUPS: string[][] = [
+  ['Line Route', 'Line Profile', 'Structure List'],
+  [
+    'Tower Design',
+    'Tower Drawings',
+    'Stub Drawings',
+    'Foundation Drawings',
+    'Conductor Drawings',
+    'OPGW Drawings',
+    'EW Drawings',
+    'Hardware-Insulator Set Drawings',
+    'Dampers',
+    'Other Line Materials',
+    'Sag Tension Charts',
+  ],
 ];
 
 function slugify(name: string): string {
@@ -99,14 +101,29 @@ export async function createProject(input: ProjectBasicsInput) {
   ]);
   if (configError) throw configError;
 
-  const { error: foldersError } = await supabase.from('document_folders').insert(
-    DEFAULT_DOCUMENT_FOLDERS.map((name) => ({
-      project_id: project.id,
-      name,
-      created_by: input.createdBy,
-      section: 'documents',
-    })),
-  );
+  const folderRows: {
+    project_id: string;
+    name: string;
+    created_by: string;
+    section: string;
+    sort_order: number;
+    divider_after: boolean;
+  }[] = [];
+  let sortOrder = 0;
+  DEFAULT_DOCUMENT_FOLDER_GROUPS.forEach((group, groupIdx) => {
+    group.forEach((name, idxInGroup) => {
+      folderRows.push({
+        project_id: project.id,
+        name,
+        created_by: input.createdBy,
+        section: 'documents',
+        sort_order: sortOrder++,
+        divider_after: idxInGroup === group.length - 1 && groupIdx < DEFAULT_DOCUMENT_FOLDER_GROUPS.length - 1,
+      });
+    });
+  });
+
+  const { error: foldersError } = await supabase.from('document_folders').insert(folderRows);
   if (foldersError) throw foldersError;
 
   return project;
