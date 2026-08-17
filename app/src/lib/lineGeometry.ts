@@ -6,6 +6,8 @@ export interface LinePathPoint {
   asset_code: string;
   lat: number;
   lng: number;
+  x: number | null;
+  y: number | null;
   z: number | null;
   station: number | null;
 }
@@ -36,6 +38,17 @@ export function bearingDeg(aLat: number, aLng: number, bLat: number, bLng: numbe
   return (Math.atan2(dLon, dLat) * 180) / Math.PI;
 }
 
+/** Straight-line distance in projected (UTM) meters — more precise than the geodesic
+ * approximation when both points have real x/y, since it's exactly what the structure
+ * list's own coordinates were surveyed in. Falls back to haversine on lat/lng for points
+ * that only have KML-derived coordinates (no x/y). */
+export function pathDistanceMeters(a: LinePathPoint, b: LinePathPoint): number {
+  if (a.x != null && a.y != null && b.x != null && b.y != null) {
+    return Math.hypot(b.x - a.x, b.y - a.y);
+  }
+  return haversineMeters(a.lat, a.lng, b.lat, b.lng);
+}
+
 /**
  * Resolves each asset to a lat/lng, then reconstructs the physical tower-to-tower order
  * by nearest-neighbor chaining on real coordinates. Neither asset_code nor the station/
@@ -43,7 +56,9 @@ export function bearingDeg(aLat: number, aLng: number, bLat: number, bLng: numbe
  * numbering the structure list happened to use, and station text can have gaps/resets
  * from real-world data-entry issues — but towers are always much closer to their true
  * line-neighbors than to any other tower, so walking to the nearest unvisited point each
- * step reliably reconstructs the route from coordinates alone.
+ * step reliably reconstructs the route from coordinates alone. The line always starts at
+ * "G1" (the entry gantry) when one exists, so cumulative length reads the way the client
+ * expects it; otherwise it starts from whichever point sits farthest from the centroid.
  */
 export function resolveLinePath(assets: AssetListItem[], coordinateSystem: string | null): LinePathPoint[] {
   const resolved: LinePathPoint[] = [];
@@ -63,6 +78,8 @@ export function resolveLinePath(assets: AssetListItem[], coordinateSystem: strin
       asset_code: asset.asset_code,
       lat,
       lng,
+      x: asset.x,
+      y: asset.y,
       z: asset.z,
       station: parseStationValue(asset.station),
     });
@@ -70,22 +87,27 @@ export function resolveLinePath(assets: AssetListItem[], coordinateSystem: strin
 
   if (resolved.length <= 2) return resolved;
 
-  let cLat = 0;
-  let cLng = 0;
-  for (const p of resolved) {
-    cLat += p.lat;
-    cLng += p.lng;
-  }
-  cLat /= resolved.length;
-  cLng /= resolved.length;
+  const g1Idx = resolved.findIndex((p) => p.asset_code.trim().toLowerCase() === 'g1');
+  let startIdx = g1Idx;
 
-  let startIdx = 0;
-  let startDist = -1;
-  for (let i = 0; i < resolved.length; i++) {
-    const d = haversineMeters(cLat, cLng, resolved[i].lat, resolved[i].lng);
-    if (d > startDist) {
-      startDist = d;
-      startIdx = i;
+  if (startIdx === -1) {
+    let cLat = 0;
+    let cLng = 0;
+    for (const p of resolved) {
+      cLat += p.lat;
+      cLng += p.lng;
+    }
+    cLat /= resolved.length;
+    cLng /= resolved.length;
+
+    startIdx = 0;
+    let startDist = -1;
+    for (let i = 0; i < resolved.length; i++) {
+      const d = haversineMeters(cLat, cLng, resolved[i].lat, resolved[i].lng);
+      if (d > startDist) {
+        startDist = d;
+        startIdx = i;
+      }
     }
   }
 
@@ -101,7 +123,7 @@ export function resolveLinePath(assets: AssetListItem[], coordinateSystem: strin
     let bestDist = Infinity;
     for (let i = 0; i < resolved.length; i++) {
       if (visited[i]) continue;
-      const d = haversineMeters(cur.lat, cur.lng, resolved[i].lat, resolved[i].lng);
+      const d = pathDistanceMeters(cur, resolved[i]);
       if (d < bestDist) {
         bestDist = d;
         bestIdx = i;

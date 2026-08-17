@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
-import { resolveLinePath, haversineMeters, bearingDeg } from './lineGeometry';
+import { resolveLinePath, pathDistanceMeters, bearingDeg } from './lineGeometry';
 import type { AssetListItem } from './useAssets';
 
 export interface LineSummary {
@@ -12,7 +12,7 @@ export interface LineSummary {
   maxElevation: number | null;
   suspensionPercent: number | null;
   tensionPercent: number | null;
-  hasCategories: boolean;
+  classified: boolean;
 }
 
 export function useLineSummary(
@@ -43,7 +43,13 @@ export function useLineSummary(
   }, [projectId]);
 
   return useMemo(() => {
-    const towerCount = assets.length;
+    // Gantries (terminal structures at each end, coded "G1"/"G2"/... or typed "GANTRY")
+    // are part of the physical line but aren't towers — excluded from the tower count and
+    // the suspension/tension split, still included in the path for total length.
+    const isGantry = (a: AssetListItem) =>
+      a.asset_type?.trim().toLowerCase() === 'gantry' || /^g\d*$/i.test(a.asset_code.trim());
+    const towers = assets.filter((a) => !isGantry(a));
+    const towerCount = towers.length;
     const path = resolveLinePath(assets, coordinateSystem);
 
     let totalLengthM: number | null = null;
@@ -54,7 +60,7 @@ export function useLineSummary(
       totalLengthM = 0;
       longestSpanM = 0;
       for (let i = 0; i < path.length - 1; i++) {
-        const d = haversineMeters(path[i].lat, path[i].lng, path[i + 1].lat, path[i + 1].lng);
+        const d = pathDistanceMeters(path[i], path[i + 1]);
         totalLengthM += d;
         if (d > longestSpanM) longestSpanM = d;
       }
@@ -78,13 +84,22 @@ export function useLineSummary(
     const hasCategories = Object.keys(categories).length > 0;
     let suspensionPercent: number | null = null;
     let tensionPercent: number | null = null;
-    if (hasCategories && towerCount > 0) {
+    let classified = false;
+    if (towerCount > 0) {
       let suspensionCount = 0;
       let tensionCount = 0;
-      for (const a of assets) {
-        const cat = a.asset_type ? categories[a.asset_type] : undefined;
+      for (const a of towers) {
+        let cat: string | undefined;
+        if (hasCategories) {
+          cat = a.asset_type ? categories[a.asset_type] : undefined;
+        } else if (a.asset_type) {
+          // No explicit classification for this project: "BNS..." types are the
+          // Normal Suspension towers, everything else (B30/B60/B90/BLC/BLS...) is Tension.
+          cat = a.asset_type.trim().toUpperCase().startsWith('BNS') ? 'suspension' : 'tension';
+        }
         if (cat === 'suspension') suspensionCount++;
         else if (cat === 'tension') tensionCount++;
+        if (cat) classified = true;
       }
       suspensionPercent = (suspensionCount / towerCount) * 100;
       tensionPercent = (tensionCount / towerCount) * 100;
@@ -99,7 +114,7 @@ export function useLineSummary(
       maxElevation,
       suspensionPercent,
       tensionPercent,
-      hasCategories,
+      classified,
     };
   }, [assets, coordinateSystem, categories]);
 }

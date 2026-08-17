@@ -15,7 +15,7 @@ interface RightPanelStackProps {
 export function RightPanelStack({ projectId, editable, weatherLat, weatherLng, lineSummary }: RightPanelStackProps) {
   return (
     <div className="right-panel-stack">
-      <AccordionPanel title="Line summary" defaultOpen>
+      <AccordionPanel title="Line summary">
         <LineSummaryPanel summary={lineSummary} />
       </AccordionPanel>
 

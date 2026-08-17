@@ -44,9 +44,9 @@ export function LineSummaryPanel({ summary }: LineSummaryPanelProps) {
           <span className="line-summary-label">{item.label}</span>
         </div>
       ))}
-      {!summary.hasCategories && (
+      {!summary.classified && (
         <p className="accordion-empty line-summary-note">
-          Suspension/Tension % needs tower types classified during the structure list import.
+          Suspension/Tension % needs tower types set during the structure list import.
         </p>
       )}
     </div>
