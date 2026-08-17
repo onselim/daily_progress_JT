@@ -25,22 +25,25 @@ function formatPercent(p: number | null): string {
 }
 
 export function LineSummaryPanel({ summary }: LineSummaryPanelProps) {
-  const items: { label: string; value: string }[] = [
+  const items: { label: string; value: string; note?: string | null }[] = [
     { label: 'Total length', value: formatKm(summary.totalLengthM) },
     { label: 'Towers', value: summary.towerCount.toLocaleString() },
     { label: 'Suspension', value: formatPercent(summary.suspensionPercent) },
     { label: 'Tension', value: formatPercent(summary.tensionPercent) },
     { label: 'Angle points', value: summary.angleCount != null ? summary.angleCount.toLocaleString() : '—' },
-    { label: 'Longest span', value: formatM(summary.longestSpanM) },
-    { label: 'Highest elevation', value: formatElevation(summary.maxElevation) },
-    { label: 'Lowest elevation', value: formatElevation(summary.minElevation) },
+    { label: 'Longest span', value: formatM(summary.longestSpanM), note: summary.longestSpanLabel },
+    { label: 'Highest elevation', value: formatElevation(summary.maxElevation), note: summary.maxElevationCode },
+    { label: 'Lowest elevation', value: formatElevation(summary.minElevation), note: summary.minElevationCode },
   ];
 
   return (
     <div className="line-summary-grid">
       {items.map((item) => (
         <div key={item.label} className="line-summary-item">
-          <span className="line-summary-value">{item.value}</span>
+          <span className="line-summary-value">
+            {item.value}
+            {item.note && <span className="line-summary-note-inline"> ({item.note})</span>}
+          </span>
           <span className="line-summary-label">{item.label}</span>
         </div>
       ))}

@@ -7,9 +7,12 @@ export interface LineSummary {
   towerCount: number;
   totalLengthM: number | null;
   longestSpanM: number | null;
+  longestSpanLabel: string | null;
   angleCount: number | null;
   minElevation: number | null;
+  minElevationCode: string | null;
   maxElevation: number | null;
+  maxElevationCode: string | null;
   suspensionPercent: number | null;
   tensionPercent: number | null;
   classified: boolean;
@@ -54,6 +57,7 @@ export function useLineSummary(
 
     let totalLengthM: number | null = null;
     let longestSpanM: number | null = null;
+    let longestSpanLabel: string | null = null;
     let angleCount: number | null = null;
 
     if (path.length >= 2) {
@@ -62,7 +66,10 @@ export function useLineSummary(
       for (let i = 0; i < path.length - 1; i++) {
         const d = pathDistanceMeters(path[i], path[i + 1]);
         totalLengthM += d;
-        if (d > longestSpanM) longestSpanM = d;
+        if (d > longestSpanM) {
+          longestSpanM = d;
+          longestSpanLabel = `${path[i].asset_code}–${path[i + 1].asset_code}`;
+        }
       }
 
       // Start and end structures are angle/terminal points by convention, plus every
@@ -77,9 +84,21 @@ export function useLineSummary(
       }
     }
 
-    const elevations = assets.map((a) => a.z).filter((z): z is number => z != null);
-    const minElevation = elevations.length > 0 ? Math.min(...elevations) : null;
-    const maxElevation = elevations.length > 0 ? Math.max(...elevations) : null;
+    let minElevation: number | null = null;
+    let maxElevation: number | null = null;
+    let minElevationCode: string | null = null;
+    let maxElevationCode: string | null = null;
+    for (const a of assets) {
+      if (a.z == null) continue;
+      if (minElevation == null || a.z < minElevation) {
+        minElevation = a.z;
+        minElevationCode = a.asset_code;
+      }
+      if (maxElevation == null || a.z > maxElevation) {
+        maxElevation = a.z;
+        maxElevationCode = a.asset_code;
+      }
+    }
 
     const hasCategories = Object.keys(categories).length > 0;
     let suspensionPercent: number | null = null;
@@ -109,9 +128,12 @@ export function useLineSummary(
       towerCount,
       totalLengthM,
       longestSpanM,
+      longestSpanLabel,
       angleCount,
       minElevation,
+      minElevationCode,
       maxElevation,
+      maxElevationCode,
       suspensionPercent,
       tensionPercent,
       classified,

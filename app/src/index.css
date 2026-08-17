@@ -1377,6 +1377,13 @@ button:disabled {
   padding: 6px 0 0;
 }
 
+.line-summary-note-inline {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 400;
+  color: #7a8099;
+}
+
 .pw-item-list {
   display: flex;
   flex-direction: column;
