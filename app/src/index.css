@@ -1335,6 +1335,45 @@ button:disabled {
   transform: rotate(90deg);
 }
 
+/* The floating Line summary/Project documents/Layers/Weather forecast stack over the
+   map — roughly halved on phones, it was taking up most of the screen width stacked
+   four tabs tall. */
+@media (max-width: 720px) {
+  .right-panel-stack {
+    top: 8px;
+    right: 8px;
+    width: 130px;
+    gap: 4px;
+    max-height: calc(100% - 16px);
+  }
+
+  .accordion-panel {
+    border-radius: 6px;
+  }
+
+  .accordion-header {
+    padding: 4px 6px;
+    font-size: 8px;
+  }
+
+  .accordion-header-title {
+    gap: 4px;
+  }
+
+  .accordion-badge {
+    font-size: 8px;
+  }
+
+  .accordion-chevron {
+    font-size: 8px;
+  }
+
+  .accordion-body {
+    padding: 2px 6px 6px;
+    font-size: 9px;
+  }
+}
+
 .accordion-body {
   padding: 4px 12px 12px;
   border-top: 1px solid var(--border);
