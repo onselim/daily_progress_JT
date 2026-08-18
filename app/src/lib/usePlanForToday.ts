@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase';
+import type { WorkItemConfig } from './useProjectConfig';
 
 export interface PlanForTodayEntry {
   assetId: string;
@@ -19,9 +20,10 @@ function todayIso() {
  * (asset_work_items.status practically never reaches 'in_progress' in real field data —
  * items go straight from not_started to completed — so deriving "ongoing" from per-item
  * status would always read empty; the asset-level flag is the one that's actually kept
- * up to date.)
+ * up to date.) The specific ongoing activity shown per tower is its first not-yet-completed
+ * item in the project's canonical work-item order — the "next thing to do" at that tower.
  */
-export function usePlanForToday(projectId: string | undefined) {
+export function usePlanForToday(projectId: string | undefined, workItems: WorkItemConfig[]) {
   const [entries, setEntries] = useState<PlanForTodayEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +32,7 @@ export function usePlanForToday(projectId: string | undefined) {
     setLoading(true);
 
     const today = todayIso();
-    const [completedResult, ongoingResult] = await Promise.all([
+    const [completedResult, activeAssetsResult] = await Promise.all([
       supabase
         .from('asset_work_items')
         .select('work_item_key, asset:assets!inner(id, asset_code, project_id)')
@@ -52,15 +54,33 @@ export function usePlanForToday(projectId: string | undefined) {
         });
       }
     }
-    if (!ongoingResult.error && ongoingResult.data) {
-      for (const row of ongoingResult.data) {
-        next.push({ assetId: row.id, assetCode: row.asset_code, workItemKey: null, kind: 'ongoing' });
+
+    if (!activeAssetsResult.error && activeAssetsResult.data && activeAssetsResult.data.length > 0) {
+      const activeAssets = activeAssetsResult.data;
+      const { data: itemRows } = await supabase
+        .from('asset_work_items')
+        .select('asset_id, work_item_key, status')
+        .in(
+          'asset_id',
+          activeAssets.map((a) => a.id),
+        );
+
+      const statusByAssetKey: Record<string, Record<string, string>> = {};
+      for (const row of itemRows ?? []) {
+        (statusByAssetKey[row.asset_id] ??= {})[row.work_item_key] = row.status;
+      }
+
+      for (const a of activeAssets) {
+        const statuses = statusByAssetKey[a.id] ?? {};
+        const nextItem = workItems.find((w) => (statuses[w.key] ?? 'not_started') !== 'completed');
+        next.push({ assetId: a.id, assetCode: a.asset_code, workItemKey: nextItem?.key ?? null, kind: 'ongoing' });
       }
     }
+
     next.sort((a, b) => a.assetCode.localeCompare(b.assetCode, undefined, { numeric: true }));
     setEntries(next);
     setLoading(false);
-  }, [projectId]);
+  }, [projectId, workItems]);
 
   useEffect(() => {
     if (!projectId) return;

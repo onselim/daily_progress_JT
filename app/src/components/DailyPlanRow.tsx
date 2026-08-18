@@ -18,7 +18,7 @@ type Tab = 'today' | 'tomorrow' | null;
 export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSignal }: DailyPlanRowProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>(null);
-  const { entries: todayEntries, loading: todayLoading, refresh: refreshToday } = usePlanForToday(projectId);
+  const { entries: todayEntries, loading: todayLoading, refresh: refreshToday } = usePlanForToday(projectId, workItems);
   const { entries: tomorrowEntries, loading: tomorrowLoading, refresh: refreshTomorrow } = usePlannedTomorrow(projectId);
   const [pickAsset, setPickAsset] = useState('');
   const [pickWorkItem, setPickWorkItem] = useState('');
