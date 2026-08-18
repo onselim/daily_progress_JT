@@ -9,7 +9,7 @@ export default function PublicViewerPage() {
   const { slug } = useParams<{ slug: string }>();
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
-  const restrictedAssetIds = useRestrictedToday(project?.id);
+  const { restrictedAssetIds } = useRestrictedToday(project?.id);
 
   if (loading) return <div className="page-loading">Loading…</div>;
 

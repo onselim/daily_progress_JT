@@ -142,9 +142,10 @@ interface AssetEditorProps {
   projectId: string;
   assetId: string;
   editable?: boolean;
+  onSaved?: () => void;
 }
 
-export function AssetEditor({ projectId, assetId, editable = true }: AssetEditorProps) {
+export function AssetEditor({ projectId, assetId, editable = true, onSaved }: AssetEditorProps) {
   const { user } = useAuth();
   const { workItems, loading: workItemsLoading } = useWorkItemsConfig(projectId);
   const { photos, loading: photosLoading, refresh: refreshPhotos } = useAssetPhotos(assetId);
@@ -263,6 +264,7 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
     });
 
     setMessage('Saved.');
+    onSaved?.();
   }
 
   async function handlePhotoUpload(e: ChangeEvent<HTMLInputElement>, category: string) {

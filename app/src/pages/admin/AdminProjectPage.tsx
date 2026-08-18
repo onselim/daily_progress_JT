@@ -14,7 +14,7 @@ export default function AdminProjectPage() {
   const { signOut } = useAuth();
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
-  const restrictedAssetIds = useRestrictedToday(project?.id);
+  const { restrictedAssetIds } = useRestrictedToday(project?.id);
   const [showDelete, setShowDelete] = useState(false);
 
   if (loading) return <div className="page-loading">Loading…</div>;

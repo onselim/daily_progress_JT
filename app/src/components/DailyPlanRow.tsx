@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { usePlanForToday } from '../lib/usePlanForToday';
 import { usePlannedTomorrow, addPlannedActivity, removePlannedActivity } from '../lib/usePlannedTomorrow';
@@ -10,18 +10,27 @@ interface DailyPlanRowProps {
   assets: AssetListItem[];
   workItems: WorkItemConfig[];
   editable: boolean;
+  refreshSignal?: number;
 }
 
 type Tab = 'today' | 'tomorrow' | null;
 
-export function DailyPlanRow({ projectId, assets, workItems, editable }: DailyPlanRowProps) {
+export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSignal }: DailyPlanRowProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>(null);
-  const { entries: todayEntries, loading: todayLoading } = usePlanForToday(projectId);
+  const { entries: todayEntries, loading: todayLoading, refresh: refreshToday } = usePlanForToday(projectId);
   const { entries: tomorrowEntries, loading: tomorrowLoading, refresh: refreshTomorrow } = usePlannedTomorrow(projectId);
   const [pickAsset, setPickAsset] = useState('');
   const [pickWorkItem, setPickWorkItem] = useState('');
   const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    if (refreshSignal === undefined) return;
+    refreshToday();
+    refreshTomorrow();
+    // Only re-run when the parent's save signal changes, not on every refresh() identity change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshSignal]);
 
   function labelFor(key: string) {
     return workItems.find((w) => w.key === key)?.label ?? key;

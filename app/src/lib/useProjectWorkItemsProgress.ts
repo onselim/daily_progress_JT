@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase';
 
 export function useProjectWorkItemsProgress(projectId: string | undefined) {
@@ -6,17 +6,15 @@ export function useProjectWorkItemsProgress(projectId: string | undefined) {
   const [percentByAssetAndKey, setPercentByAssetAndKey] = useState<Record<string, Record<string, number>>>({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     if (!projectId) return;
-    let cancelled = false;
     setLoading(true);
 
-    supabase
+    return supabase
       .from('asset_work_items')
       .select('asset_id, work_item_key, percent_complete, asset:assets!inner(project_id)')
       .eq('asset.project_id', projectId)
       .then(({ data, error }) => {
-        if (cancelled) return;
         if (!error && data) {
           const sums: Record<string, { total: number; count: number }> = {};
           const byAssetAndKey: Record<string, Record<string, number>> = {};
@@ -39,11 +37,12 @@ export function useProjectWorkItemsProgress(projectId: string | undefined) {
         }
         setLoading(false);
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [projectId]);
 
-  return { progressByAsset, percentByAssetAndKey, loading };
+  useEffect(() => {
+    if (!projectId) return;
+    refresh();
+  }, [projectId, refresh]);
+
+  return { progressByAsset, percentByAssetAndKey, loading, refresh };
 }

@@ -20,12 +20,23 @@ interface AssetWorkspaceProps {
 
 export function AssetWorkspace({ projectId, coordinateSystem, editable = true }: AssetWorkspaceProps) {
   const [selectedAssetId, setSelectedAssetId] = useState('');
+  const [dailyRefreshSignal, setDailyRefreshSignal] = useState(0);
   const { assets } = useAssets(projectId);
-  const { progressByAsset, percentByAssetAndKey } = useProjectWorkItemsProgress(projectId);
-  const restrictedAssetIds = useRestrictedToday(projectId);
+  const {
+    progressByAsset,
+    percentByAssetAndKey,
+    refresh: refreshProgress,
+  } = useProjectWorkItemsProgress(projectId);
+  const { restrictedAssetIds, refresh: refreshRestricted } = useRestrictedToday(projectId);
   const { workItems } = useWorkItemsConfig(projectId);
   const groundWireConfig = useGroundWireConfig(projectId);
   const lineSummary = useLineSummary(projectId, assets, coordinateSystem);
+
+  function handleAssetSaved() {
+    refreshProgress();
+    refreshRestricted();
+    setDailyRefreshSignal((s) => s + 1);
+  }
 
   const [weatherLat, weatherLng] = useMemo((): [number | null, number | null] => {
     if (!coordinateSystem || assets.length === 0) return [null, null];
@@ -44,7 +55,13 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true }:
 
   return (
     <>
-      <DailyPlanRow projectId={projectId} assets={assets} workItems={workItems} editable={editable} />
+      <DailyPlanRow
+        projectId={projectId}
+        assets={assets}
+        workItems={workItems}
+        editable={editable}
+        refreshSignal={dailyRefreshSignal}
+      />
       <div className="project-body">
         <AssetList
         projectId={projectId}
@@ -83,7 +100,13 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true }:
             >
               ×
             </button>
-            <AssetEditor key={selectedAssetId} projectId={projectId} assetId={selectedAssetId} editable={editable} />
+            <AssetEditor
+              key={selectedAssetId}
+              projectId={projectId}
+              assetId={selectedAssetId}
+              editable={editable}
+              onSaved={handleAssetSaved}
+            />
           </div>
         )}
       </div>
