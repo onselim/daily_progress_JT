@@ -855,7 +855,15 @@ button:disabled {
   min-height: 60px;
   background: var(--panel-bg);
   border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
+  /* Everything (title, %, tab, headline counts, stat pills, action buttons) stays on one
+     line — scrolls horizontally on narrow desktop windows rather than wrapping to a
+     second row, which is what frees up the row below for Plan for Today/Tomorrow. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.project-topbar-left {
+  flex-shrink: 0;
 }
 
 .project-topbar-left h1 {
@@ -878,8 +886,9 @@ button:disabled {
 .project-topbar-stats {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 10px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
   padding: 4px 0;
 }
 
@@ -890,6 +899,7 @@ button:disabled {
   display: flex;
   gap: 6px;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .project-topbar-actions button {
@@ -924,6 +934,7 @@ button:disabled {
 
 .pgb {
   position: relative;
+  flex-shrink: 0;
 }
 
 .pgb-tabs {
@@ -1037,8 +1048,9 @@ button:disabled {
 .pgb-headline-stats {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 10px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
   padding: 4px 0;
 }
 
@@ -1096,11 +1108,15 @@ button:disabled {
   }
 
   /* Cap and scroll the topbar so the map below always keeps the lion's share of the
-     screen — together with the asset list's own cap, this leaves the map ~78%+. */
+     screen — together with the asset list's own cap, this leaves the map ~78%+. On
+     phones this stacks/wraps vertically again rather than the desktop's one-line
+     horizontal-scroll layout — there's no room to scroll sideways usefully here. */
   .project-topbar {
     max-height: 11vh;
     overflow-y: auto;
+    overflow-x: visible;
     align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .project-topbar-actions {
