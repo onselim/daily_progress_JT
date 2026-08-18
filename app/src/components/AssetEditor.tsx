@@ -27,6 +27,14 @@ const STATUS_OPTIONS: { value: WorkItemStatus; label: string }[] = [
   { value: 'completed', label: 'Completed' },
 ];
 
+const RESTRICTION_REASONS: { value: string; label: string }[] = [
+  { value: 'not_approved', label: 'Not approved' },
+  { value: 'no_permit', label: 'No Permit' },
+  { value: 'no_access', label: 'No Access' },
+  { value: 'land_owner_problem', label: 'Land Owner Problem' },
+  { value: 'other', label: 'Other' },
+];
+
 const PERCENT_BY_STATUS: Record<WorkItemStatus, number> = {
   not_started: 0,
   in_progress: 50,
@@ -147,9 +155,9 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
   const [station, setStation] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [statusByKey, setStatusByKey] = useState<Record<string, WorkItemStatus>>({});
-  const [completedToday, setCompletedToday] = useState('');
-  const [plannedTomorrow, setPlannedTomorrow] = useState('');
+  const [completedDateByKey, setCompletedDateByKey] = useState<Record<string, string>>({});
   const [siteAccessStatus, setSiteAccessStatus] = useState('normal');
+  const [restrictionReason, setRestrictionReason] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -167,10 +175,13 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
 
     Promise.all([
       supabase.from('assets').select('asset_code, asset_type, station, notes').eq('id', assetId).maybeSingle(),
-      supabase.from('asset_work_items').select('work_item_key, percent_complete').eq('asset_id', assetId),
+      supabase
+        .from('asset_work_items')
+        .select('work_item_key, percent_complete, completed_at')
+        .eq('asset_id', assetId),
       supabase
         .from('asset_daily_log')
-        .select('completed_today, planned_tomorrow, site_access_status')
+        .select('site_access_status, restriction_reason')
         .eq('asset_id', assetId)
         .eq('log_date', todayIso())
         .maybeSingle(),
@@ -183,14 +194,16 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
       setNotes(assetRes.data?.notes ?? '');
 
       const next: Record<string, WorkItemStatus> = {};
+      const nextDates: Record<string, string> = {};
       for (const item of workItemsRes.data ?? []) {
         next[item.work_item_key] = statusFromPercent(Number(item.percent_complete));
+        if (item.completed_at) nextDates[item.work_item_key] = item.completed_at.slice(0, 10);
       }
       setStatusByKey(next);
+      setCompletedDateByKey(nextDates);
 
-      setCompletedToday(logRes.data?.completed_today ?? '');
-      setPlannedTomorrow(logRes.data?.planned_tomorrow ?? '');
       setSiteAccessStatus(logRes.data?.site_access_status ?? 'normal');
+      setRestrictionReason(logRes.data?.restriction_reason ?? '');
 
       setLoading(false);
     });
@@ -208,12 +221,13 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
 
     const workItemRows = workItems.map((item) => {
       const status = statusByKey[item.key] ?? 'not_started';
+      const completedDate = completedDateByKey[item.key] || todayIso();
       return {
         asset_id: assetId,
         work_item_key: item.key,
         percent_complete: PERCENT_BY_STATUS[status],
         status,
-        completed_at: status === 'completed' ? new Date().toISOString() : null,
+        completed_at: status === 'completed' ? new Date(`${completedDate}T12:00:00Z`).toISOString() : null,
         updated_by: user.id,
       };
     });
@@ -224,9 +238,8 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
         {
           asset_id: assetId,
           log_date: todayIso(),
-          completed_today: completedToday,
-          planned_tomorrow: plannedTomorrow,
           site_access_status: siteAccessStatus,
+          restriction_reason: siteAccessStatus === 'restricted' ? restrictionReason || null : null,
           updated_by: user.id,
         },
         { onConflict: 'asset_id,log_date' },
@@ -366,27 +379,16 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
         ))}
       </div>
 
-      {isRestricted ? (
+      {isRestricted && (
         <div className="access-banner">
           <span className="access-banner-icon">⛔</span>
           <div>
             <div className="access-banner-title">Site Access Restricted</div>
-            <div className="access-banner-sub">Non-working day — unfavourable weather/terrain</div>
+            <div className="access-banner-sub">
+              {RESTRICTION_REASONS.find((r) => r.value === restrictionReason)?.label ?? 'Reason not set'}
+            </div>
           </div>
         </div>
-      ) : (
-        (completedToday || plannedTomorrow) && (
-          <div className="daily-cards">
-            <div className="daily-card daily-card-today">
-              <div className="daily-card-lbl">✅ Today</div>
-              <div className="daily-card-val">{completedToday || '—'}</div>
-            </div>
-            <div className="daily-card daily-card-next">
-              <div className="daily-card-lbl">📋 Next day</div>
-              <div className="daily-card-val">{plannedTomorrow || '—'}</div>
-            </div>
-          </div>
-        )
       )}
 
       {!workItemsLoading &&
@@ -419,6 +421,11 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
                       {!editable && (
                         <span className="task-status" style={{ color: itemColor }}>
                           {STATUS_OPTIONS.find((o) => o.value === current)?.label}
+                          {current === 'completed' && completedDateByKey[item.key] && (
+                            <span className="completed-date-stamp completed-date-stamp-inline">
+                              {completedDateByKey[item.key]}
+                            </span>
+                          )}
                         </span>
                       )}
                       <button
@@ -448,11 +455,29 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
                             key={opt.value}
                             type="button"
                             className={`status-btn status-btn-${opt.value}${current === opt.value ? ' active' : ''}`}
-                            onClick={() => setStatusByKey((prev) => ({ ...prev, [item.key]: opt.value }))}
+                            onClick={() => {
+                              setStatusByKey((prev) => ({ ...prev, [item.key]: opt.value }));
+                              if (opt.value === 'completed' && !completedDateByKey[item.key]) {
+                                setCompletedDateByKey((prev) => ({ ...prev, [item.key]: todayIso() }));
+                              }
+                            }}
                           >
                             {opt.label}
+                            {opt.value === 'completed' && current === 'completed' && completedDateByKey[item.key] && (
+                              <span className="completed-date-stamp">{completedDateByKey[item.key]}</span>
+                            )}
                           </button>
                         ))}
+                        {current === 'completed' && (
+                          <input
+                            type="date"
+                            className="completed-date-input"
+                            value={completedDateByKey[item.key] ?? todayIso()}
+                            onChange={(e) =>
+                              setCompletedDateByKey((prev) => ({ ...prev, [item.key]: e.target.value }))
+                            }
+                          />
+                        )}
                       </div>
                     )}
 
@@ -512,22 +537,41 @@ export function AssetEditor({ projectId, assetId, editable = true }: AssetEditor
       {editable && (
         <>
           <label>
-            Completed today
-            <textarea value={completedToday} onChange={(e) => setCompletedToday(e.target.value)} rows={2} />
-          </label>
-
-          <label>
-            Planned for tomorrow
-            <textarea value={plannedTomorrow} onChange={(e) => setPlannedTomorrow(e.target.value)} rows={2} />
-          </label>
-
-          <label>
             Site access
-            <select value={siteAccessStatus} onChange={(e) => setSiteAccessStatus(e.target.value)}>
-              <option value="normal">Normal working day</option>
-              <option value="restricted">Non-working day — unfavourable weather/terrain</option>
-            </select>
+            <div className="status-toggle site-access-toggle" role="group" aria-label="Site access">
+              <button
+                type="button"
+                className={`status-btn status-btn-workable${siteAccessStatus === 'normal' ? ' active' : ''}`}
+                onClick={() => {
+                  setSiteAccessStatus('normal');
+                  setRestrictionReason('');
+                }}
+              >
+                Workable
+              </button>
+              <button
+                type="button"
+                className={`status-btn status-btn-restricted${siteAccessStatus === 'restricted' ? ' active' : ''}`}
+                onClick={() => setSiteAccessStatus('restricted')}
+              >
+                Restricted
+              </button>
+            </div>
           </label>
+
+          {siteAccessStatus === 'restricted' && (
+            <label>
+              Restriction reason
+              <select value={restrictionReason} onChange={(e) => setRestrictionReason(e.target.value)}>
+                <option value="">— select —</option>
+                {RESTRICTION_REASONS.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <label>
             Notes

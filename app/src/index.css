@@ -284,6 +284,51 @@ button:disabled {
   color: #fff;
 }
 
+.status-btn.active.status-btn-workable {
+  background: #00d4aa;
+  border-color: #00d4aa;
+  color: #0f1117;
+}
+
+.status-btn.active.status-btn-restricted {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+.completed-date-stamp {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.75);
+  text-transform: none;
+  transform: rotate(-3deg);
+  opacity: 0.85;
+}
+
+.completed-date-stamp-inline {
+  display: inline-block;
+  margin-top: 0;
+  margin-left: 6px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding: 0 3px;
+}
+
+.completed-date-input {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 11px;
+  padding: 5px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
 .form-message {
   margin: 0;
   font-size: 13px;
