@@ -1731,15 +1731,13 @@ button:disabled {
   color: var(--accent);
 }
 
+/* Lives inline in .project-topbar now (moved up out of its own row) — just a relative
+   anchor for the dropdown, no more full-row background/border of its own. */
 .daily-plan-row {
   position: relative;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 3px 20px;
-  background: var(--panel-bg);
-  border-bottom: 1px solid var(--border);
 }
 
 .daily-plan-tabs {
@@ -1778,7 +1776,7 @@ button:disabled {
 .daily-plan-detail {
   position: absolute;
   top: 100%;
-  left: 20px;
+  left: 0;
   margin-top: 6px;
   width: 380px;
   max-width: min(90vw, 440px);
@@ -1850,11 +1848,6 @@ button:disabled {
 }
 
 @media (max-width: 720px) {
-  .daily-plan-row {
-    padding: 4px 8px;
-    gap: 6px;
-  }
-
   .daily-plan-tab {
     font-size: 8px;
     padding: 3px 6px;
@@ -1862,7 +1855,7 @@ button:disabled {
   }
 
   .daily-plan-detail {
-    left: 8px;
+    left: 0;
     width: calc(100vw - 32px);
     font-size: 10px;
   }
