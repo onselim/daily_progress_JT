@@ -32,7 +32,8 @@ export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshSignal]);
 
-  function labelFor(key: string) {
+  function labelFor(key: string | null) {
+    if (key === null) return 'Active';
     return workItems.find((w) => w.key === key)?.label ?? key;
   }
 
