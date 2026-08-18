@@ -837,7 +837,7 @@ button:disabled {
   overflow: hidden;
 }
 
-.project-shell button:not(.status-btn):not(.asset-list-item):not(.basemap-btn):not(.basemap-menu-btn):not(.accordion-header):not(.asset-filter-btn):not(.items-editor-remove-btn):not(.doc-folder-header):not(.doc-folder-add-btn):not(.doc-form-btn) {
+.project-shell button:not(.status-btn):not(.asset-list-item):not(.basemap-btn):not(.basemap-menu-btn):not(.accordion-header):not(.asset-filter-btn):not(.items-editor-remove-btn):not(.doc-folder-header):not(.doc-folder-add-btn):not(.doc-form-btn):not(.daily-plan-tab) {
   color: #0f1117;
 }
 
@@ -1729,6 +1729,143 @@ button:disabled {
 .doc-form-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.daily-plan-row {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 20px;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.daily-plan-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.daily-plan-tab {
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.daily-plan-tab:hover {
+  border-color: var(--accent);
+  color: var(--text-h);
+}
+
+.daily-plan-tab.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0, 212, 170, 0.08);
+}
+
+.daily-plan-tab-count {
+  font-family: var(--mono);
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.daily-plan-detail {
+  position: absolute;
+  top: 100%;
+  left: 20px;
+  margin-top: 6px;
+  width: 380px;
+  max-width: min(90vw, 440px);
+  max-height: 50vh;
+  overflow-y: auto;
+  background: rgba(15, 17, 23, 0.98);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  z-index: 1200;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.daily-plan-group {
+  margin-bottom: 10px;
+}
+
+.daily-plan-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin-bottom: 4px;
+}
+
+.daily-plan-row-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.daily-plan-row-item:last-child {
+  border-bottom: none;
+}
+
+.daily-plan-tower {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.daily-plan-activity {
+  color: var(--text-h);
+}
+
+.daily-plan-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.daily-plan-add-row select {
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  flex: 1;
+  min-width: 100px;
+}
+
+@media (max-width: 720px) {
+  .daily-plan-row {
+    padding: 4px 8px;
+    gap: 6px;
+  }
+
+  .daily-plan-tab {
+    font-size: 8px;
+    padding: 3px 6px;
+    border-radius: 5px;
+  }
+
+  .daily-plan-detail {
+    left: 8px;
+    width: calc(100vw - 32px);
+    font-size: 10px;
+  }
 }
 
 /* Project documents / Layers panels (both render via ProjectDocumentsPanel, scoped

@@ -3,6 +3,7 @@ import { AssetList } from './AssetList';
 import { AssetEditor } from './AssetEditor';
 import { MapView } from './MapView';
 import { RightPanelStack } from './RightPanelStack';
+import { DailyPlanRow } from './DailyPlanRow';
 import { useAssets } from '../lib/useAssets';
 import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress';
 import { useRestrictedToday } from '../lib/useRestrictedToday';
@@ -42,8 +43,10 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true }:
   }, [assets, coordinateSystem]);
 
   return (
-    <div className="project-body">
-      <AssetList
+    <>
+      <DailyPlanRow projectId={projectId} assets={assets} workItems={workItems} editable={editable} />
+      <div className="project-body">
+        <AssetList
         projectId={projectId}
         selectedAssetId={selectedAssetId}
         onSelect={setSelectedAssetId}
@@ -84,6 +87,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true }:
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
