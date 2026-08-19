@@ -850,7 +850,7 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 16px;
+  gap: 10px;
   padding: 4px 20px;
   min-height: 44px;
   background: var(--panel-bg);
@@ -882,7 +882,7 @@ button:disabled {
 .project-topbar-stats {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   flex-wrap: nowrap;
   flex-shrink: 0;
   padding: 4px 0;
@@ -899,15 +899,15 @@ button:disabled {
 }
 
 .project-topbar-actions button {
-  padding: 4px 10px;
-  font-size: 11px;
+  padding: 3px 8px;
+  font-size: 10px;
 }
 
 .stat-pill {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
+  gap: 4px;
+  font-size: 10px;
   white-space: nowrap;
 }
 
@@ -1044,7 +1044,7 @@ button:disabled {
 .pgb-headline-stats {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   flex-wrap: nowrap;
   flex-shrink: 0;
   padding: 4px 0;
@@ -1734,24 +1734,20 @@ button:disabled {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 3px 20px;
-  background: var(--panel-bg);
-  border-bottom: 1px solid var(--border);
 }
 
 .daily-plan-tabs {
   display: flex;
-  gap: 8px;
+  gap: 5px;
 }
 
 /* Soft, muted green (a paler tint of the app's own teal accent) so these sit quietly
    next to the vivid Active/No Access/Completed pills instead of competing with them. */
 .daily-plan-tab {
   font: inherit;
-  font-size: 11px;
-  padding: 3px 10px;
-  border-radius: 6px;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 5px;
   background: rgba(0, 212, 170, 0.06);
   border: 1px solid rgba(0, 212, 170, 0.2);
   color: #5eead4;

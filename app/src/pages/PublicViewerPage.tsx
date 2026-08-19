@@ -2,14 +2,19 @@ import { useParams } from 'react-router-dom';
 import { useProjectBySlug } from '../lib/useProject';
 import { useAssetStats } from '../lib/useAssetStats';
 import { useRestrictedToday } from '../lib/useRestrictedToday';
+import { useAssets } from '../lib/useAssets';
+import { useWorkItemsConfig } from '../lib/useProjectConfig';
 import { AssetWorkspace } from '../components/AssetWorkspace';
 import { ProjectProgressBar } from '../components/ProjectProgressBar';
+import { DailyPlanRow } from '../components/DailyPlanRow';
 
 export default function PublicViewerPage() {
   const { slug } = useParams<{ slug: string }>();
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
   const { restrictedAssetIds } = useRestrictedToday(project?.id);
+  const { assets } = useAssets(project?.id);
+  const { workItems } = useWorkItemsConfig(project?.id);
 
   if (loading) return <div className="page-loading">Loading…</div>;
 
@@ -30,6 +35,8 @@ export default function PublicViewerPage() {
         </div>
 
         <ProjectProgressBar projectId={project.id} projectSlug={project.slug} editable={false} isAdmin={false} />
+
+        <DailyPlanRow projectId={project.id} assets={assets} workItems={workItems} editable={false} />
 
         <div className="project-topbar-stats">
           <span className="stat-pill">
