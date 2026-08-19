@@ -15,6 +15,11 @@ interface RightPanelStackProps {
   foundationTypes: FoundationTypeConfig[];
   heatmapEnabled: boolean;
   onToggleHeatmap: () => void;
+  heatmapRangeFrom: string;
+  heatmapRangeTo: string;
+  onHeatmapRangeFromChange: (value: string) => void;
+  onHeatmapRangeToChange: (value: string) => void;
+  heatPointCount: number;
 }
 
 export function RightPanelStack({
@@ -26,6 +31,11 @@ export function RightPanelStack({
   foundationTypes,
   heatmapEnabled,
   onToggleHeatmap,
+  heatmapRangeFrom,
+  heatmapRangeTo,
+  onHeatmapRangeFromChange,
+  onHeatmapRangeToChange,
+  heatPointCount,
 }: RightPanelStackProps) {
   return (
     <div className="right-panel-stack">
@@ -38,6 +48,11 @@ export function RightPanelStack({
           foundationTypes={foundationTypes}
           heatmapEnabled={heatmapEnabled}
           onToggleHeatmap={onToggleHeatmap}
+          rangeFrom={heatmapRangeFrom}
+          rangeTo={heatmapRangeTo}
+          onRangeFromChange={onHeatmapRangeFromChange}
+          onRangeToChange={onHeatmapRangeToChange}
+          heatPointCount={heatPointCount}
         />
       </AccordionPanel>
 

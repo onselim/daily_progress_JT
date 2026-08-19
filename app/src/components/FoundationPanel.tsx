@@ -4,15 +4,49 @@ interface FoundationPanelProps {
   foundationTypes: FoundationTypeConfig[];
   heatmapEnabled: boolean;
   onToggleHeatmap: () => void;
+  rangeFrom: string;
+  rangeTo: string;
+  onRangeFromChange: (value: string) => void;
+  onRangeToChange: (value: string) => void;
+  heatPointCount: number;
 }
 
-export function FoundationPanel({ foundationTypes, heatmapEnabled, onToggleHeatmap }: FoundationPanelProps) {
+export function FoundationPanel({
+  foundationTypes,
+  heatmapEnabled,
+  onToggleHeatmap,
+  rangeFrom,
+  rangeTo,
+  onRangeFromChange,
+  onRangeToChange,
+  heatPointCount,
+}: FoundationPanelProps) {
   if (foundationTypes.length === 0) {
     return <p className="accordion-empty">No foundation type data configured yet.</p>;
   }
 
   return (
     <div className="foundation-panel">
+      <div className="heatmap-range-row">
+        <input
+          type="text"
+          inputMode="numeric"
+          className="heatmap-range-input"
+          placeholder="From #"
+          value={rangeFrom}
+          onChange={(e) => onRangeFromChange(e.target.value)}
+        />
+        <span className="heatmap-range-dash">–</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          className="heatmap-range-input"
+          placeholder="To #"
+          value={rangeTo}
+          onChange={(e) => onRangeToChange(e.target.value)}
+        />
+      </div>
+
       <button
         type="button"
         className={`heatmap-toggle-btn${heatmapEnabled ? ' active' : ''}`}
@@ -20,6 +54,13 @@ export function FoundationPanel({ foundationTypes, heatmapEnabled, onToggleHeatm
       >
         {heatmapEnabled ? '🔥 Hide Concrete Heat Map' : '🔥 Show Concrete Heat Map'}
       </button>
+
+      {heatmapEnabled && (
+        <p className="accordion-empty">
+          {heatPointCount} tower{heatPointCount === 1 ? '' : 's'}
+          {rangeFrom.trim() && rangeTo.trim() ? ` between #${rangeFrom} and #${rangeTo}` : ' (all towers)'}
+        </p>
+      )}
 
       <table className="foundation-table">
         <thead>

@@ -640,6 +640,16 @@ button:disabled {
   color: #00d4aa;
 }
 
+.asset-badge-heat {
+  background: rgba(251, 191, 36, 0.18);
+  color: #fbbf24;
+}
+
+.asset-list-item.heat-centroid {
+  outline: 1px solid rgba(251, 191, 36, 0.6);
+  outline-offset: -1px;
+}
+
 .asset-mini-bar-row {
   display: flex;
   align-items: center;
@@ -1562,6 +1572,29 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.heatmap-range-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.heatmap-range-input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 12px;
+  background: rgba(23, 27, 38, 0.95);
+  color: var(--text-h);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.heatmap-range-dash {
+  color: var(--text);
+  opacity: 0.6;
 }
 
 .heatmap-toggle-btn {

@@ -141,6 +141,7 @@ interface MapViewProps {
   groundWireConfig: GroundWireConfig;
   heatmapEnabled?: boolean;
   heatPoints?: [number, number, number][];
+  heatCentroid?: [number, number] | null;
 }
 
 export function MapView({
@@ -153,6 +154,7 @@ export function MapView({
   groundWireConfig,
   heatmapEnabled = false,
   heatPoints = [],
+  heatCentroid = null,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -162,6 +164,7 @@ export function MapView({
   const deflectionGroupRef = useRef<L.LayerGroup | null>(null);
   const basemapLayerRef = useRef<L.TileLayer | null>(null);
   const heatLayerRef = useRef<L.HeatLayer | null>(null);
+  const heatCentroidMarkerRef = useRef<L.Marker | null>(null);
   const hasFitBounds = useRef(false);
   const [basemap, setBasemap] = useState<keyof typeof BASEMAPS>('satellite');
   const [basemapMenuOpen, setBasemapMenuOpen] = useState(false);
@@ -210,16 +213,51 @@ export function MapView({
     }
 
     if (heatmapEnabled && heatPoints.length > 0) {
+      // Individual sparsely-spaced towers otherwise look washed out (leaflet.heat fades
+      // each blob toward its edges) -- boosting minOpacity and setting `max` below the
+      // true peak weight keeps a single strong tower fully saturated instead of pale.
       const maxWeight = Math.max(...heatPoints.map((p) => p[2]));
       heatLayerRef.current = L.heatLayer(heatPoints, {
-        radius: 45,
-        blur: 35,
+        radius: 55,
+        blur: 25,
         maxZoom: 18,
-        max: maxWeight,
-        gradient: { 0.2: '#2563eb', 0.4: '#00d4aa', 0.6: '#f59e0b', 0.8: '#ef4444', 1.0: '#7f1d1d' },
+        max: maxWeight * 0.6,
+        minOpacity: 0.45,
+        gradient: { 0.1: '#2563eb', 0.3: '#00d4aa', 0.5: '#f59e0b', 0.75: '#ef4444', 1.0: '#7f1d1d' },
       }).addTo(map);
     }
   }, [heatmapEnabled, heatPoints]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (heatCentroidMarkerRef.current) {
+      map.removeLayer(heatCentroidMarkerRef.current);
+      heatCentroidMarkerRef.current = null;
+    }
+
+    if (heatmapEnabled && heatCentroid) {
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="width:26px;height:26px;position:relative;pointer-events:none;">
+          <svg width="26" height="26" viewBox="0 0 26 26" style="filter:drop-shadow(0 1px 3px rgba(0,0,0,.7));">
+            <circle cx="13" cy="13" r="10" fill="rgba(251,191,36,0.25)" stroke="#fbbf24" stroke-width="2"/>
+            <line x1="13" y1="2" x2="13" y2="7" stroke="#fbbf24" stroke-width="2"/>
+            <line x1="13" y1="19" x2="13" y2="24" stroke="#fbbf24" stroke-width="2"/>
+            <line x1="2" y1="13" x2="7" y2="13" stroke="#fbbf24" stroke-width="2"/>
+            <line x1="19" y1="13" x2="24" y2="13" stroke="#fbbf24" stroke-width="2"/>
+            <circle cx="13" cy="13" r="2.5" fill="#fbbf24"/>
+          </svg>
+        </div>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+      });
+      heatCentroidMarkerRef.current = L.marker(heatCentroid, { icon, interactive: false, zIndexOffset: 1000 }).addTo(
+        map,
+      );
+    }
+  }, [heatmapEnabled, heatCentroid]);
 
   useEffect(() => {
     const map = mapRef.current;

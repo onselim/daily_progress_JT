@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAssets } from '../lib/useAssets';
 import type { WorkItemConfig } from '../lib/useProjectConfig';
 import { computeGroupStatus } from '../lib/groupStatus';
@@ -51,6 +51,7 @@ interface AssetListProps {
   percentByAssetAndKey: Record<string, Record<string, number>>;
   workItems: WorkItemConfig[];
   restrictedAssetIds: Set<string>;
+  heatCentroidAssetId?: string | null;
 }
 
 export function AssetList({
@@ -61,10 +62,18 @@ export function AssetList({
   percentByAssetAndKey,
   workItems,
   restrictedAssetIds,
+  heatCentroidAssetId = null,
 }: AssetListProps) {
   const { assets, loading } = useAssets(projectId);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const centroidRowRef = useRef<HTMLLIElement>(null);
+
+  useEffect(() => {
+    if (heatCentroidAssetId) {
+      centroidRowRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }, [heatCentroidAssetId]);
 
   let filtered = assets;
   if (filter === 'active') {
@@ -129,11 +138,12 @@ export function AssetList({
           const restricted = restrictedAssetIds.has(a.id);
           const numColor = restricted ? '#ef4444' : STATUS_COLOR[a.status];
           const segments = groupSegments(workItems, percentByAssetAndKey[a.id]);
+          const isHeatCentroid = a.id === heatCentroidAssetId;
           return (
-            <li key={a.id}>
+            <li key={a.id} ref={isHeatCentroid ? centroidRowRef : undefined}>
               <button
                 type="button"
-                className={`asset-list-item${a.id === selectedAssetId ? ' active' : ''}`}
+                className={`asset-list-item${a.id === selectedAssetId ? ' active' : ''}${isHeatCentroid ? ' heat-centroid' : ''}`}
                 onClick={() => onSelect(a.id)}
               >
                 <div className="asset-list-item-row">
@@ -144,6 +154,11 @@ export function AssetList({
                     {a.asset_type}
                     {a.station != null && <span className="asset-station"> Sta.{a.station}m</span>}
                   </span>
+                  {isHeatCentroid && (
+                    <span className="asset-badge asset-badge-heat" title="Concrete-weighted center of gravity">
+                      ⚖ Center
+                    </span>
+                  )}
                   {restricted && <span className="asset-badge asset-badge-restricted">No Access</span>}
                   {!restricted && a.status === 'in_progress' && (
                     <span className="asset-badge asset-badge-active">Active</span>

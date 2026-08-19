@@ -33,6 +33,8 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
   const lineSummary = useLineSummary(projectId, assets, coordinateSystem);
   const { foundationTypes } = useFoundationTypesConfig(projectId);
   const [heatmapEnabled, setHeatmapEnabled] = useState(false);
+  const [heatmapRangeFrom, setHeatmapRangeFrom] = useState('');
+  const [heatmapRangeTo, setHeatmapRangeTo] = useState('');
 
   function handleAssetSaved() {
     refreshProgress();
@@ -55,10 +57,24 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
     return [null, null];
   }, [assets, coordinateSystem]);
 
-  const heatPoints = useMemo((): [number, number, number][] => {
+  // Range is by asset_code (the "1, 2, 3…" numbers shown in the tower list), not station —
+  // that's how the user thinks about "towers 4 to 44".
+  const rangeFromNum = heatmapRangeFrom.trim() ? Number(heatmapRangeFrom) : null;
+  const rangeToNum = heatmapRangeTo.trim() ? Number(heatmapRangeTo) : null;
+  const hasValidRange = rangeFromNum != null && rangeToNum != null && !Number.isNaN(rangeFromNum) && !Number.isNaN(rangeToNum);
+
+  const heatPointsWithAsset = useMemo((): { assetId: string; lat: number; lng: number; weight: number }[] => {
     if (foundationTypes.length === 0) return [];
-    const points: [number, number, number][] = [];
+    const lo = hasValidRange ? Math.min(rangeFromNum!, rangeToNum!) : null;
+    const hi = hasValidRange ? Math.max(rangeFromNum!, rangeToNum!) : null;
+
+    const points: { assetId: string; lat: number; lng: number; weight: number }[] = [];
     for (const asset of assets) {
+      if (lo != null && hi != null) {
+        const code = Number(asset.asset_code);
+        if (Number.isNaN(code) || code < lo || code > hi) continue;
+      }
+
       const foundation = getFoundationTypeForAsset(asset.asset_type, foundationTypes);
       if (!foundation) continue;
 
@@ -73,10 +89,46 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
       }
       if (lat == null || lng == null) continue;
 
-      points.push([lat, lng, foundation.concreteM3]);
+      points.push({ assetId: asset.id, lat, lng, weight: foundation.concreteM3 });
     }
     return points;
-  }, [assets, foundationTypes, coordinateSystem]);
+  }, [assets, foundationTypes, coordinateSystem, hasValidRange, rangeFromNum, rangeToNum]);
+
+  const heatPoints = useMemo(
+    (): [number, number, number][] => heatPointsWithAsset.map((p) => [p.lat, p.lng, p.weight]),
+    [heatPointsWithAsset],
+  );
+
+  // Concrete-weighted center of gravity of the selected towers, shown at two spots: a
+  // marker on the map itself, and a highlighted entry in the tower list (the nearest
+  // actual tower to that weighted point) so it's visible against the line too.
+  const heatCentroid = useMemo((): [number, number] | null => {
+    if (heatPointsWithAsset.length === 0) return null;
+    let sumLat = 0;
+    let sumLng = 0;
+    let sumW = 0;
+    for (const p of heatPointsWithAsset) {
+      sumLat += p.lat * p.weight;
+      sumLng += p.lng * p.weight;
+      sumW += p.weight;
+    }
+    if (sumW === 0) return null;
+    return [sumLat / sumW, sumLng / sumW];
+  }, [heatPointsWithAsset]);
+
+  const heatCentroidAssetId = useMemo((): string | null => {
+    if (!heatCentroid) return null;
+    let nearestId: string | null = null;
+    let nearestDist = Infinity;
+    for (const p of heatPointsWithAsset) {
+      const d = Math.hypot(p.lat - heatCentroid[0], p.lng - heatCentroid[1]);
+      if (d < nearestDist) {
+        nearestDist = d;
+        nearestId = p.assetId;
+      }
+    }
+    return nearestId;
+  }, [heatCentroid, heatPointsWithAsset]);
 
   return (
     <>
@@ -89,6 +141,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
         percentByAssetAndKey={percentByAssetAndKey}
         workItems={workItems}
         restrictedAssetIds={restrictedAssetIds}
+        heatCentroidAssetId={heatmapEnabled ? heatCentroidAssetId : null}
       />
       <div className="map-stage">
         <MapView
@@ -101,6 +154,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           groundWireConfig={groundWireConfig}
           heatmapEnabled={heatmapEnabled}
           heatPoints={heatPoints}
+          heatCentroid={heatCentroid}
         />
         <RightPanelStack
           projectId={projectId}
@@ -111,6 +165,11 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           foundationTypes={foundationTypes}
           heatmapEnabled={heatmapEnabled}
           onToggleHeatmap={() => setHeatmapEnabled((v) => !v)}
+          heatmapRangeFrom={heatmapRangeFrom}
+          heatmapRangeTo={heatmapRangeTo}
+          onHeatmapRangeFromChange={setHeatmapRangeFrom}
+          onHeatmapRangeToChange={setHeatmapRangeTo}
+          heatPointCount={heatPoints.length}
         />
         {selectedAssetId && (
           <div className="floating-editor">
