@@ -248,17 +248,18 @@ button:disabled {
 
 .status-toggle {
   display: flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 
 .status-btn {
-  flex: 1;
+  flex: 1 1 72px;
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 6px 8px;
-  font-size: 12px;
+  padding: 5px 6px;
+  font-size: 11px;
   cursor: pointer;
 }
 
@@ -334,10 +335,11 @@ button:disabled {
 }
 
 .completed-date-input {
-  flex: 0 0 auto;
+  flex: 1 1 110px;
+  min-width: 0;
   font: inherit;
-  font-size: 11px;
-  padding: 5px 6px;
+  font-size: 10.5px;
+  padding: 5px 4px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
@@ -349,15 +351,16 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--text);
+  white-space: nowrap;
 }
 
 .qty-percent-input {
-  width: 48px;
+  width: 40px;
   font: inherit;
-  font-size: 11px;
-  padding: 5px 4px;
+  font-size: 10.5px;
+  padding: 4px 3px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
