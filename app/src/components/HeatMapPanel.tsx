@@ -1,11 +1,19 @@
 export type HeatMetric = 'concrete' | 'excavation' | 'reinforcement' | 'weight';
 
-const METRICS: { key: HeatMetric; label: string; icon: string }[] = [
-  { key: 'excavation', label: 'Excavation', icon: '⛏' },
-  { key: 'reinforcement', label: 'Reinforcement', icon: '🔩' },
-  { key: 'concrete', label: 'Concrete', icon: '🧱' },
-  { key: 'weight', label: 'Tower Weight', icon: '⚙' },
+export type MetricTotals = Record<HeatMetric, { total: number; count: number }>;
+
+const METRICS: { key: HeatMetric; label: string; icon: string; unit: 'm3' | 'kg' }[] = [
+  { key: 'excavation', label: 'Excavation', icon: '⛏', unit: 'm3' },
+  { key: 'reinforcement', label: 'Reinforcement', icon: '🔩', unit: 'kg' },
+  { key: 'concrete', label: 'Concrete', icon: '🧱', unit: 'm3' },
+  { key: 'weight', label: 'Tower Weight', icon: '⚙', unit: 'kg' },
 ];
+
+function formatTotal(total: number, count: number, unit: 'm3' | 'kg'): string {
+  if (count === 0) return 'No data for this range';
+  const value = unit === 'm3' ? `${total.toFixed(2)} m³` : `${Math.round(total).toLocaleString()} kg`;
+  return `${value} · ${count} tower${count === 1 ? '' : 's'}`;
+}
 
 interface HeatMapPanelProps {
   activeMetric: HeatMetric | null;
@@ -15,6 +23,7 @@ interface HeatMapPanelProps {
   onRangeFromChange: (value: string) => void;
   onRangeToChange: (value: string) => void;
   heatPointCount: number;
+  metricTotals: MetricTotals;
 }
 
 export function HeatMapPanel({
@@ -25,6 +34,7 @@ export function HeatMapPanel({
   onRangeFromChange,
   onRangeToChange,
   heatPointCount,
+  metricTotals,
 }: HeatMapPanelProps) {
   return (
     <div className="heatmap-panel">
@@ -49,17 +59,21 @@ export function HeatMapPanel({
       </div>
 
       <div className="heatmap-metric-grid">
-        {METRICS.map((m) => (
-          <button
-            key={m.key}
-            type="button"
-            className={`heatmap-metric-btn${activeMetric === m.key ? ' active' : ''}`}
-            onClick={() => onSelectMetric(m.key)}
-          >
-            <span className="heatmap-metric-icon">{m.icon}</span>
-            {m.label}
-          </button>
-        ))}
+        {METRICS.map((m) => {
+          const { total, count } = metricTotals[m.key];
+          return (
+            <button
+              key={m.key}
+              type="button"
+              className={`heatmap-metric-btn${activeMetric === m.key ? ' active' : ''}`}
+              onClick={() => onSelectMetric(m.key)}
+            >
+              <span className="heatmap-metric-icon">{m.icon}</span>
+              {m.label}
+              <span className="heatmap-metric-tooltip">{formatTotal(total, count, m.unit)}</span>
+            </button>
+          );
+        })}
       </div>
 
       {activeMetric && (

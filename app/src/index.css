@@ -1610,6 +1610,7 @@ button:disabled {
 }
 
 .heatmap-metric-btn {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1635,30 +1636,28 @@ button:disabled {
   color: #fecaca;
 }
 
-.foundation-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 10.5px;
-}
-
-.foundation-table th,
-.foundation-table td {
-  padding: 4px 5px;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-
-.foundation-table th {
-  color: var(--text);
-  opacity: 0.7;
+.heatmap-metric-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f1117;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
   font-weight: 500;
-  text-transform: uppercase;
-  font-size: 9px;
+  color: var(--text-h);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-.foundation-table td {
-  color: var(--text-h);
+.heatmap-metric-btn:hover .heatmap-metric-tooltip {
+  opacity: 1;
 }
 
 .line-summary-grid {

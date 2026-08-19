@@ -2,10 +2,8 @@ import { AccordionPanel } from './AccordionPanel';
 import { ProjectDocumentsPanel } from './ProjectDocumentsPanel';
 import { WeatherPanel } from './WeatherPanel';
 import { LineSummaryPanel } from './LineSummaryPanel';
-import { FoundationPanel } from './FoundationPanel';
-import { HeatMapPanel, type HeatMetric } from './HeatMapPanel';
+import { HeatMapPanel, type HeatMetric, type MetricTotals } from './HeatMapPanel';
 import type { LineSummary } from '../lib/useLineSummary';
-import type { FoundationTypeConfig } from '../lib/useFoundationTypesConfig';
 
 interface RightPanelStackProps {
   projectId: string;
@@ -13,7 +11,6 @@ interface RightPanelStackProps {
   weatherLat: number | null;
   weatherLng: number | null;
   lineSummary: LineSummary;
-  foundationTypes: FoundationTypeConfig[];
   heatMetric: HeatMetric | null;
   onSelectHeatMetric: (metric: HeatMetric) => void;
   heatmapRangeFrom: string;
@@ -21,6 +18,7 @@ interface RightPanelStackProps {
   onHeatmapRangeFromChange: (value: string) => void;
   onHeatmapRangeToChange: (value: string) => void;
   heatPointCount: number;
+  metricTotals: MetricTotals;
 }
 
 export function RightPanelStack({
@@ -29,7 +27,6 @@ export function RightPanelStack({
   weatherLat,
   weatherLng,
   lineSummary,
-  foundationTypes,
   heatMetric,
   onSelectHeatMetric,
   heatmapRangeFrom,
@@ -37,6 +34,7 @@ export function RightPanelStack({
   onHeatmapRangeFromChange,
   onHeatmapRangeToChange,
   heatPointCount,
+  metricTotals,
 }: RightPanelStackProps) {
   return (
     <div className="right-panel-stack">
@@ -53,11 +51,8 @@ export function RightPanelStack({
           onRangeFromChange={onHeatmapRangeFromChange}
           onRangeToChange={onHeatmapRangeToChange}
           heatPointCount={heatPointCount}
+          metricTotals={metricTotals}
         />
-      </AccordionPanel>
-
-      <AccordionPanel title="Foundation">
-        <FoundationPanel foundationTypes={foundationTypes} />
       </AccordionPanel>
 
       <AccordionPanel title="Project documents">

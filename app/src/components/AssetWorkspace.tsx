@@ -3,7 +3,7 @@ import { AssetList } from './AssetList';
 import { AssetEditor } from './AssetEditor';
 import { MapView } from './MapView';
 import { RightPanelStack } from './RightPanelStack';
-import type { HeatMetric } from './HeatMapPanel';
+import type { HeatMetric, MetricTotals } from './HeatMapPanel';
 import { useAssets } from '../lib/useAssets';
 import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress';
 import { useRestrictedToday } from '../lib/useRestrictedToday';
@@ -66,29 +66,53 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
   const rangeToNum = heatmapRangeTo.trim() ? Number(heatmapRangeTo) : null;
   const hasValidRange = rangeFromNum != null && rangeToNum != null && !Number.isNaN(rangeFromNum) && !Number.isNaN(rangeToNum);
 
-  function weightForMetric(assetType: string | null): number | null {
-    if (!heatMetric) return null;
-    if (heatMetric === 'weight') return getTowerWeightForAsset(assetType, towerWeights);
+  function weightFor(metric: HeatMetric, assetType: string | null): number | null {
+    if (metric === 'weight') return getTowerWeightForAsset(assetType, towerWeights);
     const foundation = getFoundationTypeForAsset(assetType, foundationTypes);
     if (!foundation) return null;
-    if (heatMetric === 'concrete') return foundation.concreteM3;
-    if (heatMetric === 'excavation') return foundation.excavationM3;
+    if (metric === 'concrete') return foundation.concreteM3;
+    if (metric === 'excavation') return foundation.excavationM3;
     return foundation.reinforcementKg;
   }
 
+  const rangeLo = hasValidRange ? Math.min(rangeFromNum!, rangeToNum!) : null;
+  const rangeHi = hasValidRange ? Math.max(rangeFromNum!, rangeToNum!) : null;
+  const inRange = (assetCode: string) => {
+    if (rangeLo == null || rangeHi == null) return true;
+    const code = Number(assetCode);
+    return !Number.isNaN(code) && code >= rangeLo && code <= rangeHi;
+  };
+
+  // Totals for all 4 metrics (not just the active one) so the Heat Map panel's buttons can
+  // show "total for this range" on hover, regardless of which layer is currently shown.
+  const metricTotals = useMemo((): MetricTotals => {
+    const totals: MetricTotals = {
+      concrete: { total: 0, count: 0 },
+      excavation: { total: 0, count: 0 },
+      reinforcement: { total: 0, count: 0 },
+      weight: { total: 0, count: 0 },
+    };
+    for (const asset of assets) {
+      if (!inRange(asset.asset_code)) continue;
+      for (const metric of Object.keys(totals) as HeatMetric[]) {
+        const w = weightFor(metric, asset.asset_type);
+        if (w == null) continue;
+        totals[metric].total += w;
+        totals[metric].count += 1;
+      }
+    }
+    return totals;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assets, foundationTypes, towerWeights, rangeLo, rangeHi]);
+
   const heatPointsWithAsset = useMemo((): { assetId: string; lat: number; lng: number; weight: number }[] => {
     if (!heatMetric) return [];
-    const lo = hasValidRange ? Math.min(rangeFromNum!, rangeToNum!) : null;
-    const hi = hasValidRange ? Math.max(rangeFromNum!, rangeToNum!) : null;
 
     const points: { assetId: string; lat: number; lng: number; weight: number }[] = [];
     for (const asset of assets) {
-      if (lo != null && hi != null) {
-        const code = Number(asset.asset_code);
-        if (Number.isNaN(code) || code < lo || code > hi) continue;
-      }
+      if (!inRange(asset.asset_code)) continue;
 
-      const weight = weightForMetric(asset.asset_type);
+      const weight = weightFor(heatMetric, asset.asset_type);
       if (weight == null) continue;
 
       let lat = asset.lat;
@@ -106,7 +130,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
     }
     return points;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assets, foundationTypes, towerWeights, heatMetric, coordinateSystem, hasValidRange, rangeFromNum, rangeToNum]);
+  }, [assets, foundationTypes, towerWeights, heatMetric, coordinateSystem, rangeLo, rangeHi]);
 
   const heatPoints = useMemo(
     (): [number, number, number][] => heatPointsWithAsset.map((p) => [p.lat, p.lng, p.weight]),
@@ -176,7 +200,6 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           weatherLat={weatherLat}
           weatherLng={weatherLng}
           lineSummary={lineSummary}
-          foundationTypes={foundationTypes}
           heatMetric={heatMetric}
           onSelectHeatMetric={(metric) => setHeatMetric((cur) => (cur === metric ? null : metric))}
           heatmapRangeFrom={heatmapRangeFrom}
@@ -184,6 +207,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           onHeatmapRangeFromChange={setHeatmapRangeFrom}
           onHeatmapRangeToChange={setHeatmapRangeTo}
           heatPointCount={heatPoints.length}
+          metricTotals={metricTotals}
         />
         {selectedAssetId && (
           <div className="floating-editor">
