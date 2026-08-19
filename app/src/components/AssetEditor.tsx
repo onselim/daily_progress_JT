@@ -477,7 +477,7 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
               <legend style={{ color }}>
                 {group.name} <span className="group-count">{done}/{group.items.length}</span>
               </legend>
-              {group.name === 'Foundation' && foundation && (
+              {group.name.toUpperCase() === 'FOUNDATION' && foundation && (
                 <div className="foundation-stats" title={`${foundation.type} — ${foundation.soilType}`}>
                   <div className="foundation-stat">
                     <span className="foundation-stat-label">Concrete</span>
