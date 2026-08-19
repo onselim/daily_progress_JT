@@ -19,6 +19,11 @@ export async function createDocumentFolder(
   if (error) throw error;
 }
 
+export async function renameDocumentFolder(folderId: string, newName: string) {
+  const { error } = await supabase.from('document_folders').update({ name: newName.trim() }).eq('id', folderId);
+  if (error) throw error;
+}
+
 /** Deletes a folder, every sub-folder beneath it (any depth), and every document in all
  * of them: the Storage objects first, then the folder row (whose sub-folders and
  * `documents` rows cascade-delete via FKs). */

@@ -3,7 +3,9 @@ import { useAuth } from '../lib/AuthContext';
 import { useProjectDocuments, type DocumentFolder, type ProjectDocument } from '../lib/useProjectDocuments';
 import { uploadProjectDocument } from '../lib/uploadProjectDocument';
 import { deleteProjectDocument } from '../lib/deleteProjectDocument';
-import { createDocumentFolder, deleteDocumentFolder } from '../lib/documentFolders';
+import { renameProjectDocument } from '../lib/renameDocument';
+import { createDocumentFolder, deleteDocumentFolder, renameDocumentFolder } from '../lib/documentFolders';
+import { RenamableText } from './RenamableText';
 
 interface ProjectDocumentsPanelProps {
   projectId: string;
@@ -23,6 +25,8 @@ interface FolderNodeProps {
   onDeleteDocument: (docId: string, fileUrl: string) => void;
   onCreateSubfolder: (name: string, parentFolderId: string) => Promise<void>;
   onDeleteFolder: (folderId: string, folderName: string) => void;
+  onRenameFolder: (folderId: string, newName: string) => void;
+  onRenameDocument: (docId: string, newName: string) => void;
 }
 
 function FolderNode({
@@ -36,6 +40,8 @@ function FolderNode({
   onDeleteDocument,
   onCreateSubfolder,
   onDeleteFolder,
+  onRenameFolder,
+  onRenameDocument,
 }: FolderNodeProps) {
   const [open, setOpen] = useState(false);
   const [addingSubfolder, setAddingSubfolder] = useState(false);
@@ -61,11 +67,24 @@ function FolderNode({
   return (
     <div className="doc-folder" style={depth > 0 ? { marginLeft: 16 } : undefined}>
       <div className="doc-folder-header-row">
-        <button type="button" className="doc-folder-header" onClick={() => setOpen((v) => !v)}>
+        <div
+          className="doc-folder-header"
+          role="button"
+          tabIndex={0}
+          onClick={() => setOpen((v) => !v)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setOpen((v) => !v);
+            }
+          }}
+        >
           <span className={`accordion-chevron${open ? ' open' : ''}`}>▸</span>
-          <span className="doc-folder-name">{folder.name}</span>
+          <RenamableText value={folder.name} editable={editable} onRename={(name) => onRenameFolder(folder.id, name)}>
+            <span className="doc-folder-name">{folder.name}</span>
+          </RenamableText>
           <span className="doc-folder-count">{docs.length}</span>
-        </button>
+        </div>
         {editable && (
           <button
             type="button"
@@ -92,6 +111,8 @@ function FolderNode({
               onDeleteDocument={onDeleteDocument}
               onCreateSubfolder={onCreateSubfolder}
               onDeleteFolder={onDeleteFolder}
+              onRenameFolder={onRenameFolder}
+              onRenameDocument={onRenameDocument}
             />
           ))}
 
@@ -99,9 +120,15 @@ function FolderNode({
 
           {docs.map((doc) => (
             <div key={doc.id} className="doc-row">
-              <a href={doc.file_url} target="_blank" rel="noreferrer">
-                {doc.slot_name}
-              </a>
+              <RenamableText
+                value={doc.slot_name}
+                editable={editable}
+                onRename={(name) => onRenameDocument(doc.id, name)}
+              >
+                <a href={doc.file_url} target="_blank" rel="noreferrer">
+                  {doc.slot_name}
+                </a>
+              </RenamableText>
               {editable && (
                 <button
                   type="button"
@@ -121,6 +148,7 @@ function FolderNode({
                 {uploadingKey === folder.id ? 'Uploading…' : '+ Add file'}
                 <input
                   type="file"
+                  multiple
                   onChange={(e) => onUpload(e, folder.id)}
                   disabled={uploadingKey === folder.id}
                 />
@@ -176,11 +204,13 @@ export function ProjectDocumentsPanel({
   const [creatingFolder, setCreatingFolder] = useState(false);
 
   async function handleUpload(e: ChangeEvent<HTMLInputElement>, folderId: string | null) {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
+    const files = e.target.files;
+    if (!files || files.length === 0 || !user) return;
     setUploadingKey(folderId ?? 'root');
     try {
-      await uploadProjectDocument({ projectId, file, uploadedBy: user.id, folderId, section });
+      for (const file of Array.from(files)) {
+        await uploadProjectDocument({ projectId, file, uploadedBy: user.id, folderId, section });
+      }
       await refresh();
     } finally {
       setUploadingKey(null);
@@ -190,6 +220,16 @@ export function ProjectDocumentsPanel({
 
   async function handleDeleteDocument(docId: string, fileUrl: string) {
     await deleteProjectDocument(docId, fileUrl);
+    await refresh();
+  }
+
+  async function handleRenameFolder(folderId: string, newName: string) {
+    await renameDocumentFolder(folderId, newName);
+    await refresh();
+  }
+
+  async function handleRenameDocument(docId: string, newName: string) {
+    await renameProjectDocument(docId, newName);
     await refresh();
   }
 
@@ -240,6 +280,8 @@ export function ProjectDocumentsPanel({
             onDeleteDocument={handleDeleteDocument}
             onCreateSubfolder={handleCreateFolder}
             onDeleteFolder={handleDeleteFolder}
+            onRenameFolder={handleRenameFolder}
+            onRenameDocument={handleRenameDocument}
           />
           {folder.divider_after && <div className="doc-folder-divider" />}
         </div>
@@ -249,9 +291,15 @@ export function ProjectDocumentsPanel({
         <div className="doc-folder-body doc-folder-root">
           {rootDocs.map((doc) => (
             <div key={doc.id} className="doc-row">
-              <a href={doc.file_url} target="_blank" rel="noreferrer">
-                {doc.slot_name}
-              </a>
+              <RenamableText
+                value={doc.slot_name}
+                editable={editable}
+                onRename={(name) => handleRenameDocument(doc.id, name)}
+              >
+                <a href={doc.file_url} target="_blank" rel="noreferrer">
+                  {doc.slot_name}
+                </a>
+              </RenamableText>
               {editable && (
                 <button
                   type="button"
@@ -271,7 +319,12 @@ export function ProjectDocumentsPanel({
         <div className="doc-actions-row">
           <label className="photo-upload-label">
             {uploadingKey === 'root' ? 'Uploading…' : '+ Add document'}
-            <input type="file" onChange={(e) => handleUpload(e, null)} disabled={uploadingKey === 'root'} />
+            <input
+              type="file"
+              multiple
+              onChange={(e) => handleUpload(e, null)}
+              disabled={uploadingKey === 'root'}
+            />
           </label>
 
           {addingFolder ? (

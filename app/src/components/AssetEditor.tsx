@@ -8,6 +8,8 @@ import { deleteAssetPhoto } from '../lib/deleteAssetPhoto';
 import { useAssetDocuments, type AssetDocument } from '../lib/useAssetDocuments';
 import { uploadAssetDocument } from '../lib/uploadAssetDocument';
 import { deleteAssetDocument } from '../lib/deleteAssetDocument';
+import { renameAssetDocument } from '../lib/renameDocument';
+import { RenamableText } from './RenamableText';
 
 type WorkItemStatus = 'not_started' | 'in_progress' | 'completed';
 
@@ -108,19 +110,23 @@ function DocumentLinks({
   editable,
   deletingIds,
   onDelete,
+  onRename,
 }: {
   documents: AssetDocument[];
   editable: boolean;
   deletingIds: Set<string>;
   onDelete: (doc: AssetDocument) => void;
+  onRename: (doc: AssetDocument, newName: string) => void;
 }) {
   return (
     <div className="doc-folder-body">
       {documents.map((d) => (
         <div key={d.id} className="doc-row">
-          <a href={d.file_url} target="_blank" rel="noreferrer">
-            {d.file_name}
-          </a>
+          <RenamableText value={d.file_name} editable={editable} onRename={(name) => onRename(d, name)}>
+            <a href={d.file_url} target="_blank" rel="noreferrer">
+              {d.file_name}
+            </a>
+          </RenamableText>
           {editable && (
             <button
               type="button"
@@ -304,19 +310,30 @@ export function AssetEditor({ projectId, assetId, editable = true, onSaved }: As
   }
 
   async function handleDocumentUpload(e: ChangeEvent<HTMLInputElement>, workItemKey: string) {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
+    const files = e.target.files;
+    if (!files || files.length === 0 || !user) return;
     setUploadingDocKey(workItemKey);
     setMessage(null);
 
     try {
-      await uploadAssetDocument({ projectId, assetCode, assetId, file, uploadedBy: user.id, workItemKey });
+      for (const file of Array.from(files)) {
+        await uploadAssetDocument({ projectId, assetCode, assetId, file, uploadedBy: user.id, workItemKey });
+      }
       await refreshAssetDocs();
     } catch (err) {
       setMessage(`Document upload failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setUploadingDocKey(null);
       e.target.value = '';
+    }
+  }
+
+  async function handleRenameDocument(doc: AssetDocument, newName: string) {
+    try {
+      await renameAssetDocument(doc.id, newName);
+      await refreshAssetDocs();
+    } catch (err) {
+      setMessage(`Rename failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
@@ -516,12 +533,14 @@ export function AssetEditor({ projectId, assetId, editable = true, onSaved }: As
                           editable={editable}
                           deletingIds={deletingDocIds}
                           onDelete={handleDeleteDocument}
+                          onRename={handleRenameDocument}
                         />
                         {editable && (
                           <label className="photo-upload-label photo-upload-label-sm">
                             {uploadingDocKey === item.key ? 'Uploading…' : `+ Add ${docLabel}`}
                             <input
                               type="file"
+                              multiple
                               onChange={(e) => handleDocumentUpload(e, item.key)}
                               disabled={uploadingDocKey === item.key}
                             />

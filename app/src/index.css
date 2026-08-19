@@ -1613,6 +1613,22 @@ button:disabled {
   border-bottom: none;
 }
 
+.rename-input {
+  background: var(--bg-alt, #1a1d29);
+  border: 1px solid #00d4aa;
+  border-radius: 3px;
+  color: inherit;
+  font: inherit;
+  padding: 1px 4px;
+  min-width: 0;
+  width: 100%;
+  max-width: 220px;
+}
+
+.renamable-text {
+  min-width: 0;
+}
+
 .doc-folder {
   border-bottom: 1px solid var(--border);
   padding: 2px 0;
