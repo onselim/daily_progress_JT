@@ -266,6 +266,21 @@ button:disabled {
   background: var(--panel-bg);
 }
 
+.status-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.status-btn:disabled:hover {
+  background: var(--bg);
+}
+
+.task-lock-icon {
+  font-size: 10px;
+  margin-right: 4px;
+  opacity: 0.7;
+}
+
 .status-btn.active.status-btn-not_started {
   background: #3d4259;
   border-color: #3d4259;

@@ -20,8 +20,12 @@ function todayIso() {
  * (asset_work_items.status practically never reaches 'in_progress' in real field data —
  * items go straight from not_started to completed — so deriving "ongoing" from per-item
  * status would always read empty; the asset-level flag is the one that's actually kept
- * up to date.) The specific ongoing activity shown per tower is its first not-yet-completed
- * item in the project's canonical work-item order — the "next thing to do" at that tower.
+ * up to date.) The specific ongoing activity shown per tower is the item right after the
+ * *most advanced* completed item in the project's canonical work-item order — not simply
+ * the first incomplete one. Some towers have early items (e.g. Tree Cutting) that were
+ * never backfilled even though much later items are already completed; picking "first
+ * incomplete" would misreport those towers as still doing the earliest untouched item
+ * instead of their real current stage.
  */
 export function usePlanForToday(projectId: string | undefined, workItems: WorkItemConfig[]) {
   const [entries, setEntries] = useState<PlanForTodayEntry[]>([]);
@@ -72,7 +76,11 @@ export function usePlanForToday(projectId: string | undefined, workItems: WorkIt
 
       for (const a of activeAssets) {
         const statuses = statusByAssetKey[a.id] ?? {};
-        const nextItem = workItems.find((w) => (statuses[w.key] ?? 'not_started') !== 'completed');
+        let lastCompletedIndex = -1;
+        workItems.forEach((w, idx) => {
+          if ((statuses[w.key] ?? 'not_started') === 'completed') lastCompletedIndex = idx;
+        });
+        const nextItem = workItems[lastCompletedIndex + 1];
         next.push({ assetId: a.id, assetCode: a.asset_code, workItemKey: nextItem?.key ?? null, kind: 'ongoing' });
       }
     }

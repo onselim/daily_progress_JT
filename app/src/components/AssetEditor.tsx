@@ -379,6 +379,18 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
 
   if (loading) return <p>Loading asset…</p>;
 
+  // Work items form one strict pipeline in the project's canonical order (Pre-Construction
+  // -> Foundation -> Erection -> Stringing, and sequential within each group too, e.g.
+  // Excavation before Lean Concrete, Ground Erection before Tower Erection). An item can't
+  // move past "Not started" until the item immediately before it is Completed.
+  function lockInfo(key: string): { locked: boolean; blockingLabel?: string } {
+    const idx = workItems.findIndex((w) => w.key === key);
+    if (idx <= 0) return { locked: false };
+    const prev = workItems[idx - 1];
+    const prevStatus = statusByKey[prev.key] ?? 'not_started';
+    return prevStatus === 'completed' ? { locked: false } : { locked: true, blockingLabel: prev.label };
+  }
+
   const groups: { name: string; items: WorkItemConfig[] }[] = [];
   for (const item of workItems) {
     const name = item.group ?? 'Work items';
@@ -471,11 +483,19 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
                 const docLabel = DOCUMENT_ENABLED_KEYS[item.key];
                 const itemDocs = docLabel ? assetDocs.filter((d) => d.work_item_key === item.key) : [];
                 const isDocExpanded = expandedDocKey === item.key;
+                const { locked, blockingLabel } = lockInfo(item.key);
 
                 return (
                   <div key={item.key} className="work-item-row">
                     <div className="task-row">
-                      <span className="task-name">{item.label}</span>
+                      <span className="task-name">
+                        {locked && (
+                          <span className="task-lock-icon" title={`Complete "${blockingLabel}" first`}>
+                            🔒
+                          </span>
+                        )}
+                        {item.label}
+                      </span>
                       <div className="task-bar">
                         <div className="task-fill" style={{ width: `${fill}%`, background: itemColor }} />
                       </div>
@@ -511,24 +531,29 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
 
                     {editable && (
                       <div className="status-toggle" role="group" aria-label={item.label}>
-                        {STATUS_OPTIONS.map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            className={`status-btn status-btn-${opt.value}${current === opt.value ? ' active' : ''}`}
-                            onClick={() => {
-                              setStatusByKey((prev) => ({ ...prev, [item.key]: opt.value }));
-                              if (opt.value === 'completed' && !completedDateByKey[item.key]) {
-                                setCompletedDateByKey((prev) => ({ ...prev, [item.key]: todayIso() }));
-                              }
-                            }}
-                          >
-                            {opt.label}
-                            {opt.value === 'completed' && current === 'completed' && completedDateByKey[item.key] && (
-                              <span className="completed-date-stamp">{completedDateByKey[item.key]}</span>
-                            )}
-                          </button>
-                        ))}
+                        {STATUS_OPTIONS.map((opt) => {
+                          const blockedByLock = locked && opt.value !== 'not_started' && current !== opt.value;
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              className={`status-btn status-btn-${opt.value}${current === opt.value ? ' active' : ''}`}
+                              disabled={blockedByLock}
+                              title={blockedByLock ? `Complete "${blockingLabel}" first` : undefined}
+                              onClick={() => {
+                                setStatusByKey((prev) => ({ ...prev, [item.key]: opt.value }));
+                                if (opt.value === 'completed' && !completedDateByKey[item.key]) {
+                                  setCompletedDateByKey((prev) => ({ ...prev, [item.key]: todayIso() }));
+                                }
+                              }}
+                            >
+                              {opt.label}
+                              {opt.value === 'completed' && current === 'completed' && completedDateByKey[item.key] && (
+                                <span className="completed-date-stamp">{completedDateByKey[item.key]}</span>
+                              )}
+                            </button>
+                          );
+                        })}
                         {current === 'completed' && (
                           <input
                             type="date"
