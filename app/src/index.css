@@ -1746,8 +1746,9 @@ button:disabled {
 .daily-plan-tab {
   font: inherit;
   font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 5px;
+  padding: 1px 7px;
+  line-height: 1.5;
+  border-radius: 4px;
   background: rgba(0, 212, 170, 0.06);
   border: 1px solid rgba(0, 212, 170, 0.2);
   color: #5eead4;
