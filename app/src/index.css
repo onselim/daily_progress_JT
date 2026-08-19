@@ -344,6 +344,38 @@ button:disabled {
   color: var(--text-h);
 }
 
+.qty-percent-field {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.qty-percent-input {
+  width: 48px;
+  font: inherit;
+  font-size: 11px;
+  padding: 5px 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  text-align: right;
+}
+
+.qty-percent-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
 .form-message {
   margin: 0;
   font-size: 13px;

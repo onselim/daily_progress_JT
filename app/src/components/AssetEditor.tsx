@@ -170,6 +170,7 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
   const [showWindy, setShowWindy] = useState(false);
   const [statusByKey, setStatusByKey] = useState<Record<string, WorkItemStatus>>({});
   const [completedDateByKey, setCompletedDateByKey] = useState<Record<string, string>>({});
+  const [quantityPercentByKey, setQuantityPercentByKey] = useState<Record<string, number>>({});
   const [siteAccessStatus, setSiteAccessStatus] = useState('normal');
   const [restrictionReason, setRestrictionReason] = useState('');
   const [loading, setLoading] = useState(true);
@@ -195,7 +196,7 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
         .maybeSingle(),
       supabase
         .from('asset_work_items')
-        .select('work_item_key, percent_complete, completed_at')
+        .select('work_item_key, percent_complete, completed_at, quantity_percent')
         .eq('asset_id', assetId),
       supabase
         .from('asset_daily_log')
@@ -227,12 +228,15 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
 
       const next: Record<string, WorkItemStatus> = {};
       const nextDates: Record<string, string> = {};
+      const nextQtyPercent: Record<string, number> = {};
       for (const item of workItemsRes.data ?? []) {
         next[item.work_item_key] = statusFromPercent(Number(item.percent_complete));
         if (item.completed_at) nextDates[item.work_item_key] = item.completed_at.slice(0, 10);
+        nextQtyPercent[item.work_item_key] = Number(item.quantity_percent ?? 100);
       }
       setStatusByKey(next);
       setCompletedDateByKey(nextDates);
+      setQuantityPercentByKey(nextQtyPercent);
 
       setSiteAccessStatus(logRes.data?.site_access_status ?? 'normal');
       setRestrictionReason(logRes.data?.restriction_reason ?? '');
@@ -260,6 +264,7 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
         percent_complete: PERCENT_BY_STATUS[status],
         status,
         completed_at: status === 'completed' ? new Date(`${completedDate}T12:00:00Z`).toISOString() : null,
+        quantity_percent: quantityPercentByKey[item.key] ?? 100,
         updated_by: user.id,
       };
     });
@@ -507,6 +512,8 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
                 const itemDocs = docLabel ? assetDocs.filter((d) => d.work_item_key === item.key) : [];
                 const isDocExpanded = expandedDocKey === item.key;
                 const { locked, blockingLabel } = lockInfo(item.key);
+                const isFoundationItem = group.name.toUpperCase() === 'FOUNDATION';
+                const qtyPercent = quantityPercentByKey[item.key] ?? 100;
 
                 return (
                   <div key={item.key} className="work-item-row">
@@ -528,6 +535,11 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
                           {current === 'completed' && completedDateByKey[item.key] && (
                             <span className="completed-date-stamp completed-date-stamp-inline">
                               {completedDateByKey[item.key]}
+                            </span>
+                          )}
+                          {isFoundationItem && current !== 'not_started' && qtyPercent !== 100 && (
+                            <span className="qty-percent-badge" title="Share of designed quantity actually placed">
+                              {qtyPercent}% qty
                             </span>
                           )}
                         </span>
@@ -586,6 +598,28 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
                               setCompletedDateByKey((prev) => ({ ...prev, [item.key]: e.target.value }))
                             }
                           />
+                        )}
+                        {isFoundationItem && current !== 'not_started' && (
+                          <label
+                            className="qty-percent-field"
+                            title="Share of the designed quantity actually placed -- e.g. only 2 of 4 legs poured, or pad-only on a pad-and-chimney foundation"
+                          >
+                            Qty
+                            <input
+                              type="number"
+                              className="qty-percent-input"
+                              min={0}
+                              max={100}
+                              step={5}
+                              value={qtyPercent}
+                              onChange={(e) => {
+                                const raw = Number(e.target.value);
+                                const clamped = Number.isNaN(raw) ? 100 : Math.min(100, Math.max(0, raw));
+                                setQuantityPercentByKey((prev) => ({ ...prev, [item.key]: clamped }));
+                              }}
+                            />
+                            %
+                          </label>
                         )}
                       </div>
                     )}
