@@ -96,6 +96,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
               key={selectedAssetId}
               projectId={projectId}
               assetId={selectedAssetId}
+              coordinateSystem={coordinateSystem}
               editable={editable}
               onSaved={handleAssetSaved}
             />

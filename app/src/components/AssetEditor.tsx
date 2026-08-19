@@ -10,6 +10,8 @@ import { uploadAssetDocument } from '../lib/uploadAssetDocument';
 import { deleteAssetDocument } from '../lib/deleteAssetDocument';
 import { renameAssetDocument } from '../lib/renameDocument';
 import { RenamableText } from './RenamableText';
+import { WindyPopup } from './WindyPopup';
+import { utmToLatLng } from '../lib/utmToLatLng';
 
 type WorkItemStatus = 'not_started' | 'in_progress' | 'completed';
 
@@ -147,11 +149,12 @@ function DocumentLinks({
 interface AssetEditorProps {
   projectId: string;
   assetId: string;
+  coordinateSystem?: string | null;
   editable?: boolean;
   onSaved?: () => void;
 }
 
-export function AssetEditor({ projectId, assetId, editable = true, onSaved }: AssetEditorProps) {
+export function AssetEditor({ projectId, assetId, coordinateSystem = null, editable = true, onSaved }: AssetEditorProps) {
   const { user } = useAuth();
   const { workItems, loading: workItemsLoading } = useWorkItemsConfig(projectId);
   const { photos, loading: photosLoading, refresh: refreshPhotos } = useAssetPhotos(assetId);
@@ -161,6 +164,8 @@ export function AssetEditor({ projectId, assetId, editable = true, onSaved }: As
   const [assetType, setAssetType] = useState<string | null>(null);
   const [station, setStation] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
+  const [assetLatLng, setAssetLatLng] = useState<[number, number] | null>(null);
+  const [showWindy, setShowWindy] = useState(false);
   const [statusByKey, setStatusByKey] = useState<Record<string, WorkItemStatus>>({});
   const [completedDateByKey, setCompletedDateByKey] = useState<Record<string, string>>({});
   const [siteAccessStatus, setSiteAccessStatus] = useState('normal');
@@ -181,7 +186,11 @@ export function AssetEditor({ projectId, assetId, editable = true, onSaved }: As
     setMessage(null);
 
     Promise.all([
-      supabase.from('assets').select('asset_code, asset_type, station, notes').eq('id', assetId).maybeSingle(),
+      supabase
+        .from('assets')
+        .select('asset_code, asset_type, station, notes, lat, lng, x, y')
+        .eq('id', assetId)
+        .maybeSingle(),
       supabase
         .from('asset_work_items')
         .select('work_item_key, percent_complete, completed_at')
@@ -199,6 +208,20 @@ export function AssetEditor({ projectId, assetId, editable = true, onSaved }: As
       setAssetType(assetRes.data?.asset_type ?? null);
       setStation(assetRes.data?.station ?? null);
       setNotes(assetRes.data?.notes ?? '');
+
+      const rawLat = assetRes.data?.lat;
+      const rawLng = assetRes.data?.lng;
+      if (rawLat != null && rawLng != null) {
+        setAssetLatLng([rawLat, rawLng]);
+      } else if (assetRes.data?.x != null && assetRes.data?.y != null && coordinateSystem) {
+        try {
+          setAssetLatLng(utmToLatLng(assetRes.data.x, assetRes.data.y, coordinateSystem));
+        } catch {
+          setAssetLatLng(null);
+        }
+      } else {
+        setAssetLatLng(null);
+      }
 
       const next: Record<string, WorkItemStatus> = {};
       const nextDates: Record<string, string> = {};
@@ -218,7 +241,7 @@ export function AssetEditor({ projectId, assetId, editable = true, onSaved }: As
     return () => {
       cancelled = true;
     };
-  }, [assetId]);
+  }, [assetId, coordinateSystem]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -385,7 +408,26 @@ export function AssetEditor({ projectId, assetId, editable = true, onSaved }: As
         {assetCode}
         {assetType && <span className="asset-editor-type"> — {assetType}</span>}
         {station != null && <span className="asset-editor-station"> · Sta.{station}m</span>}
+        {assetLatLng && (
+          <button
+            type="button"
+            className="wind-toggle-btn"
+            onClick={() => setShowWindy((v) => !v)}
+            title="Wind forecast"
+          >
+            🌬
+          </button>
+        )}
       </h2>
+
+      {showWindy && assetLatLng && (
+        <WindyPopup
+          lat={assetLatLng[0]}
+          lng={assetLatLng[1]}
+          label={assetCode}
+          onClose={() => setShowWindy(false)}
+        />
+      )}
 
       <div className="overall-bar">
         {groups.map((group) => (
