@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.heat';
 import { utmToLatLng } from '../lib/utmToLatLng';
 import { resolveLinePath, bearingDeg } from '../lib/lineGeometry';
 import type { AssetListItem } from '../lib/useAssets';
@@ -138,6 +139,8 @@ interface MapViewProps {
   restrictedAssetIds: Set<string>;
   percentByAssetAndKey: Record<string, Record<string, number>>;
   groundWireConfig: GroundWireConfig;
+  heatmapEnabled?: boolean;
+  heatPoints?: [number, number, number][];
 }
 
 export function MapView({
@@ -148,6 +151,8 @@ export function MapView({
   restrictedAssetIds,
   percentByAssetAndKey,
   groundWireConfig,
+  heatmapEnabled = false,
+  heatPoints = [],
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -156,6 +161,7 @@ export function MapView({
   const crossGroupRef = useRef<L.LayerGroup | null>(null);
   const deflectionGroupRef = useRef<L.LayerGroup | null>(null);
   const basemapLayerRef = useRef<L.TileLayer | null>(null);
+  const heatLayerRef = useRef<L.HeatLayer | null>(null);
   const hasFitBounds = useRef(false);
   const [basemap, setBasemap] = useState<keyof typeof BASEMAPS>('satellite');
   const [basemapMenuOpen, setBasemapMenuOpen] = useState(false);
@@ -193,6 +199,27 @@ export function MapView({
     const bm = BASEMAPS[basemap];
     basemapLayerRef.current = L.tileLayer(bm.url, bm.options).addTo(map);
   }, [basemap]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (heatLayerRef.current) {
+      map.removeLayer(heatLayerRef.current);
+      heatLayerRef.current = null;
+    }
+
+    if (heatmapEnabled && heatPoints.length > 0) {
+      const maxWeight = Math.max(...heatPoints.map((p) => p[2]));
+      heatLayerRef.current = L.heatLayer(heatPoints, {
+        radius: 45,
+        blur: 35,
+        maxZoom: 18,
+        max: maxWeight,
+        gradient: { 0.2: '#2563eb', 0.4: '#00d4aa', 0.6: '#f59e0b', 0.8: '#ef4444', 1.0: '#7f1d1d' },
+      }).addTo(map);
+    }
+  }, [heatmapEnabled, heatPoints]);
 
   useEffect(() => {
     const map = mapRef.current;

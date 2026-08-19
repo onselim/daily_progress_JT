@@ -2,6 +2,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 import { useWorkItemsConfig, type WorkItemConfig } from '../lib/useProjectConfig';
+import { useFoundationTypesConfig, getFoundationTypeForAsset } from '../lib/useFoundationTypesConfig';
 import { useAssetPhotos, type AssetPhoto } from '../lib/useAssetPhotos';
 import { uploadAssetPhoto } from '../lib/uploadAssetPhoto';
 import { deleteAssetPhoto } from '../lib/deleteAssetPhoto';
@@ -157,6 +158,7 @@ interface AssetEditorProps {
 export function AssetEditor({ projectId, assetId, coordinateSystem = null, editable = true, onSaved }: AssetEditorProps) {
   const { user } = useAuth();
   const { workItems, loading: workItemsLoading } = useWorkItemsConfig(projectId);
+  const { foundationTypes } = useFoundationTypesConfig(projectId);
   const { photos, loading: photosLoading, refresh: refreshPhotos } = useAssetPhotos(assetId);
   const { documents: assetDocs, refresh: refreshAssetDocs } = useAssetDocuments(assetId);
 
@@ -413,6 +415,7 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
   }
 
   const isRestricted = siteAccessStatus === 'restricted';
+  const foundation = getFoundationTypeForAsset(assetType, foundationTypes);
 
   return (
     <form className="asset-editor" onSubmit={handleSubmit}>
@@ -474,6 +477,26 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
               <legend style={{ color }}>
                 {group.name} <span className="group-count">{done}/{group.items.length}</span>
               </legend>
+              {group.name === 'Foundation' && foundation && (
+                <div className="foundation-stats" title={`${foundation.type} — ${foundation.soilType}`}>
+                  <div className="foundation-stat">
+                    <span className="foundation-stat-label">Concrete</span>
+                    <span className="foundation-stat-value">{foundation.concreteM3.toFixed(2)} m³</span>
+                  </div>
+                  <div className="foundation-stat">
+                    <span className="foundation-stat-label">Excavation</span>
+                    <span className="foundation-stat-value">{foundation.excavationM3.toFixed(1)} m³</span>
+                  </div>
+                  <div className="foundation-stat">
+                    <span className="foundation-stat-label">Reinforcement</span>
+                    <span className="foundation-stat-value">{foundation.reinforcementKg.toLocaleString()} kg</span>
+                  </div>
+                  <div className="foundation-stat">
+                    <span className="foundation-stat-label">Lean Concrete</span>
+                    <span className="foundation-stat-value">{foundation.leanConcreteM3.toFixed(2)} m³</span>
+                  </div>
+                </div>
+              )}
               {group.items.map((item) => {
                 const current = statusByKey[item.key] ?? 'not_started';
                 const fill = PERCENT_BY_STATUS[current];

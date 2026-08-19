@@ -9,6 +9,7 @@ import { useRestrictedToday } from '../lib/useRestrictedToday';
 import { useWorkItemsConfig } from '../lib/useProjectConfig';
 import { useGroundWireConfig } from '../lib/useGroundWireConfig';
 import { useLineSummary } from '../lib/useLineSummary';
+import { useFoundationTypesConfig, getFoundationTypeForAsset } from '../lib/useFoundationTypesConfig';
 import { utmToLatLng } from '../lib/utmToLatLng';
 
 interface AssetWorkspaceProps {
@@ -30,6 +31,8 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
   const { workItems } = useWorkItemsConfig(projectId);
   const groundWireConfig = useGroundWireConfig(projectId);
   const lineSummary = useLineSummary(projectId, assets, coordinateSystem);
+  const { foundationTypes } = useFoundationTypesConfig(projectId);
+  const [heatmapEnabled, setHeatmapEnabled] = useState(false);
 
   function handleAssetSaved() {
     refreshProgress();
@@ -52,6 +55,29 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
     return [null, null];
   }, [assets, coordinateSystem]);
 
+  const heatPoints = useMemo((): [number, number, number][] => {
+    if (foundationTypes.length === 0) return [];
+    const points: [number, number, number][] = [];
+    for (const asset of assets) {
+      const foundation = getFoundationTypeForAsset(asset.asset_type, foundationTypes);
+      if (!foundation) continue;
+
+      let lat = asset.lat;
+      let lng = asset.lng;
+      if ((lat == null || lng == null) && asset.x != null && asset.y != null && coordinateSystem) {
+        try {
+          [lat, lng] = utmToLatLng(asset.x, asset.y, coordinateSystem);
+        } catch {
+          continue;
+        }
+      }
+      if (lat == null || lng == null) continue;
+
+      points.push([lat, lng, foundation.concreteM3]);
+    }
+    return points;
+  }, [assets, foundationTypes, coordinateSystem]);
+
   return (
     <>
       <div className="project-body">
@@ -73,6 +99,8 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           restrictedAssetIds={restrictedAssetIds}
           percentByAssetAndKey={percentByAssetAndKey}
           groundWireConfig={groundWireConfig}
+          heatmapEnabled={heatmapEnabled}
+          heatPoints={heatPoints}
         />
         <RightPanelStack
           projectId={projectId}
@@ -80,6 +108,9 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           weatherLat={weatherLat}
           weatherLng={weatherLng}
           lineSummary={lineSummary}
+          foundationTypes={foundationTypes}
+          heatmapEnabled={heatmapEnabled}
+          onToggleHeatmap={() => setHeatmapEnabled((v) => !v)}
         />
         {selectedAssetId && (
           <div className="floating-editor">
