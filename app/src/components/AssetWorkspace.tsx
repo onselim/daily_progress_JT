@@ -3,6 +3,7 @@ import { AssetList } from './AssetList';
 import { AssetEditor } from './AssetEditor';
 import { MapView } from './MapView';
 import { RightPanelStack } from './RightPanelStack';
+import { DailyPlanRow } from './DailyPlanRow';
 import { useAssets } from '../lib/useAssets';
 import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress';
 import { useRestrictedToday } from '../lib/useRestrictedToday';
@@ -15,11 +16,11 @@ interface AssetWorkspaceProps {
   projectId: string;
   coordinateSystem: string | null;
   editable?: boolean;
-  onAssetSaved?: () => void;
 }
 
-export function AssetWorkspace({ projectId, coordinateSystem, editable = true, onAssetSaved }: AssetWorkspaceProps) {
+export function AssetWorkspace({ projectId, coordinateSystem, editable = true }: AssetWorkspaceProps) {
   const [selectedAssetId, setSelectedAssetId] = useState('');
+  const [dailyRefreshSignal, setDailyRefreshSignal] = useState(0);
   const { assets } = useAssets(projectId);
   const {
     progressByAsset,
@@ -34,7 +35,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
   function handleAssetSaved() {
     refreshProgress();
     refreshRestricted();
-    onAssetSaved?.();
+    setDailyRefreshSignal((s) => s + 1);
   }
 
   const [weatherLat, weatherLng] = useMemo((): [number | null, number | null] => {
@@ -54,6 +55,13 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
 
   return (
     <>
+      <DailyPlanRow
+        projectId={projectId}
+        assets={assets}
+        workItems={workItems}
+        editable={editable}
+        refreshSignal={dailyRefreshSignal}
+      />
       <div className="project-body">
         <AssetList
         projectId={projectId}

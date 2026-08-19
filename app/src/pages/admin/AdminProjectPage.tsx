@@ -4,11 +4,8 @@ import { useAuth } from '../../lib/AuthContext';
 import { useProjectBySlug } from '../../lib/useProject';
 import { useAssetStats } from '../../lib/useAssetStats';
 import { useRestrictedToday } from '../../lib/useRestrictedToday';
-import { useAssets } from '../../lib/useAssets';
-import { useWorkItemsConfig } from '../../lib/useProjectConfig';
 import { AssetWorkspace } from '../../components/AssetWorkspace';
 import { ProjectProgressBar } from '../../components/ProjectProgressBar';
-import { DailyPlanRow } from '../../components/DailyPlanRow';
 import { DeleteProjectDialog } from '../../components/DeleteProjectDialog';
 
 export default function AdminProjectPage() {
@@ -18,10 +15,7 @@ export default function AdminProjectPage() {
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
   const { restrictedAssetIds } = useRestrictedToday(project?.id);
-  const { assets } = useAssets(project?.id);
-  const { workItems } = useWorkItemsConfig(project?.id);
   const [showDelete, setShowDelete] = useState(false);
-  const [dailyRefreshSignal, setDailyRefreshSignal] = useState(0);
 
   if (loading) return <div className="page-loading">Loading…</div>;
   if (error || !project) return <div className="page-loading">Project not found.</div>;
@@ -69,13 +63,6 @@ export default function AdminProjectPage() {
             <span className="stat-pill-lbl">Towers</span>
           </span>
         </div>
-        <DailyPlanRow
-          projectId={project.id}
-          assets={assets}
-          workItems={workItems}
-          editable
-          refreshSignal={dailyRefreshSignal}
-        />
         <div className="project-topbar-actions">
           <button type="button" onClick={() => navigate(`/admin/${project.slug}/work-items`)}>
             Edit work items
@@ -90,11 +77,7 @@ export default function AdminProjectPage() {
         </div>
       </header>
 
-      <AssetWorkspace
-        projectId={project.id}
-        coordinateSystem={project.coordinate_system}
-        onAssetSaved={() => setDailyRefreshSignal((s) => s + 1)}
-      />
+      <AssetWorkspace projectId={project.id} coordinateSystem={project.coordinate_system} />
 
       {showDelete && (
         <DeleteProjectDialog

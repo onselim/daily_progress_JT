@@ -855,11 +855,7 @@ button:disabled {
   min-height: 44px;
   background: var(--panel-bg);
   border-bottom: 1px solid var(--border);
-  /* Everything (title, %, tab, headline counts, stat pills, action buttons) stays on one
-     line — scrolls horizontally on narrow desktop windows rather than wrapping to a
-     second row, which is what frees up the row below for Plan for Today/Tomorrow. */
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  flex-wrap: wrap;
 }
 
 .project-topbar-left {
@@ -1738,6 +1734,10 @@ button:disabled {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  gap: 8px;
+  padding: 3px 20px;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--border);
 }
 
 .daily-plan-tabs {
@@ -1745,14 +1745,16 @@ button:disabled {
   gap: 8px;
 }
 
+/* Soft, muted green (a paler tint of the app's own teal accent) so these sit quietly
+   next to the vivid Active/No Access/Completed pills instead of competing with them. */
 .daily-plan-tab {
   font: inherit;
   font-size: 11px;
   padding: 3px 10px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-  color: var(--text);
+  background: rgba(0, 212, 170, 0.06);
+  border: 1px solid rgba(0, 212, 170, 0.2);
+  color: #5eead4;
   cursor: pointer;
 }
 
@@ -1764,7 +1766,7 @@ button:disabled {
 .daily-plan-tab.active {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(0, 212, 170, 0.08);
+  background: rgba(0, 212, 170, 0.15);
 }
 
 .daily-plan-tab-count {
