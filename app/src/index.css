@@ -1597,7 +1597,22 @@ button:disabled {
   opacity: 0.6;
 }
 
-.heatmap-toggle-btn {
+.heatmap-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.heatmap-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.heatmap-metric-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -1605,12 +1620,16 @@ button:disabled {
   color: var(--text-h);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 8px 8px;
   cursor: pointer;
-  text-align: center;
+  text-align: left;
 }
 
-.heatmap-toggle-btn.active {
+.heatmap-metric-icon {
+  font-size: 13px;
+}
+
+.heatmap-metric-btn.active {
   background: #7f1d1d;
   border-color: #ef4444;
   color: #fecaca;

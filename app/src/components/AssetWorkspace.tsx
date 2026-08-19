@@ -3,6 +3,7 @@ import { AssetList } from './AssetList';
 import { AssetEditor } from './AssetEditor';
 import { MapView } from './MapView';
 import { RightPanelStack } from './RightPanelStack';
+import type { HeatMetric } from './HeatMapPanel';
 import { useAssets } from '../lib/useAssets';
 import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress';
 import { useRestrictedToday } from '../lib/useRestrictedToday';
@@ -10,6 +11,7 @@ import { useWorkItemsConfig } from '../lib/useProjectConfig';
 import { useGroundWireConfig } from '../lib/useGroundWireConfig';
 import { useLineSummary } from '../lib/useLineSummary';
 import { useFoundationTypesConfig, getFoundationTypeForAsset } from '../lib/useFoundationTypesConfig';
+import { useTowerWeightsConfig, getTowerWeightForAsset } from '../lib/useTowerWeightsConfig';
 import { utmToLatLng } from '../lib/utmToLatLng';
 
 interface AssetWorkspaceProps {
@@ -32,7 +34,8 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
   const groundWireConfig = useGroundWireConfig(projectId);
   const lineSummary = useLineSummary(projectId, assets, coordinateSystem);
   const { foundationTypes } = useFoundationTypesConfig(projectId);
-  const [heatmapEnabled, setHeatmapEnabled] = useState(false);
+  const { towerWeights } = useTowerWeightsConfig(projectId);
+  const [heatMetric, setHeatMetric] = useState<HeatMetric | null>(null);
   const [heatmapRangeFrom, setHeatmapRangeFrom] = useState('');
   const [heatmapRangeTo, setHeatmapRangeTo] = useState('');
 
@@ -63,8 +66,18 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
   const rangeToNum = heatmapRangeTo.trim() ? Number(heatmapRangeTo) : null;
   const hasValidRange = rangeFromNum != null && rangeToNum != null && !Number.isNaN(rangeFromNum) && !Number.isNaN(rangeToNum);
 
+  function weightForMetric(assetType: string | null): number | null {
+    if (!heatMetric) return null;
+    if (heatMetric === 'weight') return getTowerWeightForAsset(assetType, towerWeights);
+    const foundation = getFoundationTypeForAsset(assetType, foundationTypes);
+    if (!foundation) return null;
+    if (heatMetric === 'concrete') return foundation.concreteM3;
+    if (heatMetric === 'excavation') return foundation.excavationM3;
+    return foundation.reinforcementKg;
+  }
+
   const heatPointsWithAsset = useMemo((): { assetId: string; lat: number; lng: number; weight: number }[] => {
-    if (foundationTypes.length === 0) return [];
+    if (!heatMetric) return [];
     const lo = hasValidRange ? Math.min(rangeFromNum!, rangeToNum!) : null;
     const hi = hasValidRange ? Math.max(rangeFromNum!, rangeToNum!) : null;
 
@@ -75,8 +88,8 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
         if (Number.isNaN(code) || code < lo || code > hi) continue;
       }
 
-      const foundation = getFoundationTypeForAsset(asset.asset_type, foundationTypes);
-      if (!foundation) continue;
+      const weight = weightForMetric(asset.asset_type);
+      if (weight == null) continue;
 
       let lat = asset.lat;
       let lng = asset.lng;
@@ -89,19 +102,20 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
       }
       if (lat == null || lng == null) continue;
 
-      points.push({ assetId: asset.id, lat, lng, weight: foundation.concreteM3 });
+      points.push({ assetId: asset.id, lat, lng, weight });
     }
     return points;
-  }, [assets, foundationTypes, coordinateSystem, hasValidRange, rangeFromNum, rangeToNum]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assets, foundationTypes, towerWeights, heatMetric, coordinateSystem, hasValidRange, rangeFromNum, rangeToNum]);
 
   const heatPoints = useMemo(
     (): [number, number, number][] => heatPointsWithAsset.map((p) => [p.lat, p.lng, p.weight]),
     [heatPointsWithAsset],
   );
 
-  // Concrete-weighted center of gravity of the selected towers, shown at two spots: a
-  // marker on the map itself, and a highlighted entry in the tower list (the nearest
-  // actual tower to that weighted point) so it's visible against the line too.
+  // Weighted center of gravity of the selected towers for the active metric, shown at two
+  // spots: a marker on the map itself, and a highlighted entry in the tower list (the
+  // nearest actual tower to that weighted point) so it's visible against the line too.
   const heatCentroid = useMemo((): [number, number] | null => {
     if (heatPointsWithAsset.length === 0) return null;
     let sumLat = 0;
@@ -141,7 +155,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
         percentByAssetAndKey={percentByAssetAndKey}
         workItems={workItems}
         restrictedAssetIds={restrictedAssetIds}
-        heatCentroidAssetId={heatmapEnabled ? heatCentroidAssetId : null}
+        heatCentroidAssetId={heatCentroidAssetId}
       />
       <div className="map-stage">
         <MapView
@@ -152,7 +166,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           restrictedAssetIds={restrictedAssetIds}
           percentByAssetAndKey={percentByAssetAndKey}
           groundWireConfig={groundWireConfig}
-          heatmapEnabled={heatmapEnabled}
+          heatmapEnabled={heatMetric != null}
           heatPoints={heatPoints}
           heatCentroid={heatCentroid}
         />
@@ -163,8 +177,8 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           weatherLng={weatherLng}
           lineSummary={lineSummary}
           foundationTypes={foundationTypes}
-          heatmapEnabled={heatmapEnabled}
-          onToggleHeatmap={() => setHeatmapEnabled((v) => !v)}
+          heatMetric={heatMetric}
+          onSelectHeatMetric={(metric) => setHeatMetric((cur) => (cur === metric ? null : metric))}
           heatmapRangeFrom={heatmapRangeFrom}
           heatmapRangeTo={heatmapRangeTo}
           onHeatmapRangeFromChange={setHeatmapRangeFrom}

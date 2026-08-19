@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.heat';
 import { utmToLatLng } from '../lib/utmToLatLng';
 import { resolveLinePath, bearingDeg } from '../lib/lineGeometry';
 import type { AssetListItem } from '../lib/useAssets';
@@ -123,6 +122,32 @@ function activeIconHtml(size: number, color: string, code: string): string {
   </div>`;
 }
 
+const HEAT_GRADIENT_STOPS: [number, [number, number, number]][] = [
+  [0, [37, 99, 235]], // #2563eb
+  [0.35, [0, 212, 170]], // #00d4aa
+  [0.6, [245, 158, 11]], // #f59e0b
+  [0.8, [239, 68, 68]], // #ef4444
+  [1, [127, 29, 29]], // #7f1d1d
+];
+
+/** Maps a normalized 0..1 intensity to a color along the same blue -> amber -> dark-red
+ * scale used elsewhere in the app, for the heat-map "cloud" circles' fill. */
+function heatColor(t: number): string {
+  const clamped = Math.max(0, Math.min(1, t));
+  for (let i = 0; i < HEAT_GRADIENT_STOPS.length - 1; i++) {
+    const [t0, c0] = HEAT_GRADIENT_STOPS[i];
+    const [t1, c1] = HEAT_GRADIENT_STOPS[i + 1];
+    if (clamped >= t0 && clamped <= t1) {
+      const f = t1 === t0 ? 0 : (clamped - t0) / (t1 - t0);
+      const r = Math.round(c0[0] + (c1[0] - c0[0]) * f);
+      const g = Math.round(c0[1] + (c1[1] - c0[1]) * f);
+      const b = Math.round(c0[2] + (c1[2] - c0[2]) * f);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+  }
+  return `rgb(${HEAT_GRADIENT_STOPS[HEAT_GRADIENT_STOPS.length - 1][1].join(', ')})`;
+}
+
 function plainIconHtml(size: number, color: string, code: string, selected: boolean): string {
   return `<div style="width:${size}px;height:${size}px;background:${color};border:2px solid ${
     selected ? '#2563eb' : 'rgba(255,255,255,.85)'
@@ -163,7 +188,7 @@ export function MapView({
   const crossGroupRef = useRef<L.LayerGroup | null>(null);
   const deflectionGroupRef = useRef<L.LayerGroup | null>(null);
   const basemapLayerRef = useRef<L.TileLayer | null>(null);
-  const heatLayerRef = useRef<L.HeatLayer | null>(null);
+  const heatLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const heatCentroidMarkerRef = useRef<L.Marker | null>(null);
   const hasFitBounds = useRef(false);
   const [basemap, setBasemap] = useState<keyof typeof BASEMAPS>('satellite');
@@ -207,24 +232,36 @@ export function MapView({
     const map = mapRef.current;
     if (!map) return;
 
-    if (heatLayerRef.current) {
-      map.removeLayer(heatLayerRef.current);
-      heatLayerRef.current = null;
+    if (heatLayerGroupRef.current) {
+      map.removeLayer(heatLayerGroupRef.current);
+      heatLayerGroupRef.current = null;
     }
 
     if (heatmapEnabled && heatPoints.length > 0) {
-      // Individual sparsely-spaced towers otherwise look washed out (leaflet.heat fades
-      // each blob toward its edges) -- boosting minOpacity and setting `max` below the
-      // true peak weight keeps a single strong tower fully saturated instead of pale.
-      const maxWeight = Math.max(...heatPoints.map((p) => p[2]));
-      heatLayerRef.current = L.heatLayer(heatPoints, {
-        radius: 55,
-        blur: 25,
-        maxZoom: 18,
-        max: maxWeight * 0.6,
-        minOpacity: 0.45,
-        gradient: { 0.1: '#2563eb', 0.3: '#00d4aa', 0.5: '#f59e0b', 0.75: '#ef4444', 1.0: '#7f1d1d' },
-      }).addTo(map);
+      // A diffuse leaflet.heat-style blur reads as washed out for a handful of sparse
+      // towers -- solid, black-outlined "cloud" circles per tower (color + size both
+      // driven by intensity) read far more clearly, and overlapping circles still blend
+      // into a cluster the way a real heat map would.
+      const weights = heatPoints.map((p) => p[2]);
+      const minW = Math.min(...weights);
+      const maxW = Math.max(...weights);
+      const span = maxW - minW;
+
+      const group = L.layerGroup();
+      for (const [lat, lng, weight] of heatPoints) {
+        const t = span > 0 ? (weight - minW) / span : 0.6;
+        const radiusM = 110 + t * 260;
+        L.circle([lat, lng], {
+          radius: radiusM,
+          color: '#000000',
+          weight: 2,
+          opacity: 0.8,
+          fillColor: heatColor(t),
+          fillOpacity: 0.55,
+        }).addTo(group);
+      }
+      group.addTo(map);
+      heatLayerGroupRef.current = group;
     }
   }, [heatmapEnabled, heatPoints]);
 

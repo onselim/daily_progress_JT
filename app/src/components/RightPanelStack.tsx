@@ -3,6 +3,7 @@ import { ProjectDocumentsPanel } from './ProjectDocumentsPanel';
 import { WeatherPanel } from './WeatherPanel';
 import { LineSummaryPanel } from './LineSummaryPanel';
 import { FoundationPanel } from './FoundationPanel';
+import { HeatMapPanel, type HeatMetric } from './HeatMapPanel';
 import type { LineSummary } from '../lib/useLineSummary';
 import type { FoundationTypeConfig } from '../lib/useFoundationTypesConfig';
 
@@ -13,8 +14,8 @@ interface RightPanelStackProps {
   weatherLng: number | null;
   lineSummary: LineSummary;
   foundationTypes: FoundationTypeConfig[];
-  heatmapEnabled: boolean;
-  onToggleHeatmap: () => void;
+  heatMetric: HeatMetric | null;
+  onSelectHeatMetric: (metric: HeatMetric) => void;
   heatmapRangeFrom: string;
   heatmapRangeTo: string;
   onHeatmapRangeFromChange: (value: string) => void;
@@ -29,8 +30,8 @@ export function RightPanelStack({
   weatherLng,
   lineSummary,
   foundationTypes,
-  heatmapEnabled,
-  onToggleHeatmap,
+  heatMetric,
+  onSelectHeatMetric,
   heatmapRangeFrom,
   heatmapRangeTo,
   onHeatmapRangeFromChange,
@@ -43,17 +44,20 @@ export function RightPanelStack({
         <LineSummaryPanel summary={lineSummary} />
       </AccordionPanel>
 
-      <AccordionPanel title="Foundation">
-        <FoundationPanel
-          foundationTypes={foundationTypes}
-          heatmapEnabled={heatmapEnabled}
-          onToggleHeatmap={onToggleHeatmap}
+      <AccordionPanel title="Heat Map">
+        <HeatMapPanel
+          activeMetric={heatMetric}
+          onSelectMetric={onSelectHeatMetric}
           rangeFrom={heatmapRangeFrom}
           rangeTo={heatmapRangeTo}
           onRangeFromChange={onHeatmapRangeFromChange}
           onRangeToChange={onHeatmapRangeToChange}
           heatPointCount={heatPointCount}
         />
+      </AccordionPanel>
+
+      <AccordionPanel title="Foundation">
+        <FoundationPanel foundationTypes={foundationTypes} />
       </AccordionPanel>
 
       <AccordionPanel title="Project documents">
