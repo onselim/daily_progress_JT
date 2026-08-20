@@ -24,13 +24,13 @@ interface AssetWorkspaceProps {
 export function AssetWorkspace({ projectId, coordinateSystem, editable = true, onAssetSaved }: AssetWorkspaceProps) {
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const { assets } = useAssets(projectId);
+  const { workItems } = useWorkItemsConfig(projectId);
   const {
     progressByAsset,
     percentByAssetAndKey,
     refresh: refreshProgress,
-  } = useProjectWorkItemsProgress(projectId);
+  } = useProjectWorkItemsProgress(projectId, workItems);
   const { restrictedAssetIds, refresh: refreshRestricted } = useRestrictedToday(projectId);
-  const { workItems } = useWorkItemsConfig(projectId);
   const groundWireConfig = useGroundWireConfig(projectId);
   const lineSummary = useLineSummary(projectId, assets, coordinateSystem);
   const { foundationTypes } = useFoundationTypesConfig(projectId);

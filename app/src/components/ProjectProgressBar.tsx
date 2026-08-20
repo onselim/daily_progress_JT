@@ -75,7 +75,7 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
   const construction = useConstructionBreakdown(projectId, workItems);
   const design = useDesignBreakdown(projectId);
   const supply = useSupplyBreakdown(projectId);
-  const { percentByAssetAndKey } = useProjectWorkItemsProgress(projectId);
+  const { percentByAssetAndKey } = useProjectWorkItemsProgress(projectId, workItems);
   const { stats } = useAssetStats(projectId);
   const overallPercent = computeOverallPercent(design.overallPercent, construction.overallPercent, supply.overallPercent);
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
