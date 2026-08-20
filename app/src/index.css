@@ -3106,3 +3106,140 @@ a.pw-edit-items-link {
   color: #0f1117;
   border-color: var(--accent);
 }
+
+/* ============ Mobile pass #3: fix clipped flyouts, push the map toward ~70% ============
+   Appended last on purpose. This file has more than one spot where a same-viewport
+   media rule for a selector is declared *before* that selector's unconditional (base)
+   rule elsewhere in the file -- the base rule then wins the cascade tie regardless of
+   which one is inside @media, silently no-op'ing the override (found and worked around
+   once already for .accordion-body). Rather than keep hunting instances one at a time,
+   everything mobile-specific that needs to actually win now lives in this one block,
+   guaranteed to be the last declaration for every property it touches. */
+@media (max-width: 720px) {
+  /* .right-panel-stack's overflow-y:auto was clipping the opened accordion flyout
+     (position:absolute, wider than the 110px stack) -- most of it was invisible and
+     unclickable, which read as "the tab doesn't open". The header stack itself never
+     needs its own scroll in practice (5 short buttons comfortably fit any phone's
+     height budget), so it's safe to let this be fully visible instead. */
+  .right-panel-stack {
+    overflow: visible;
+  }
+
+  /* The deeper reason a flyout was unclickable: .accordion-panel's backdrop-filter
+     triggers its own isolated stacking context (same rule as z-index+position,
+     opacity<1, transform...), so a flyout's z-index only ever outranks elements
+     *inside its own panel* -- a later sibling panel's header (e.g. Weather forecast
+     sitting right where Heat Map's flyout visually overlaps it) belongs to a
+     different, later-painted context and wins regardless of any z-index set deeper
+     inside Heat Map's subtree. Moving the frosted-card look onto the header itself
+     removes the trap; the flyout already carries its own background/blur/border
+     for when it's open, so nothing looks different either state. */
+  .accordion-panel {
+    background: transparent;
+    backdrop-filter: none;
+    border: none;
+  }
+
+  .accordion-header {
+    background: rgba(23, 27, 38, 0.97);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+  }
+
+  /* Tighten every stacked/wrapped row in the topbar -- title, progress tabs, daily
+     plan tabs, headline stat pills, action buttons -- so their combined height stops
+     eating so much of the screen from the map. */
+  .project-topbar {
+    gap: 3px;
+    padding: 3px 10px;
+    min-height: 0;
+  }
+
+  .project-topbar-left h1 {
+    font-size: 9px;
+  }
+
+  .project-topbar-left p,
+  .project-topbar-left a {
+    font-size: 7px;
+  }
+
+  .project-topbar-left p {
+    margin-top: 0;
+  }
+
+  .pgb-tabs {
+    gap: 3px;
+  }
+
+  .pgb-tab {
+    padding: 1px 4px;
+    gap: 0;
+  }
+
+  .pgb-tab-val {
+    font-size: 8px;
+  }
+
+  .pgb-tab-overall .pgb-tab-val {
+    font-size: 9px;
+  }
+
+  .pgb-tab-lbl {
+    font-size: 6px;
+  }
+
+  .daily-plan-tabs {
+    gap: 3px;
+  }
+
+  .daily-plan-tab {
+    font-size: 7px;
+    padding: 1px 5px;
+  }
+
+  .project-topbar-stats,
+  .pgb-headline-stats {
+    gap: 4px;
+    padding: 2px 0;
+  }
+
+  .stat-pill,
+  .pgb-headline-stats .stat-pill {
+    font-size: 7px;
+    gap: 2px;
+  }
+
+  .stat-pill-dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .project-topbar-actions {
+    gap: 3px;
+  }
+
+  .project-topbar-actions button {
+    padding: 2px 5px;
+    font-size: 8px;
+  }
+
+  /* The tower list's own budget -- rows are already tight (padding/gap trimmed in an
+     earlier pass), so this just shows fewer of them at once in exchange for the map
+     getting most of what the topbar gave up above. */
+  .asset-list-panel {
+    height: 14vh;
+    min-height: 108px;
+  }
+
+  .asset-search {
+    padding: 4px 6px;
+    font-size: 10px;
+    margin-bottom: 3px;
+  }
+
+  .asset-filter-row {
+    margin-bottom: 3px;
+  }
+}
