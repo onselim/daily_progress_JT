@@ -335,7 +335,10 @@ button:disabled {
 }
 
 .completed-date-input {
-  flex: 1 1 110px;
+  /* No flex-grow: it used to stretch to fill its whole wrapped row (flex:1 ...) even
+     though the date text only needs ~100px, leaving the Qty% field stranded alone on
+     the next line. Fixed-ish width now lets both share a row. */
+  flex: 0 1 100px;
   min-width: 0;
   font: inherit;
   font-size: 10.5px;
@@ -366,6 +369,17 @@ button:disabled {
   background: var(--bg);
   color: var(--text-h);
   text-align: right;
+  /* Native number-input spin buttons render oversized/blocky at this field's compact
+     size (varies by browser but consistently looked broken) -- drop them and keep
+     plain text-style input; the field still only accepts 0-100 via the JS handler. */
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.qty-percent-input::-webkit-inner-spin-button,
+.qty-percent-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .qty-percent-badge {
