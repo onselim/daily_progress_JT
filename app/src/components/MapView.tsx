@@ -155,6 +155,12 @@ function geoLayerStyle(category?: string): L.PathOptions {
   if (category === 'pipeline') {
     return { color: '#a16207', weight: 3, dashArray: '2 6', opacity: 0.85 };
   }
+  if (category === 'substation') {
+    return { color: '#ef4444', weight: 2, fillColor: '#ef4444', fillOpacity: 0.25, opacity: 0.9 };
+  }
+  if (category === 'power_plant') {
+    return { color: '#a855f7', weight: 2, fillColor: '#a855f7', fillOpacity: 0.25, opacity: 0.9 };
+  }
   return { color: '#f59e0b', weight: 3, dashArray: '6 4', opacity: 0.85 };
 }
 
