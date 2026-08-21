@@ -19,6 +19,8 @@ interface RightPanelStackProps {
   onHeatmapRangeToChange: (value: string) => void;
   heatPointCount: number;
   metricTotals: MetricTotals;
+  enabledLayerIds: Set<string>;
+  onToggleLayer: (layerId: string) => void;
 }
 
 export function RightPanelStack({
@@ -35,6 +37,8 @@ export function RightPanelStack({
   onHeatmapRangeToChange,
   heatPointCount,
   metricTotals,
+  enabledLayerIds,
+  onToggleLayer,
 }: RightPanelStackProps) {
   return (
     <div className="right-panel-stack">
@@ -65,6 +69,8 @@ export function RightPanelStack({
           editable={editable}
           section="layers"
           emptyLabel="No extra map layers configured yet."
+          enabledLayerIds={enabledLayerIds}
+          onToggleLayer={onToggleLayer}
         />
       </AccordionPanel>
 

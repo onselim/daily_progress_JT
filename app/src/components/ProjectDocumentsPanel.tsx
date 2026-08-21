@@ -7,11 +7,15 @@ import { renameProjectDocument } from '../lib/renameDocument';
 import { createDocumentFolder, deleteDocumentFolder, renameDocumentFolder } from '../lib/documentFolders';
 import { RenamableText } from './RenamableText';
 
+const GEO_LAYER_EXTENSIONS = /\.(geojson|json)$/i;
+
 interface ProjectDocumentsPanelProps {
   projectId: string;
   editable: boolean;
   section?: string;
   emptyLabel?: string;
+  enabledLayerIds?: Set<string>;
+  onToggleLayer?: (layerId: string) => void;
 }
 
 interface FolderNodeProps {
@@ -27,6 +31,29 @@ interface FolderNodeProps {
   onDeleteFolder: (folderId: string, folderName: string) => void;
   onRenameFolder: (folderId: string, newName: string) => void;
   onRenameDocument: (docId: string, newName: string) => void;
+  enabledLayerIds?: Set<string>;
+  onToggleLayer?: (layerId: string) => void;
+}
+
+function LayerToggle({
+  doc,
+  enabledLayerIds,
+  onToggleLayer,
+}: {
+  doc: ProjectDocument;
+  enabledLayerIds?: Set<string>;
+  onToggleLayer?: (layerId: string) => void;
+}) {
+  if (!onToggleLayer || !GEO_LAYER_EXTENSIONS.test(doc.slot_name)) return null;
+  return (
+    <label className="layer-toggle" title="Show/hide this layer on the map">
+      <input
+        type="checkbox"
+        checked={enabledLayerIds?.has(doc.id) ?? false}
+        onChange={() => onToggleLayer(doc.id)}
+      />
+    </label>
+  );
 }
 
 function FolderNode({
@@ -42,6 +69,8 @@ function FolderNode({
   onDeleteFolder,
   onRenameFolder,
   onRenameDocument,
+  enabledLayerIds,
+  onToggleLayer,
 }: FolderNodeProps) {
   const [open, setOpen] = useState(false);
   const [addingSubfolder, setAddingSubfolder] = useState(false);
@@ -113,6 +142,8 @@ function FolderNode({
               onDeleteFolder={onDeleteFolder}
               onRenameFolder={onRenameFolder}
               onRenameDocument={onRenameDocument}
+              enabledLayerIds={enabledLayerIds}
+              onToggleLayer={onToggleLayer}
             />
           ))}
 
@@ -120,15 +151,18 @@ function FolderNode({
 
           {docs.map((doc) => (
             <div key={doc.id} className="doc-row">
-              <RenamableText
-                value={doc.slot_name}
-                editable={editable}
-                onRename={(name) => onRenameDocument(doc.id, name)}
-              >
-                <a href={doc.file_url} target="_blank" rel="noreferrer">
-                  {doc.slot_name}
-                </a>
-              </RenamableText>
+              <span className="doc-row-main">
+                <LayerToggle doc={doc} enabledLayerIds={enabledLayerIds} onToggleLayer={onToggleLayer} />
+                <RenamableText
+                  value={doc.slot_name}
+                  editable={editable}
+                  onRename={(name) => onRenameDocument(doc.id, name)}
+                >
+                  <a href={doc.file_url} target="_blank" rel="noreferrer">
+                    {doc.slot_name}
+                  </a>
+                </RenamableText>
+              </span>
               {editable && (
                 <button
                   type="button"
@@ -195,6 +229,8 @@ export function ProjectDocumentsPanel({
   editable,
   section = 'documents',
   emptyLabel = 'No documents uploaded yet.',
+  enabledLayerIds,
+  onToggleLayer,
 }: ProjectDocumentsPanelProps) {
   const { user } = useAuth();
   const { documents, folders, loading, refresh } = useProjectDocuments(projectId, section);
@@ -282,6 +318,8 @@ export function ProjectDocumentsPanel({
             onDeleteFolder={handleDeleteFolder}
             onRenameFolder={handleRenameFolder}
             onRenameDocument={handleRenameDocument}
+            enabledLayerIds={enabledLayerIds}
+            onToggleLayer={onToggleLayer}
           />
           {folder.divider_after && <div className="doc-folder-divider" />}
         </div>
@@ -291,15 +329,18 @@ export function ProjectDocumentsPanel({
         <div className="doc-folder-body doc-folder-root">
           {rootDocs.map((doc) => (
             <div key={doc.id} className="doc-row">
-              <RenamableText
-                value={doc.slot_name}
-                editable={editable}
-                onRename={(name) => handleRenameDocument(doc.id, name)}
-              >
-                <a href={doc.file_url} target="_blank" rel="noreferrer">
-                  {doc.slot_name}
-                </a>
-              </RenamableText>
+              <span className="doc-row-main">
+                <LayerToggle doc={doc} enabledLayerIds={enabledLayerIds} onToggleLayer={onToggleLayer} />
+                <RenamableText
+                  value={doc.slot_name}
+                  editable={editable}
+                  onRename={(name) => handleRenameDocument(doc.id, name)}
+                >
+                  <a href={doc.file_url} target="_blank" rel="noreferrer">
+                    {doc.slot_name}
+                  </a>
+                </RenamableText>
+              </span>
               {editable && (
                 <button
                   type="button"

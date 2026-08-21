@@ -12,6 +12,7 @@ import { useGroundWireConfig } from '../lib/useGroundWireConfig';
 import { useLineSummary } from '../lib/useLineSummary';
 import { useFoundationTypesConfig, getFoundationTypeForAsset } from '../lib/useFoundationTypesConfig';
 import { useTowerWeightsConfig, getTowerWeightForAsset } from '../lib/useTowerWeightsConfig';
+import { useMapLayers } from '../lib/useMapLayers';
 import { utmToLatLng } from '../lib/utmToLatLng';
 
 interface AssetWorkspaceProps {
@@ -38,6 +39,22 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
   const [heatMetric, setHeatMetric] = useState<HeatMetric | null>(null);
   const [heatmapRangeFrom, setHeatmapRangeFrom] = useState('');
   const [heatmapRangeTo, setHeatmapRangeTo] = useState('');
+  const { layers: mapLayers } = useMapLayers(projectId);
+  const [enabledLayerIds, setEnabledLayerIds] = useState<Set<string>>(new Set());
+
+  function toggleLayer(layerId: string) {
+    setEnabledLayerIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(layerId)) next.delete(layerId);
+      else next.add(layerId);
+      return next;
+    });
+  }
+
+  const activeMapLayers = useMemo(
+    () => mapLayers.filter((l) => enabledLayerIds.has(l.id)),
+    [mapLayers, enabledLayerIds],
+  );
 
   function handleAssetSaved() {
     refreshProgress();
@@ -193,6 +210,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           heatmapEnabled={heatMetric != null}
           heatPoints={heatPoints}
           heatCentroid={heatCentroid}
+          geoLayers={activeMapLayers}
         />
         <RightPanelStack
           projectId={projectId}
@@ -208,6 +226,8 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           onHeatmapRangeToChange={setHeatmapRangeTo}
           heatPointCount={heatPoints.length}
           metricTotals={metricTotals}
+          enabledLayerIds={enabledLayerIds}
+          onToggleLayer={toggleLayer}
         />
         {selectedAssetId && (
           <div className="floating-editor">

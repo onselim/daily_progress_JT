@@ -148,6 +148,16 @@ function heatColor(t: number): string {
   return `rgb(${HEAT_GRADIENT_STOPS[HEAT_GRADIENT_STOPS.length - 1][1].join(', ')})`;
 }
 
+/** Existing-infrastructure overlays (OpenStreetMap power lines / pipelines uploaded as
+ * GeoJSON to the Layers panel) get a dashed line distinct from the project's own solid
+ * conductor spans, colored by category so power and pipeline read apart at a glance. */
+function geoLayerStyle(category?: string): L.PathOptions {
+  if (category === 'pipeline') {
+    return { color: '#a16207', weight: 3, dashArray: '2 6', opacity: 0.85 };
+  }
+  return { color: '#f59e0b', weight: 3, dashArray: '6 4', opacity: 0.85 };
+}
+
 function plainIconHtml(size: number, color: string, code: string, selected: boolean): string {
   return `<div style="width:${size}px;height:${size}px;background:${color};border:2px solid ${
     selected ? '#2563eb' : 'rgba(255,255,255,.85)'
@@ -167,6 +177,7 @@ interface MapViewProps {
   heatmapEnabled?: boolean;
   heatPoints?: [number, number, number][];
   heatCentroid?: [number, number] | null;
+  geoLayers?: { id: string; name: string; url: string }[];
 }
 
 export function MapView({
@@ -180,6 +191,7 @@ export function MapView({
   heatmapEnabled = false,
   heatPoints = [],
   heatCentroid = null,
+  geoLayers = [],
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -190,6 +202,7 @@ export function MapView({
   const basemapLayerRef = useRef<L.TileLayer | null>(null);
   const heatLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const heatCentroidMarkerRef = useRef<L.Marker | null>(null);
+  const geoLayersRef = useRef<Record<string, L.GeoJSON>>({});
   const hasFitBounds = useRef(false);
   const [basemap, setBasemap] = useState<keyof typeof BASEMAPS>('satellite');
   const [basemapMenuOpen, setBasemapMenuOpen] = useState(false);
@@ -295,6 +308,50 @@ export function MapView({
       );
     }
   }, [heatmapEnabled, heatCentroid]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    let cancelled = false;
+
+    const activeIds = new Set(geoLayers.map((l) => l.id));
+    for (const [id, layer] of Object.entries(geoLayersRef.current)) {
+      if (!activeIds.has(id)) {
+        map.removeLayer(layer);
+        delete geoLayersRef.current[id];
+      }
+    }
+
+    for (const geoLayer of geoLayers) {
+      if (geoLayersRef.current[geoLayer.id]) continue;
+      fetch(geoLayer.url)
+        .then((res) => res.json())
+        .then((data) => {
+          if (cancelled || geoLayersRef.current[geoLayer.id]) return;
+          const layer = L.geoJSON(data, {
+            style: (feature) => geoLayerStyle(feature?.properties?.category),
+            onEachFeature: (feature, featureLayer) => {
+              const p = feature.properties ?? {};
+              const bits = [
+                p.name,
+                p.voltage ? `${Number(p.voltage) / 1000} kV` : null,
+                p.man_made ?? p.power,
+              ].filter(Boolean);
+              featureLayer.bindTooltip(bits.join(' — ') || geoLayer.name, { sticky: true });
+            },
+          });
+          layer.addTo(map);
+          geoLayersRef.current[geoLayer.id] = layer;
+        })
+        .catch(() => {
+          /* layer file missing/invalid -- silently skip, nothing to show */
+        });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [geoLayers]);
 
   useEffect(() => {
     const map = mapRef.current;

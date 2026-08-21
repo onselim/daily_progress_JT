@@ -1960,6 +1960,25 @@ button:disabled {
   font-size: 11px;
 }
 
+.doc-row-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.layer-toggle {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.layer-toggle input {
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
 .doc-row:last-child {
   border-bottom: none;
 }
