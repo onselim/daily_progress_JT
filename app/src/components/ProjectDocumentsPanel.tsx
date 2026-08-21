@@ -266,6 +266,7 @@ export function ProjectDocumentsPanel({
   const [newFolderName, setNewFolderName] = useState('');
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [fetchingOsm, setFetchingOsm] = useState(false);
+  const [osmFetchProgress, setOsmFetchProgress] = useState<string | null>(null);
   const [osmFetchError, setOsmFetchError] = useState<string | null>(null);
 
   async function replaceNamedDocument(name: string, geojson: GeoJSON.FeatureCollection) {
@@ -280,12 +281,14 @@ export function ProjectDocumentsPanel({
     if (!osmFetchContext || !user) return;
     setFetchingOsm(true);
     setOsmFetchError(null);
+    setOsmFetchProgress(null);
     try {
       const bounds = computeProjectBounds(osmFetchContext.assets, osmFetchContext.coordinateSystem);
       if (!bounds) throw new Error('No tower coordinates to search around yet.');
 
-      const { powerLines, pipelines, substations, railways } = await fetchExistingInfrastructure(bounds);
+      const { powerLines, pipelines, substations, railways } = await fetchExistingInfrastructure(bounds, setOsmFetchProgress);
 
+      setOsmFetchProgress('Uploading layers…');
       await Promise.all([
         replaceNamedDocument(OSM_LAYER_NAMES.powerLines, powerLines),
         replaceNamedDocument(OSM_LAYER_NAMES.pipelines, pipelines),
@@ -297,6 +300,7 @@ export function ProjectDocumentsPanel({
       setOsmFetchError(err instanceof Error ? err.message : 'Fetch failed');
     } finally {
       setFetchingOsm(false);
+      setOsmFetchProgress(null);
     }
   }
 
@@ -365,7 +369,7 @@ export function ProjectDocumentsPanel({
       {editable && osmFetchContext && (
         <div className="osm-fetch-row">
           <button type="button" className="doc-folder-add-btn" onClick={handleFetchOsmLayers} disabled={fetchingOsm}>
-            {fetchingOsm ? 'Fetching from OpenStreetMap…' : '🌐 Fetch existing infrastructure (OSM)'}
+            {fetchingOsm ? (osmFetchProgress ?? 'Fetching from OpenStreetMap…') : '🌐 Fetch existing infrastructure (OSM)'}
           </button>
           {osmFetchError && <p className="osm-fetch-error">{osmFetchError}</p>}
         </div>

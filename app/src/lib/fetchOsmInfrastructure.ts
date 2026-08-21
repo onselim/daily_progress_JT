@@ -59,22 +59,51 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// A plain fetch() has no timeout of its own -- if the shared free Overpass instance
+// accepts the connection but sits on it under load, a query can hang far longer than
+// any reasonable UI wait, with the button just stuck on "Fetching..." forever and no
+// error to explain why. Aborting after REQUEST_TIMEOUT_MS turns that into a fast,
+// visible failure instead.
+const REQUEST_TIMEOUT_MS = 20000;
+
 // 429 (rate limited) and 502/503/504 (the shared free instance overloaded or its
-// gateway timing out) are worth a couple of retries with backoff -- both showed up
-// under real use, and both are often gone a few seconds later on a shared public
-// service with no SLA. Anything else (a malformed query, etc.) isn't going to fix
-// itself by waiting.
+// gateway timing out) are worth one retry with backoff -- both showed up under real
+// use, and both are often gone a few seconds later on a shared public service with
+// no SLA. Anything else (a malformed query, a hard timeout) isn't going to fix
+// itself by waiting, and kept-bounded total wait matters more than an extra attempt.
 const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
 
 async function runOverpassQuery(ql: string, attempt = 1): Promise<OverpassElement[]> {
-  const res = await fetch(OVERPASS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `data=${encodeURIComponent(ql)}`,
-  });
+  let res: Response;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      res = await fetch(OVERPASS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `data=${encodeURIComponent(ql)}`,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch (err) {
+    if (attempt < 2) {
+      await wait(3000);
+      return runOverpassQuery(ql, attempt + 1);
+    }
+    const timedOut = err instanceof DOMException && err.name === 'AbortError';
+    throw new Error(
+      timedOut
+        ? "OpenStreetMap's free query service didn't respond in time -- try again in a few minutes."
+        : 'Could not reach OpenStreetMap\'s query service -- check your connection and try again.',
+    );
+  }
+
   if (RETRYABLE_STATUSES.has(res.status)) {
-    if (attempt < 3) {
-      await wait(attempt * 4000);
+    if (attempt < 2) {
+      await wait(3000);
       return runOverpassQuery(ql, attempt + 1);
     }
     throw new Error("OpenStreetMap's free query service is busy right now -- wait a few minutes and try again.");
@@ -131,19 +160,27 @@ export interface FetchedInfrastructure {
  * combining everything into one query was tried and measured *slower* and less
  * reliable (a consistent ~10s gateway timeout on the shared free instance), and
  * plain concurrent requests (Promise.all) reliably triggered its rate limit under
- * real use. Each query also retries with backoff via runOverpassQuery. */
-export async function fetchExistingInfrastructure(bounds: Bounds): Promise<FetchedInfrastructure> {
+ * real use. Each query also retries with backoff via runOverpassQuery.
+ * `onProgress`, if given, is called before each of the three so a caller can show
+ * which step is running instead of one static "fetching" message. */
+export async function fetchExistingInfrastructure(
+  bounds: Bounds,
+  onProgress?: (label: string) => void,
+): Promise<FetchedInfrastructure> {
   const bbox = bboxString(bounds);
 
-  const powerPipelineQl = `[out:json][timeout:30];(way["power"="line"](${bbox});way["power"="minor_line"](${bbox});way["man_made"="pipeline"](${bbox}););out geom;`;
+  onProgress?.('Fetching power lines & pipelines…');
+  const powerPipelineQl = `[out:json][timeout:20];(way["power"="line"](${bbox});way["power"="minor_line"](${bbox});way["man_made"="pipeline"](${bbox}););out geom;`;
   const powerPipelineEls = await runOverpassQuery(powerPipelineQl);
   await wait(1500);
 
-  const substationQl = `[out:json][timeout:30];(node["power"="substation"](${bbox});way["power"="substation"](${bbox});way["power"="plant"](${bbox});way["power"="cable"](${bbox}););out geom;`;
+  onProgress?.('Fetching substations & plants…');
+  const substationQl = `[out:json][timeout:20];(node["power"="substation"](${bbox});way["power"="substation"](${bbox});way["power"="plant"](${bbox});way["power"="cable"](${bbox}););out geom;`;
   const substationEls = await runOverpassQuery(substationQl);
   await wait(1500);
 
-  const railwayQl = `[out:json][timeout:30];(way["railway"="rail"](${bbox});way["railway"="light_rail"](${bbox});way["railway"="narrow_gauge"](${bbox}););out geom;`;
+  onProgress?.('Fetching railways…');
+  const railwayQl = `[out:json][timeout:20];(way["railway"="rail"](${bbox});way["railway"="light_rail"](${bbox});way["railway"="narrow_gauge"](${bbox}););out geom;`;
   const railwayEls = await runOverpassQuery(railwayQl);
 
   const powerEls = powerPipelineEls.filter((e) => e.tags?.power === 'line' || e.tags?.power === 'minor_line');
