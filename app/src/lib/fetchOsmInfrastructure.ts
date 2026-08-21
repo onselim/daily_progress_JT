@@ -59,22 +59,28 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function runOverpassQuery(ql: string): Promise<OverpassElement[]> {
+// 429 (rate limited) and 502/503/504 (the shared free instance overloaded or its
+// gateway timing out) are worth a couple of retries with backoff -- both showed up
+// under real use, and both are often gone a few seconds later on a shared public
+// service with no SLA. Anything else (a malformed query, etc.) isn't going to fix
+// itself by waiting.
+const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
+
+async function runOverpassQuery(ql: string, attempt = 1): Promise<OverpassElement[]> {
   const res = await fetch(OVERPASS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `data=${encodeURIComponent(ql)}`,
   });
-  if (res.status === 429) {
-    throw new Error('OpenStreetMap\'s free query service is busy right now (rate limited) -- wait a minute and try again.');
+  if (RETRYABLE_STATUSES.has(res.status)) {
+    if (attempt < 3) {
+      await wait(attempt * 4000);
+      return runOverpassQuery(ql, attempt + 1);
+    }
+    throw new Error("OpenStreetMap's free query service is busy right now -- wait a few minutes and try again.");
   }
   if (!res.ok) throw new Error(`Overpass API request failed (${res.status})`);
   const data = await res.json();
-  // A one-second gap before the *next* call this same click makes -- these functions
-  // are always awaited back-to-back by the caller, never run concurrently, but the
-  // free public instance still throttles by requests-per-second, not just
-  // concurrency, so a bare zero-delay sequence can still trip it under load.
-  await wait(1000);
   return data.elements ?? [];
 }
 
@@ -109,39 +115,46 @@ function bboxString(b: Bounds): string {
   return `${b.south},${b.west},${b.north},${b.east}`;
 }
 
-/** Existing overhead power lines and pipelines within the bounds, from OpenStreetMap
- * (same underlying data source openinframap.org itself uses, via the official,
- * documented Overpass API rather than embedding OpenInfraMap's own undocumented
- * vector-tile service). */
-export async function fetchExistingPowerAndPipelines(bounds: Bounds): Promise<{
+export interface FetchedInfrastructure {
   powerLines: GeoJSON.FeatureCollection;
   pipelines: GeoJSON.FeatureCollection;
-}> {
+  substations: GeoJSON.FeatureCollection;
+  railways: GeoJSON.FeatureCollection;
+}
+
+/** Existing power lines, pipelines, substations/plants, and railways within the
+ * bounds, from OpenStreetMap (same underlying data source openinframap.org itself
+ * uses, via the official, documented Overpass API rather than embedding
+ * OpenInfraMap's own undocumented vector-tile service).
+ *
+ * Three separate, lighter queries run one at a time with a gap between them --
+ * combining everything into one query was tried and measured *slower* and less
+ * reliable (a consistent ~10s gateway timeout on the shared free instance), and
+ * plain concurrent requests (Promise.all) reliably triggered its rate limit under
+ * real use. Each query also retries with backoff via runOverpassQuery. */
+export async function fetchExistingInfrastructure(bounds: Bounds): Promise<FetchedInfrastructure> {
   const bbox = bboxString(bounds);
-  const ql = `[out:json][timeout:60];(way["power"="line"](${bbox});way["power"="minor_line"](${bbox});way["man_made"="pipeline"](${bbox}););out geom;`;
-  const elements = await runOverpassQuery(ql);
-  const powerEls = elements.filter((e) => e.tags?.power === 'line' || e.tags?.power === 'minor_line');
-  const pipelineEls = elements.filter((e) => e.tags?.man_made === 'pipeline');
+
+  const powerPipelineQl = `[out:json][timeout:30];(way["power"="line"](${bbox});way["power"="minor_line"](${bbox});way["man_made"="pipeline"](${bbox}););out geom;`;
+  const powerPipelineEls = await runOverpassQuery(powerPipelineQl);
+  await wait(1500);
+
+  const substationQl = `[out:json][timeout:30];(node["power"="substation"](${bbox});way["power"="substation"](${bbox});way["power"="plant"](${bbox});way["power"="cable"](${bbox}););out geom;`;
+  const substationEls = await runOverpassQuery(substationQl);
+  await wait(1500);
+
+  const railwayQl = `[out:json][timeout:30];(way["railway"="rail"](${bbox});way["railway"="light_rail"](${bbox});way["railway"="narrow_gauge"](${bbox}););out geom;`;
+  const railwayEls = await runOverpassQuery(railwayQl);
+
+  const powerEls = powerPipelineEls.filter((e) => e.tags?.power === 'line' || e.tags?.power === 'minor_line');
+  const pipelineEls = powerPipelineEls.filter((e) => e.tags?.man_made === 'pipeline');
+
   return {
     powerLines: elementsToGeoJSON(powerEls, () => 'power_line'),
     pipelines: elementsToGeoJSON(pipelineEls, () => 'pipeline'),
+    substations: elementsToGeoJSON(substationEls, (tags) =>
+      tags.power === 'plant' ? 'power_plant' : tags.power === 'cable' ? 'power_line' : 'substation',
+    ),
+    railways: elementsToGeoJSON(railwayEls, () => 'railway'),
   };
-}
-
-/** Existing substations and power plants within the bounds. */
-export async function fetchExistingSubstationsAndPlants(bounds: Bounds): Promise<GeoJSON.FeatureCollection> {
-  const bbox = bboxString(bounds);
-  const ql = `[out:json][timeout:60];(node["power"="substation"](${bbox});way["power"="substation"](${bbox});way["power"="plant"](${bbox});way["power"="cable"](${bbox}););out geom;`;
-  const elements = await runOverpassQuery(ql);
-  return elementsToGeoJSON(elements, (tags) => (tags.power === 'plant' ? 'power_plant' : tags.power === 'cable' ? 'power_line' : 'substation'));
-}
-
-/** Existing railway lines (main line, narrow gauge, light rail) within the bounds --
- * sidings/yards (railway=service) and stations are left out, this is about route
- * crossings, not station-level detail. */
-export async function fetchExistingRailways(bounds: Bounds): Promise<GeoJSON.FeatureCollection> {
-  const bbox = bboxString(bounds);
-  const ql = `[out:json][timeout:60];(way["railway"="rail"](${bbox});way["railway"="light_rail"](${bbox});way["railway"="narrow_gauge"](${bbox}););out geom;`;
-  const elements = await runOverpassQuery(ql);
-  return elementsToGeoJSON(elements, () => 'railway');
 }
