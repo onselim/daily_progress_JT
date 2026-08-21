@@ -55,14 +55,26 @@ export function computeProjectBounds(assets: AssetListItem[], coordinateSystem: 
   };
 }
 
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function runOverpassQuery(ql: string): Promise<OverpassElement[]> {
   const res = await fetch(OVERPASS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `data=${encodeURIComponent(ql)}`,
   });
+  if (res.status === 429) {
+    throw new Error('OpenStreetMap\'s free query service is busy right now (rate limited) -- wait a minute and try again.');
+  }
   if (!res.ok) throw new Error(`Overpass API request failed (${res.status})`);
   const data = await res.json();
+  // A one-second gap before the *next* call this same click makes -- these functions
+  // are always awaited back-to-back by the caller, never run concurrently, but the
+  // free public instance still throttles by requests-per-second, not just
+  // concurrency, so a bare zero-delay sequence can still trip it under load.
+  await wait(1000);
   return data.elements ?? [];
 }
 
@@ -122,4 +134,14 @@ export async function fetchExistingSubstationsAndPlants(bounds: Bounds): Promise
   const ql = `[out:json][timeout:60];(node["power"="substation"](${bbox});way["power"="substation"](${bbox});way["power"="plant"](${bbox});way["power"="cable"](${bbox}););out geom;`;
   const elements = await runOverpassQuery(ql);
   return elementsToGeoJSON(elements, (tags) => (tags.power === 'plant' ? 'power_plant' : tags.power === 'cable' ? 'power_line' : 'substation'));
+}
+
+/** Existing railway lines (main line, narrow gauge, light rail) within the bounds --
+ * sidings/yards (railway=service) and stations are left out, this is about route
+ * crossings, not station-level detail. */
+export async function fetchExistingRailways(bounds: Bounds): Promise<GeoJSON.FeatureCollection> {
+  const bbox = bboxString(bounds);
+  const ql = `[out:json][timeout:60];(way["railway"="rail"](${bbox});way["railway"="light_rail"](${bbox});way["railway"="narrow_gauge"](${bbox}););out geom;`;
+  const elements = await runOverpassQuery(ql);
+  return elementsToGeoJSON(elements, () => 'railway');
 }

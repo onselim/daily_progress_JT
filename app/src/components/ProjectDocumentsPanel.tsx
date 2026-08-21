@@ -5,7 +5,12 @@ import { uploadProjectDocument } from '../lib/uploadProjectDocument';
 import { deleteProjectDocument } from '../lib/deleteProjectDocument';
 import { renameProjectDocument } from '../lib/renameDocument';
 import { createDocumentFolder, deleteDocumentFolder, renameDocumentFolder } from '../lib/documentFolders';
-import { computeProjectBounds, fetchExistingPowerAndPipelines, fetchExistingSubstationsAndPlants } from '../lib/fetchOsmInfrastructure';
+import {
+  computeProjectBounds,
+  fetchExistingPowerAndPipelines,
+  fetchExistingSubstationsAndPlants,
+  fetchExistingRailways,
+} from '../lib/fetchOsmInfrastructure';
 import type { AssetListItem } from '../lib/useAssets';
 import { RenamableText } from './RenamableText';
 
@@ -17,6 +22,7 @@ const OSM_LAYER_NAMES = {
   powerLines: 'Existing Power Lines (OSM).geojson',
   pipelines: 'Existing Pipelines (OSM).geojson',
   substations: 'Existing Substations & Plants (OSM).geojson',
+  railways: 'Existing Railways (OSM).geojson',
 };
 
 interface ProjectDocumentsPanelProps {
@@ -283,15 +289,18 @@ export function ProjectDocumentsPanel({
       const bounds = computeProjectBounds(osmFetchContext.assets, osmFetchContext.coordinateSystem);
       if (!bounds) throw new Error('No tower coordinates to search around yet.');
 
-      const [{ powerLines, pipelines }, substations] = await Promise.all([
-        fetchExistingPowerAndPipelines(bounds),
-        fetchExistingSubstationsAndPlants(bounds),
-      ]);
+      // Sequential, not Promise.all -- the free public Overpass instance only allows a
+      // couple of concurrent requests per IP and returns 429 if that's exceeded, which
+      // firing all three queries at once reliably tripped.
+      const { powerLines, pipelines } = await fetchExistingPowerAndPipelines(bounds);
+      const substations = await fetchExistingSubstationsAndPlants(bounds);
+      const railways = await fetchExistingRailways(bounds);
 
       await Promise.all([
         replaceNamedDocument(OSM_LAYER_NAMES.powerLines, powerLines),
         replaceNamedDocument(OSM_LAYER_NAMES.pipelines, pipelines),
         replaceNamedDocument(OSM_LAYER_NAMES.substations, substations),
+        replaceNamedDocument(OSM_LAYER_NAMES.railways, railways),
       ]);
       await refresh();
     } catch (err) {
@@ -366,7 +375,7 @@ export function ProjectDocumentsPanel({
       {editable && osmFetchContext && (
         <div className="osm-fetch-row">
           <button type="button" className="doc-folder-add-btn" onClick={handleFetchOsmLayers} disabled={fetchingOsm}>
-            {fetchingOsm ? 'Fetching from OpenStreetMap…' : '🌐 Fetch existing power lines / pipelines (OSM)'}
+            {fetchingOsm ? 'Fetching from OpenStreetMap…' : '🌐 Fetch existing infrastructure (OSM)'}
           </button>
           {osmFetchError && <p className="osm-fetch-error">{osmFetchError}</p>}
         </div>

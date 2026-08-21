@@ -161,6 +161,9 @@ function geoLayerStyle(category?: string): L.PathOptions {
   if (category === 'power_plant') {
     return { color: '#a855f7', weight: 2, fillColor: '#a855f7', fillOpacity: 0.25, opacity: 0.9 };
   }
+  if (category === 'railway') {
+    return { color: '#1f2937', weight: 3, dashArray: '1 6', opacity: 0.9 };
+  }
   return { color: '#f59e0b', weight: 3, dashArray: '6 4', opacity: 0.85 };
 }
 
