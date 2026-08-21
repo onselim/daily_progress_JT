@@ -239,6 +239,8 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           enabledLayerIds={enabledLayerIds}
           onToggleLayer={toggleLayer}
           layerErrors={layerErrors}
+          assets={assets}
+          coordinateSystem={coordinateSystem}
         />
         {selectedAssetId && (
           <div className="floating-editor">

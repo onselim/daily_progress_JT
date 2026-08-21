@@ -4,6 +4,7 @@ import { WeatherPanel } from './WeatherPanel';
 import { LineSummaryPanel } from './LineSummaryPanel';
 import { HeatMapPanel, type HeatMetric, type MetricTotals } from './HeatMapPanel';
 import type { LineSummary } from '../lib/useLineSummary';
+import type { AssetListItem } from '../lib/useAssets';
 
 interface RightPanelStackProps {
   projectId: string;
@@ -22,6 +23,8 @@ interface RightPanelStackProps {
   enabledLayerIds: Set<string>;
   onToggleLayer: (layerId: string) => void;
   layerErrors: Record<string, string>;
+  assets: AssetListItem[];
+  coordinateSystem: string | null;
 }
 
 export function RightPanelStack({
@@ -41,6 +44,8 @@ export function RightPanelStack({
   enabledLayerIds,
   onToggleLayer,
   layerErrors,
+  assets,
+  coordinateSystem,
 }: RightPanelStackProps) {
   return (
     <div className="right-panel-stack">
@@ -74,6 +79,7 @@ export function RightPanelStack({
           enabledLayerIds={enabledLayerIds}
           onToggleLayer={onToggleLayer}
           layerErrors={layerErrors}
+          osmFetchContext={{ assets, coordinateSystem }}
         />
       </AccordionPanel>
 

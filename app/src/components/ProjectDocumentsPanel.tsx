@@ -5,9 +5,19 @@ import { uploadProjectDocument } from '../lib/uploadProjectDocument';
 import { deleteProjectDocument } from '../lib/deleteProjectDocument';
 import { renameProjectDocument } from '../lib/renameDocument';
 import { createDocumentFolder, deleteDocumentFolder, renameDocumentFolder } from '../lib/documentFolders';
+import { computeProjectBounds, fetchExistingPowerAndPipelines, fetchExistingSubstationsAndPlants } from '../lib/fetchOsmInfrastructure';
+import type { AssetListItem } from '../lib/useAssets';
 import { RenamableText } from './RenamableText';
 
 const GEO_LAYER_EXTENSIONS = /\.(geojson|json)$/i;
+
+// Re-fetching replaces any previously-fetched file with this exact name rather than
+// piling up duplicates each time the admin clicks the button again.
+const OSM_LAYER_NAMES = {
+  powerLines: 'Existing Power Lines (OSM).geojson',
+  pipelines: 'Existing Pipelines (OSM).geojson',
+  substations: 'Existing Substations & Plants (OSM).geojson',
+};
 
 interface ProjectDocumentsPanelProps {
   projectId: string;
@@ -17,6 +27,7 @@ interface ProjectDocumentsPanelProps {
   enabledLayerIds?: Set<string>;
   onToggleLayer?: (layerId: string) => void;
   layerErrors?: Record<string, string>;
+  osmFetchContext?: { assets: AssetListItem[]; coordinateSystem: string | null };
 }
 
 interface FolderNodeProps {
@@ -245,6 +256,7 @@ export function ProjectDocumentsPanel({
   enabledLayerIds,
   onToggleLayer,
   layerErrors,
+  osmFetchContext,
 }: ProjectDocumentsPanelProps) {
   const { user } = useAuth();
   const { documents, folders, loading, refresh } = useProjectDocuments(projectId, section);
@@ -252,6 +264,42 @@ export function ProjectDocumentsPanel({
   const [addingFolder, setAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [creatingFolder, setCreatingFolder] = useState(false);
+  const [fetchingOsm, setFetchingOsm] = useState(false);
+  const [osmFetchError, setOsmFetchError] = useState<string | null>(null);
+
+  async function replaceNamedDocument(name: string, geojson: GeoJSON.FeatureCollection) {
+    if (!user || geojson.features.length === 0) return;
+    const existing = documents.find((d) => d.slot_name === name);
+    if (existing) await deleteProjectDocument(existing.id, existing.file_url);
+    const file = new File([JSON.stringify(geojson)], name, { type: 'application/geo+json' });
+    await uploadProjectDocument({ projectId, file, uploadedBy: user.id, folderId: null, section, slotName: name });
+  }
+
+  async function handleFetchOsmLayers() {
+    if (!osmFetchContext || !user) return;
+    setFetchingOsm(true);
+    setOsmFetchError(null);
+    try {
+      const bounds = computeProjectBounds(osmFetchContext.assets, osmFetchContext.coordinateSystem);
+      if (!bounds) throw new Error('No tower coordinates to search around yet.');
+
+      const [{ powerLines, pipelines }, substations] = await Promise.all([
+        fetchExistingPowerAndPipelines(bounds),
+        fetchExistingSubstationsAndPlants(bounds),
+      ]);
+
+      await Promise.all([
+        replaceNamedDocument(OSM_LAYER_NAMES.powerLines, powerLines),
+        replaceNamedDocument(OSM_LAYER_NAMES.pipelines, pipelines),
+        replaceNamedDocument(OSM_LAYER_NAMES.substations, substations),
+      ]);
+      await refresh();
+    } catch (err) {
+      setOsmFetchError(err instanceof Error ? err.message : 'Fetch failed');
+    } finally {
+      setFetchingOsm(false);
+    }
+  }
 
   async function handleUpload(e: ChangeEvent<HTMLInputElement>, folderId: string | null) {
     const files = e.target.files;
@@ -315,6 +363,15 @@ export function ProjectDocumentsPanel({
 
   return (
     <>
+      {editable && osmFetchContext && (
+        <div className="osm-fetch-row">
+          <button type="button" className="doc-folder-add-btn" onClick={handleFetchOsmLayers} disabled={fetchingOsm}>
+            {fetchingOsm ? 'Fetching from OpenStreetMap…' : '🌐 Fetch existing power lines / pipelines (OSM)'}
+          </button>
+          {osmFetchError && <p className="osm-fetch-error">{osmFetchError}</p>}
+        </div>
+      )}
+
       {folders.length === 0 && rootDocs.length === 0 && <p className="accordion-empty">{emptyLabel}</p>}
 
       {rootFolders.map((folder) => (

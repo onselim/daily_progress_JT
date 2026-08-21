@@ -2087,6 +2087,26 @@ button:disabled {
   color: var(--accent);
 }
 
+.doc-folder-add-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.osm-fetch-row {
+  margin-bottom: 10px;
+}
+
+.osm-fetch-row .doc-folder-add-btn {
+  width: 100%;
+  text-align: center;
+}
+
+.osm-fetch-error {
+  color: #ef4444;
+  font-size: 11px;
+  margin: 4px 0 0;
+}
+
 .doc-folder-add-form {
   display: flex;
   align-items: center;
