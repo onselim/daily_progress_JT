@@ -164,6 +164,12 @@ function geoLayerStyle(category?: string): L.PathOptions {
   if (category === 'railway') {
     return { color: '#1f2937', weight: 3, dashArray: '1 6', opacity: 0.9 };
   }
+  if (category === 'excavation_pit') {
+    // These are drawn at true physical scale (a few metres per side), so they're only
+    // meaningfully visible once zoomed into a specific tower -- a solid, saturated fill
+    // reads clearly at that scale instead of getting lost against satellite imagery.
+    return { color: '#dc2626', weight: 1.5, fillColor: '#dc2626', fillOpacity: 0.45, opacity: 0.95 };
+  }
   return { color: '#f59e0b', weight: 3, dashArray: '6 4', opacity: 0.85 };
 }
 
@@ -348,12 +354,11 @@ export function MapView({
             style: (feature) => geoLayerStyle(feature?.properties?.category),
             onEachFeature: (feature, featureLayer) => {
               const p = feature.properties ?? {};
-              const bits = [
-                p.name,
-                p.voltage ? `${Number(p.voltage) / 1000} kV` : null,
-                p.man_made ?? p.power,
-              ].filter(Boolean);
-              featureLayer.bindTooltip(bits.join(' — ') || geoLayer.name, { sticky: true });
+              const bits =
+                p.category === 'excavation_pit'
+                  ? [p.tower, p.tower_type, p.stub ? `Leg ${p.leg} (${p.stub})` : null, p.excavation_side_m ? `${p.excavation_side_m} m` : null]
+                  : [p.name, p.voltage ? `${Number(p.voltage) / 1000} kV` : null, p.man_made ?? p.power];
+              featureLayer.bindTooltip(bits.filter(Boolean).join(' — ') || geoLayer.name, { sticky: true });
             },
           });
           layer.addTo(map);
