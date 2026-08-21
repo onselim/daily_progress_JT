@@ -21,6 +21,7 @@ interface RightPanelStackProps {
   metricTotals: MetricTotals;
   enabledLayerIds: Set<string>;
   onToggleLayer: (layerId: string) => void;
+  layerErrors: Record<string, string>;
 }
 
 export function RightPanelStack({
@@ -39,6 +40,7 @@ export function RightPanelStack({
   metricTotals,
   enabledLayerIds,
   onToggleLayer,
+  layerErrors,
 }: RightPanelStackProps) {
   return (
     <div className="right-panel-stack">
@@ -71,6 +73,7 @@ export function RightPanelStack({
           emptyLabel="No extra map layers configured yet."
           enabledLayerIds={enabledLayerIds}
           onToggleLayer={onToggleLayer}
+          layerErrors={layerErrors}
         />
       </AccordionPanel>
 

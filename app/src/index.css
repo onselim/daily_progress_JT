@@ -1979,6 +1979,13 @@ button:disabled {
   accent-color: var(--accent);
 }
 
+.layer-toggle-error {
+  color: #ef4444;
+  font-size: 11px;
+  flex-shrink: 0;
+  cursor: default;
+}
+
 .doc-row:last-child {
   border-bottom: none;
 }

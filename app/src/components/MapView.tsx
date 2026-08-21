@@ -184,6 +184,7 @@ interface MapViewProps {
   heatPoints?: [number, number, number][];
   heatCentroid?: [number, number] | null;
   geoLayers?: { id: string; name: string; url: string }[];
+  onLayerError?: (layerId: string, message: string) => void;
 }
 
 export function MapView({
@@ -198,6 +199,7 @@ export function MapView({
   heatPoints = [],
   heatCentroid = null,
   geoLayers = [],
+  onLayerError,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -334,6 +336,11 @@ export function MapView({
         .then((res) => res.json())
         .then((data) => {
           if (cancelled || geoLayersRef.current[geoLayer.id]) return;
+          const validTypes = ['FeatureCollection', 'Feature', 'GeometryCollection'];
+          if (!validTypes.includes(data?.type)) {
+            onLayerError?.(geoLayer.id, `Not a GeoJSON file (found "${data?.type ?? typeof data}" instead)`);
+            return;
+          }
           const layer = L.geoJSON(data, {
             style: (feature) => geoLayerStyle(feature?.properties?.category),
             onEachFeature: (feature, featureLayer) => {
@@ -349,15 +356,15 @@ export function MapView({
           layer.addTo(map);
           geoLayersRef.current[geoLayer.id] = layer;
         })
-        .catch(() => {
-          /* layer file missing/invalid -- silently skip, nothing to show */
+        .catch((err) => {
+          onLayerError?.(geoLayer.id, err instanceof Error ? err.message : 'Failed to load layer');
         });
     }
 
     return () => {
       cancelled = true;
     };
-  }, [geoLayers]);
+  }, [geoLayers, onLayerError]);
 
   useEffect(() => {
     const map = mapRef.current;

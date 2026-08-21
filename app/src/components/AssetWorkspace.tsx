@@ -41,12 +41,21 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
   const [heatmapRangeTo, setHeatmapRangeTo] = useState('');
   const { layers: mapLayers } = useMapLayers(projectId);
   const [enabledLayerIds, setEnabledLayerIds] = useState<Set<string>>(new Set());
+  const [layerErrors, setLayerErrors] = useState<Record<string, string>>({});
 
   function toggleLayer(layerId: string) {
     setEnabledLayerIds((prev) => {
       const next = new Set(prev);
       if (next.has(layerId)) next.delete(layerId);
       else next.add(layerId);
+      return next;
+    });
+    // Clear any stale error so re-toggling a fixed file (or one that just finished
+    // uploading) gets a clean retry instead of showing yesterday's failure forever.
+    setLayerErrors((prev) => {
+      if (!(layerId in prev)) return prev;
+      const next = { ...prev };
+      delete next[layerId];
       return next;
     });
   }
@@ -211,6 +220,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           heatPoints={heatPoints}
           heatCentroid={heatCentroid}
           geoLayers={activeMapLayers}
+          onLayerError={(layerId, message) => setLayerErrors((prev) => ({ ...prev, [layerId]: message }))}
         />
         <RightPanelStack
           projectId={projectId}
@@ -228,6 +238,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           metricTotals={metricTotals}
           enabledLayerIds={enabledLayerIds}
           onToggleLayer={toggleLayer}
+          layerErrors={layerErrors}
         />
         {selectedAssetId && (
           <div className="floating-editor">

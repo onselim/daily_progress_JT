@@ -16,6 +16,7 @@ interface ProjectDocumentsPanelProps {
   emptyLabel?: string;
   enabledLayerIds?: Set<string>;
   onToggleLayer?: (layerId: string) => void;
+  layerErrors?: Record<string, string>;
 }
 
 interface FolderNodeProps {
@@ -33,26 +34,36 @@ interface FolderNodeProps {
   onRenameDocument: (docId: string, newName: string) => void;
   enabledLayerIds?: Set<string>;
   onToggleLayer?: (layerId: string) => void;
+  layerErrors?: Record<string, string>;
 }
 
 function LayerToggle({
   doc,
   enabledLayerIds,
   onToggleLayer,
+  layerErrors,
 }: {
   doc: ProjectDocument;
   enabledLayerIds?: Set<string>;
   onToggleLayer?: (layerId: string) => void;
+  layerErrors?: Record<string, string>;
 }) {
   if (!onToggleLayer || !GEO_LAYER_EXTENSIONS.test(doc.slot_name)) return null;
+  const error = layerErrors?.[doc.id];
   return (
-    <label className="layer-toggle" title="Show/hide this layer on the map">
-      <input
-        type="checkbox"
-        checked={enabledLayerIds?.has(doc.id) ?? false}
-        onChange={() => onToggleLayer(doc.id)}
-      />
-    </label>
+    <>
+      <label
+        className="layer-toggle"
+        title={error ? `Couldn't show this layer: ${error}` : 'Show/hide this layer on the map'}
+      >
+        <input
+          type="checkbox"
+          checked={enabledLayerIds?.has(doc.id) ?? false}
+          onChange={() => onToggleLayer(doc.id)}
+        />
+      </label>
+      {error && enabledLayerIds?.has(doc.id) && <span className="layer-toggle-error">⚠</span>}
+    </>
   );
 }
 
@@ -71,6 +82,7 @@ function FolderNode({
   onRenameDocument,
   enabledLayerIds,
   onToggleLayer,
+  layerErrors,
 }: FolderNodeProps) {
   const [open, setOpen] = useState(false);
   const [addingSubfolder, setAddingSubfolder] = useState(false);
@@ -144,6 +156,7 @@ function FolderNode({
               onRenameDocument={onRenameDocument}
               enabledLayerIds={enabledLayerIds}
               onToggleLayer={onToggleLayer}
+              layerErrors={layerErrors}
             />
           ))}
 
@@ -152,7 +165,7 @@ function FolderNode({
           {docs.map((doc) => (
             <div key={doc.id} className="doc-row">
               <span className="doc-row-main">
-                <LayerToggle doc={doc} enabledLayerIds={enabledLayerIds} onToggleLayer={onToggleLayer} />
+                <LayerToggle doc={doc} enabledLayerIds={enabledLayerIds} onToggleLayer={onToggleLayer} layerErrors={layerErrors} />
                 <RenamableText
                   value={doc.slot_name}
                   editable={editable}
@@ -231,6 +244,7 @@ export function ProjectDocumentsPanel({
   emptyLabel = 'No documents uploaded yet.',
   enabledLayerIds,
   onToggleLayer,
+  layerErrors,
 }: ProjectDocumentsPanelProps) {
   const { user } = useAuth();
   const { documents, folders, loading, refresh } = useProjectDocuments(projectId, section);
@@ -320,6 +334,7 @@ export function ProjectDocumentsPanel({
             onRenameDocument={handleRenameDocument}
             enabledLayerIds={enabledLayerIds}
             onToggleLayer={onToggleLayer}
+            layerErrors={layerErrors}
           />
           {folder.divider_after && <div className="doc-folder-divider" />}
         </div>
@@ -330,7 +345,7 @@ export function ProjectDocumentsPanel({
           {rootDocs.map((doc) => (
             <div key={doc.id} className="doc-row">
               <span className="doc-row-main">
-                <LayerToggle doc={doc} enabledLayerIds={enabledLayerIds} onToggleLayer={onToggleLayer} />
+                <LayerToggle doc={doc} enabledLayerIds={enabledLayerIds} onToggleLayer={onToggleLayer} layerErrors={layerErrors} />
                 <RenamableText
                   value={doc.slot_name}
                   editable={editable}
