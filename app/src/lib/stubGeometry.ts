@@ -156,6 +156,7 @@ export function buildExcavationFeatureCollection(
           tower_type: asset.asset_type,
           leg: result.leg,
           stub: result.stub,
+          leg_ext_m: legExtM,
           b_width_m: Number(result.bWidthM.toFixed(3)),
           // Site engineers work in UTM, not lat/lng -- shown on hover in MapView.
           corners_utm: result.cornersUtm.map(([x, y]) => [Number(x.toFixed(3)), Number(y.toFixed(3))]),

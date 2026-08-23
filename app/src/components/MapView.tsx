@@ -356,7 +356,8 @@ export function MapView({
               const p = feature.properties ?? {};
               if (p.category === 'excavation_pit') {
                 const bWidth = p.b_width_m ?? p.excavation_side_m;
-                const header = [p.tower, p.tower_type, p.stub ? `Leg ${p.leg} (${p.stub})` : null, bWidth ? `B (pad width): ${bWidth} m` : null]
+                const legExt = typeof p.leg_ext_m === 'number' ? `Leg Ext: ${p.leg_ext_m > 0 ? `+${p.leg_ext_m}` : p.leg_ext_m}` : null;
+                const header = [p.tower, p.tower_type, p.stub ? `Leg ${p.leg} (${p.stub})` : null, legExt, bWidth ? `B (pad width): ${bWidth} m` : null]
                   .filter(Boolean)
                   .join(' — ');
                 const cornerLines = Array.isArray(p.corners_utm)
