@@ -6,12 +6,20 @@ import { useRestrictedAssetCodes } from '../lib/useRestrictedAssetCodes';
 import { useAssets } from '../lib/useAssets';
 import { useWorkItemsConfig } from '../lib/useProjectConfig';
 import { useConstructionBreakdown } from '../lib/useConstructionBreakdown';
+import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress';
+import { computeGroupStatus } from '../lib/groupStatus';
 import { useDesignBreakdown } from '../lib/useDesignBreakdown';
 import { useSupplyBreakdown } from '../lib/useSupplyBreakdown';
 import { computeOverallPercent } from '../lib/overallProgress';
 import { useDailyLogEntries } from '../lib/useDailyLogEntries';
 import { useWeatherForecast } from '../lib/useWeatherForecast';
 import { utmToLatLng } from '../lib/utmToLatLng';
+
+const HEADLINE_GROUPS = [
+  { name: 'FOUNDATION', label: 'Foundation' },
+  { name: 'ERECTION', label: 'Erection' },
+  { name: 'STRINGING', label: 'Stringing' },
+];
 
 function formatDate() {
   return new Date().toLocaleDateString('en-GB', {
@@ -30,6 +38,7 @@ export default function PrintReportPage() {
   const { assets } = useAssets(project?.id);
   const { workItems } = useWorkItemsConfig(project?.id);
   const { items, overallPercent: constructionPercent } = useConstructionBreakdown(project?.id, workItems);
+  const { percentByAssetAndKey } = useProjectWorkItemsProgress(project?.id, workItems);
   const { items: designItems, overallPercent: designPercent } = useDesignBreakdown(project?.id);
   const { items: supplyItems, overallPercent: supplyPercent } = useSupplyBreakdown(project?.id);
   const overallPercent = computeOverallPercent(designPercent, constructionPercent, supplyPercent);
@@ -63,6 +72,14 @@ export default function PrintReportPage() {
       </div>
     );
   }
+
+  const headlineCounts = HEADLINE_GROUPS.map((hg) => {
+    const itemKeys = workItems.filter((w) => w.group === hg.name).map((w) => w.key);
+    const done = Object.values(percentByAssetAndKey).filter(
+      (percentByKey) => computeGroupStatus(itemKeys, percentByKey) === 'completed',
+    ).length;
+    return { ...hg, done };
+  });
 
   const todayEntries = entries.filter((e) => e.completedToday.trim());
   const tomorrowEntries = entries.filter((e) => e.plannedTomorrow.trim());
@@ -158,6 +175,13 @@ export default function PrintReportPage() {
             <div className="pd-subtotal">
               <span>Overall</span>
               <span style={{ color: '#10b981' }}>{constructionPercent.toFixed(2)}%</span>
+            </div>
+            <div className="pd-headline-counts">
+              {headlineCounts.map((hg) => (
+                <span key={hg.name}>
+                  {hg.label} <strong>{hg.done}/{stats.total}</strong>
+                </span>
+              ))}
             </div>
           </div>
 

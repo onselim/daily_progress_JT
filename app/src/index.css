@@ -2693,6 +2693,19 @@ button:disabled {
   color: #6b7280;
 }
 
+.pd-headline-counts {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 10px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.pd-headline-counts strong {
+  color: #111827;
+}
+
 .pd-muted {
   font-size: 12px;
   color: #9ca3af;
