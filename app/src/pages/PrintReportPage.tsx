@@ -73,6 +73,13 @@ export default function PrintReportPage() {
     );
   }
 
+  const perItemAssetCounts = Object.fromEntries(
+    workItems.map((w) => [
+      w.key,
+      Object.values(percentByAssetAndKey).filter((pk) => (pk[w.key] ?? 0) >= 100).length,
+    ]),
+  );
+
   const headlineCounts = HEADLINE_GROUPS.map((hg) => {
     const itemKeys = workItems.filter((w) => w.group === hg.name).map((w) => w.key);
     const done = Object.values(percentByAssetAndKey).filter(
@@ -170,6 +177,7 @@ export default function PrintReportPage() {
                   />
                 </div>
                 <span className="pd-bar-val">{item.percentComplete.toFixed(1)}%</span>
+                <span className="pd-bar-count">{perItemAssetCounts[item.key] ?? 0}/{stats.total}</span>
               </div>
             ))}
             <div className="pd-subtotal">

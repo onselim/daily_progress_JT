@@ -2682,6 +2682,13 @@ button:disabled {
   color: #374151;
 }
 
+.pd-bar-count {
+  flex: 0 0 44px;
+  font-size: 9px;
+  text-align: right;
+  color: #9ca3af;
+}
+
 .pd-subtotal {
   display: flex;
   justify-content: space-between;
