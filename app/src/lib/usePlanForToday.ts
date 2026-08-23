@@ -15,17 +15,11 @@ function todayIso() {
 
 /**
  * "Completed today" = work items whose completed_at date is today.
- * "Ongoing" = towers currently marked Active (assets.status = 'in_progress') — the same
- * signal the sidebar/map "Active" badge and stat pill already use elsewhere in the app.
- * (asset_work_items.status practically never reaches 'in_progress' in real field data —
- * items go straight from not_started to completed — so deriving "ongoing" from per-item
- * status would always read empty; the asset-level flag is the one that's actually kept
- * up to date.) The specific ongoing activity shown per tower is the item right after the
- * *most advanced* completed item in the project's canonical work-item order — not simply
- * the first incomplete one. Some towers have early items (e.g. Tree Cutting) that were
- * never backfilled even though much later items are already completed; picking "first
- * incomplete" would misreport those towers as still doing the earliest untouched item
- * instead of their real current stage.
+ * "Ongoing" = activities planned for today (yesterday's "Plan for Tomorrow" entry, whose
+ * planned_date is now today) that haven't been marked completed today yet -- consistent
+ * with `useActiveAssetIds`'s definition of "Active" (today's completions + tomorrow's
+ * plan), rather than the old `assets.status` flag, which was set once (often at import)
+ * and never revisited.
  */
 export function usePlanForToday(projectId: string | undefined, workItems: WorkItemConfig[]) {
   const [entries, setEntries] = useState<PlanForTodayEntry[]>([]);
@@ -36,7 +30,7 @@ export function usePlanForToday(projectId: string | undefined, workItems: WorkIt
     setLoading(true);
 
     const today = todayIso();
-    const [completedResult, activeAssetsResult] = await Promise.all([
+    const [completedResult, plannedTodayResult] = await Promise.all([
       supabase
         .from('asset_work_items')
         .select('work_item_key, asset:assets!inner(id, asset_code, project_id)')
@@ -44,44 +38,33 @@ export function usePlanForToday(projectId: string | undefined, workItems: WorkIt
         .eq('status', 'completed')
         .gte('completed_at', `${today}T00:00:00`)
         .lt('completed_at', `${today}T23:59:59`),
-      supabase.from('assets').select('id, asset_code').eq('project_id', projectId).eq('status', 'in_progress'),
+      supabase
+        .from('planned_activities')
+        .select('work_item_key, asset:assets!inner(id, asset_code, project_id)')
+        .eq('asset.project_id', projectId)
+        .eq('planned_date', today),
     ]);
 
     const next: PlanForTodayEntry[] = [];
+    const completedKeys = new Set<string>();
     if (!completedResult.error && completedResult.data) {
       for (const row of completedResult.data) {
+        const asset = row.asset as unknown as { id: string; asset_code: string };
+        completedKeys.add(`${asset.id}:${row.work_item_key}`);
         next.push({
-          assetId: (row.asset as unknown as { id: string }).id,
-          assetCode: (row.asset as unknown as { asset_code: string }).asset_code,
+          assetId: asset.id,
+          assetCode: asset.asset_code,
           workItemKey: row.work_item_key,
           kind: 'completed',
         });
       }
     }
 
-    if (!activeAssetsResult.error && activeAssetsResult.data && activeAssetsResult.data.length > 0) {
-      const activeAssets = activeAssetsResult.data;
-      const { data: itemRows } = await supabase
-        .from('asset_work_items')
-        .select('asset_id, work_item_key, status')
-        .in(
-          'asset_id',
-          activeAssets.map((a) => a.id),
-        );
-
-      const statusByAssetKey: Record<string, Record<string, string>> = {};
-      for (const row of itemRows ?? []) {
-        (statusByAssetKey[row.asset_id] ??= {})[row.work_item_key] = row.status;
-      }
-
-      for (const a of activeAssets) {
-        const statuses = statusByAssetKey[a.id] ?? {};
-        let lastCompletedIndex = -1;
-        workItems.forEach((w, idx) => {
-          if ((statuses[w.key] ?? 'not_started') === 'completed') lastCompletedIndex = idx;
-        });
-        const nextItem = workItems[lastCompletedIndex + 1];
-        next.push({ assetId: a.id, assetCode: a.asset_code, workItemKey: nextItem?.key ?? null, kind: 'ongoing' });
+    if (!plannedTodayResult.error && plannedTodayResult.data) {
+      for (const row of plannedTodayResult.data) {
+        const asset = row.asset as unknown as { id: string; asset_code: string };
+        if (completedKeys.has(`${asset.id}:${row.work_item_key}`)) continue;
+        next.push({ assetId: asset.id, assetCode: asset.asset_code, workItemKey: row.work_item_key, kind: 'ongoing' });
       }
     }
 
