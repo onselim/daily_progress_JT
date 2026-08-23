@@ -187,6 +187,7 @@ interface MapViewProps {
   selectedAssetId: string;
   onSelect: (assetId: string) => void;
   restrictedAssetIds: Set<string>;
+  activeAssetIds: Set<string>;
   percentByAssetAndKey: Record<string, Record<string, number>>;
   groundWireConfig: GroundWireConfig;
   heatmapEnabled?: boolean;
@@ -202,6 +203,7 @@ export function MapView({
   selectedAssetId,
   onSelect,
   restrictedAssetIds,
+  activeAssetIds,
   percentByAssetAndKey,
   groundWireConfig,
   heatmapEnabled = false,
@@ -420,7 +422,7 @@ export function MapView({
 
       const restricted = restrictedAssetIds.has(asset.id);
       const isSelected = asset.id === selectedAssetId;
-      const isActive = asset.status === 'in_progress';
+      const isActive = activeAssetIds.has(asset.id);
       const color = STATUS_COLOR[asset.status] ?? STATUS_COLOR.not_started;
       const baseSize = isSelected ? 30 : restricted ? 26 : isActive ? 26 : 20;
 
@@ -616,7 +618,7 @@ export function MapView({
       );
       hasFitBounds.current = true;
     }
-  }, [assets, coordinateSystem, selectedAssetId, onSelect, restrictedAssetIds, percentByAssetAndKey, groundWireConfig]);
+  }, [assets, coordinateSystem, selectedAssetId, onSelect, restrictedAssetIds, activeAssetIds, percentByAssetAndKey, groundWireConfig]);
 
   function zoomToSelected() {
     const map = mapRef.current;

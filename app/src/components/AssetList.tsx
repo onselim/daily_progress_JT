@@ -51,6 +51,7 @@ interface AssetListProps {
   percentByAssetAndKey: Record<string, Record<string, number>>;
   workItems: WorkItemConfig[];
   restrictedAssetIds: Set<string>;
+  activeAssetIds: Set<string>;
   heatCentroidAssetId?: string | null;
 }
 
@@ -62,6 +63,7 @@ export function AssetList({
   percentByAssetAndKey,
   workItems,
   restrictedAssetIds,
+  activeAssetIds,
   heatCentroidAssetId = null,
 }: AssetListProps) {
   const { assets, loading } = useAssets(projectId);
@@ -77,7 +79,7 @@ export function AssetList({
 
   let filtered = assets;
   if (filter === 'active') {
-    filtered = filtered.filter((a) => a.status === 'in_progress');
+    filtered = filtered.filter((a) => activeAssetIds.has(a.id));
   } else if (filter === 'noAccess') {
     filtered = filtered.filter((a) => restrictedAssetIds.has(a.id));
   } else if (filter !== 'all') {
@@ -160,7 +162,7 @@ export function AssetList({
                     </span>
                   )}
                   {restricted && <span className="asset-badge asset-badge-restricted">No Access</span>}
-                  {!restricted && a.status === 'in_progress' && (
+                  {!restricted && activeAssetIds.has(a.id) && (
                     <span className="asset-badge asset-badge-active">Active</span>
                   )}
                 </div>
