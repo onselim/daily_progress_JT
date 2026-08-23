@@ -167,6 +167,8 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
   const [station, setStation] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [assetLatLng, setAssetLatLng] = useState<[number, number] | null>(null);
+  const [legExtM, setLegExtM] = useState<(number | null)[] | null>(null);
+  const [soilType, setSoilType] = useState<number | null>(null);
   const [showWindy, setShowWindy] = useState(false);
   const [statusByKey, setStatusByKey] = useState<Record<string, WorkItemStatus>>({});
   const [completedDateByKey, setCompletedDateByKey] = useState<Record<string, string>>({});
@@ -191,7 +193,9 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
     Promise.all([
       supabase
         .from('assets')
-        .select('asset_code, asset_type, station, notes, lat, lng, x, y')
+        .select(
+          'asset_code, asset_type, station, notes, lat, lng, x, y, leg1_ext_m, leg2_ext_m, leg3_ext_m, leg4_ext_m, soil_type',
+        )
         .eq('id', assetId)
         .maybeSingle(),
       supabase
@@ -211,6 +215,14 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
       setAssetType(assetRes.data?.asset_type ?? null);
       setStation(assetRes.data?.station ?? null);
       setNotes(assetRes.data?.notes ?? '');
+      const legs = [
+        assetRes.data?.leg1_ext_m,
+        assetRes.data?.leg2_ext_m,
+        assetRes.data?.leg3_ext_m,
+        assetRes.data?.leg4_ext_m,
+      ];
+      setLegExtM(legs.every((v) => v == null) ? null : legs.map((v) => (v == null ? null : Number(v))));
+      setSoilType(assetRes.data?.soil_type != null ? Number(assetRes.data.soil_type) : null);
 
       const rawLat = assetRes.data?.lat;
       const rawLng = assetRes.data?.lng;
@@ -500,6 +512,19 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
                     <span className="foundation-stat-label">Lean Concrete</span>
                     <span className="foundation-stat-value">{foundation.leanConcreteM3.toFixed(2)} m³</span>
                   </div>
+                </div>
+              )}
+              {group.name.toUpperCase() === 'FOUNDATION' && (legExtM || soilType != null) && (
+                <div className="foundation-stub-row" title="Per-leg extension and soil type, used for the excavation-pit layer">
+                  {soilType != null && <span>Soil Type {soilType}</span>}
+                  {legExtM && (
+                    <span>
+                      Leg Ext (m):{' '}
+                      {legExtM
+                        .map((v, i) => `L${i + 1} ${v == null ? '—' : v > 0 ? `+${v}` : v}`)
+                        .join(' · ')}
+                    </span>
+                  )}
                 </div>
               )}
               {group.items.map((item) => {

@@ -354,10 +354,18 @@ export function MapView({
             style: (feature) => geoLayerStyle(feature?.properties?.category),
             onEachFeature: (feature, featureLayer) => {
               const p = feature.properties ?? {};
-              const bits =
-                p.category === 'excavation_pit'
-                  ? [p.tower, p.tower_type, p.stub ? `Leg ${p.leg} (${p.stub})` : null, p.excavation_side_m ? `${p.excavation_side_m} m` : null]
-                  : [p.name, p.voltage ? `${Number(p.voltage) / 1000} kV` : null, p.man_made ?? p.power];
+              if (p.category === 'excavation_pit') {
+                const bWidth = p.b_width_m ?? p.excavation_side_m;
+                const header = [p.tower, p.tower_type, p.stub ? `Leg ${p.leg} (${p.stub})` : null, bWidth ? `B (pad width): ${bWidth} m` : null]
+                  .filter(Boolean)
+                  .join(' — ');
+                const cornerLines = Array.isArray(p.corners)
+                  ? p.corners.map((c: [number, number], i: number) => `C${i + 1}: ${c[0]}, ${c[1]}`).join('<br/>')
+                  : '';
+                featureLayer.bindTooltip(`${header}${cornerLines ? `<br/>${cornerLines}` : ''}`, { sticky: true });
+                return;
+              }
+              const bits = [p.name, p.voltage ? `${Number(p.voltage) / 1000} kV` : null, p.man_made ?? p.power];
               featureLayer.bindTooltip(bits.filter(Boolean).join(' — ') || geoLayer.name, { sticky: true });
             },
           });

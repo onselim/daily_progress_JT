@@ -7,6 +7,9 @@ import { renameProjectDocument } from '../lib/renameDocument';
 import { createDocumentFolder, deleteDocumentFolder, renameDocumentFolder } from '../lib/documentFolders';
 import { computeProjectBounds, fetchExistingInfrastructure } from '../lib/fetchOsmInfrastructure';
 import type { AssetListItem } from '../lib/useAssets';
+import type { FoundationTypeConfig } from '../lib/useFoundationTypesConfig';
+import { useStubSettingsConfig } from '../lib/useStubSettingsConfig';
+import { buildExcavationFeatureCollection } from '../lib/stubGeometry';
 import { RenamableText } from './RenamableText';
 
 const GEO_LAYER_EXTENSIONS = /\.(geojson|json)$/i;
@@ -20,6 +23,8 @@ const OSM_LAYER_NAMES = {
   railways: 'Existing Railways (OSM).geojson',
 };
 
+const EXCAVATION_LAYER_NAME = 'Excavation Pits (per-leg).geojson';
+
 interface ProjectDocumentsPanelProps {
   projectId: string;
   editable: boolean;
@@ -29,6 +34,11 @@ interface ProjectDocumentsPanelProps {
   onToggleLayer?: (layerId: string) => void;
   layerErrors?: Record<string, string>;
   osmFetchContext?: { assets: AssetListItem[]; coordinateSystem: string | null };
+  excavationContext?: {
+    assets: AssetListItem[];
+    foundationTypes: FoundationTypeConfig[];
+    coordinateSystem: string | null;
+  };
 }
 
 interface FolderNodeProps {
@@ -258,9 +268,11 @@ export function ProjectDocumentsPanel({
   onToggleLayer,
   layerErrors,
   osmFetchContext,
+  excavationContext,
 }: ProjectDocumentsPanelProps) {
   const { user } = useAuth();
   const { documents, folders, loading, refresh } = useProjectDocuments(projectId, section);
+  const { stubSettings } = useStubSettingsConfig(excavationContext ? projectId : undefined);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [addingFolder, setAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -268,6 +280,8 @@ export function ProjectDocumentsPanel({
   const [fetchingOsm, setFetchingOsm] = useState(false);
   const [osmFetchProgress, setOsmFetchProgress] = useState<string | null>(null);
   const [osmFetchError, setOsmFetchError] = useState<string | null>(null);
+  const [generatingExcavation, setGeneratingExcavation] = useState(false);
+  const [excavationError, setExcavationError] = useState<string | null>(null);
 
   async function replaceNamedDocument(name: string, geojson: GeoJSON.FeatureCollection) {
     if (!user || geojson.features.length === 0) return;
@@ -301,6 +315,30 @@ export function ProjectDocumentsPanel({
     } finally {
       setFetchingOsm(false);
       setOsmFetchProgress(null);
+    }
+  }
+
+  async function handleGenerateExcavationLayer() {
+    if (!excavationContext) return;
+    setGeneratingExcavation(true);
+    setExcavationError(null);
+    try {
+      if (stubSettings.length === 0) throw new Error('No stub-setting data configured for this project yet.');
+      const geojson = buildExcavationFeatureCollection(
+        excavationContext.assets,
+        stubSettings,
+        excavationContext.foundationTypes,
+        excavationContext.coordinateSystem,
+      );
+      if (geojson.features.length === 0) {
+        throw new Error('No towers have leg-extension data yet -- nothing to generate.');
+      }
+      await replaceNamedDocument(EXCAVATION_LAYER_NAME, geojson);
+      await refresh();
+    } catch (err) {
+      setExcavationError(err instanceof Error ? err.message : 'Generation failed');
+    } finally {
+      setGeneratingExcavation(false);
     }
   }
 
@@ -372,6 +410,20 @@ export function ProjectDocumentsPanel({
             {fetchingOsm ? (osmFetchProgress ?? 'Fetching from OpenStreetMap…') : '🌐 Fetch existing infrastructure (OSM)'}
           </button>
           {osmFetchError && <p className="osm-fetch-error">{osmFetchError}</p>}
+        </div>
+      )}
+
+      {editable && excavationContext && (
+        <div className="osm-fetch-row">
+          <button
+            type="button"
+            className="doc-folder-add-btn"
+            onClick={handleGenerateExcavationLayer}
+            disabled={generatingExcavation}
+          >
+            {generatingExcavation ? 'Generating…' : '🏗 Generate excavation-pit layer'}
+          </button>
+          {excavationError && <p className="osm-fetch-error">{excavationError}</p>}
         </div>
       )}
 

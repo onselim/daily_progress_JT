@@ -12,6 +12,11 @@ export interface AssetListItem {
   z: number | null;
   lat: number | null;
   lng: number | null;
+  leg1_ext_m: number | null;
+  leg2_ext_m: number | null;
+  leg3_ext_m: number | null;
+  leg4_ext_m: number | null;
+  soil_type: number;
 }
 
 export function useAssets(projectId: string | undefined) {
@@ -25,7 +30,9 @@ export function useAssets(projectId: string | undefined) {
 
     supabase
       .from('assets')
-      .select('id, asset_code, asset_type, status, station, x, y, z, lat, lng')
+      .select(
+        'id, asset_code, asset_type, status, station, x, y, z, lat, lng, leg1_ext_m, leg2_ext_m, leg3_ext_m, leg4_ext_m, soil_type',
+      )
       .eq('project_id', projectId)
       .then(({ data, error }) => {
         if (cancelled) return;

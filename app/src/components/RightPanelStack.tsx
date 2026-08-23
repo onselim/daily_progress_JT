@@ -5,6 +5,7 @@ import { LineSummaryPanel } from './LineSummaryPanel';
 import { HeatMapPanel, type HeatMetric, type MetricTotals } from './HeatMapPanel';
 import type { LineSummary } from '../lib/useLineSummary';
 import type { AssetListItem } from '../lib/useAssets';
+import type { FoundationTypeConfig } from '../lib/useFoundationTypesConfig';
 
 interface RightPanelStackProps {
   projectId: string;
@@ -24,6 +25,7 @@ interface RightPanelStackProps {
   onToggleLayer: (layerId: string) => void;
   layerErrors: Record<string, string>;
   assets: AssetListItem[];
+  foundationTypes: FoundationTypeConfig[];
   coordinateSystem: string | null;
 }
 
@@ -45,6 +47,7 @@ export function RightPanelStack({
   onToggleLayer,
   layerErrors,
   assets,
+  foundationTypes,
   coordinateSystem,
 }: RightPanelStackProps) {
   return (
@@ -80,6 +83,7 @@ export function RightPanelStack({
           onToggleLayer={onToggleLayer}
           layerErrors={layerErrors}
           osmFetchContext={{ assets, coordinateSystem }}
+          excavationContext={{ assets, foundationTypes, coordinateSystem }}
         />
       </AccordionPanel>
 

@@ -240,6 +240,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           onToggleLayer={toggleLayer}
           layerErrors={layerErrors}
           assets={assets}
+          foundationTypes={foundationTypes}
           coordinateSystem={coordinateSystem}
         />
         {selectedAssetId && (

@@ -899,6 +899,16 @@ button:disabled {
   color: var(--text-h);
 }
 
+.foundation-stub-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.75;
+  margin: -4px 0 10px;
+}
+
 .access-banner {
   display: flex;
   gap: 10px;
