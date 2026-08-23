@@ -4,7 +4,7 @@ import { useProjectDocuments, type DocumentFolder, type ProjectDocument } from '
 import { uploadProjectDocument } from '../lib/uploadProjectDocument';
 import { deleteProjectDocument } from '../lib/deleteProjectDocument';
 import { renameProjectDocument } from '../lib/renameDocument';
-import { createDocumentFolder, deleteDocumentFolder, renameDocumentFolder } from '../lib/documentFolders';
+import { createDocumentFolder, deleteDocumentFolder, renameDocumentFolder, moveProjectDocument } from '../lib/documentFolders';
 import { computeProjectBounds, fetchExistingInfrastructure } from '../lib/fetchOsmInfrastructure';
 import type { AssetListItem } from '../lib/useAssets';
 import type { FoundationTypeConfig } from '../lib/useFoundationTypesConfig';
@@ -24,6 +24,20 @@ const OSM_LAYER_NAMES = {
 };
 
 const EXCAVATION_LAYER_NAME = 'Excavation Pits (per-leg).geojson';
+
+/** Flattens the folder tree into a depth-indented pick list for the "move to folder"
+ * dropdown, in the same order folders appear in the panel. */
+function flattenFolders(
+  allFolders: DocumentFolder[],
+  parentId: string | null = null,
+  depth = 0,
+): { id: string; label: string }[] {
+  const children = allFolders.filter((f) => f.parent_folder_id === parentId);
+  return children.flatMap((f) => [
+    { id: f.id, label: `${'— '.repeat(depth)}${f.name}` },
+    ...flattenFolders(allFolders, f.id, depth + 1),
+  ]);
+}
 
 interface ProjectDocumentsPanelProps {
   projectId: string;
@@ -59,6 +73,7 @@ interface FolderNodeProps {
   onDeleteFolder: (folderId: string, folderName: string) => void;
   onRenameFolder: (folderId: string, newName: string) => void;
   onRenameDocument: (docId: string, newName: string) => void;
+  onMoveDocument: (docId: string, folderId: string | null) => void;
   enabledLayerIds?: Set<string>;
   onToggleLayer?: (layerId: string) => void;
   layerErrors?: Record<string, string>;
@@ -94,6 +109,33 @@ function LayerToggle({
   );
 }
 
+function MoveToFolder({
+  doc,
+  allFolders,
+  onMove,
+}: {
+  doc: ProjectDocument;
+  allFolders: DocumentFolder[];
+  onMove: (docId: string, folderId: string | null) => void;
+}) {
+  if (allFolders.length === 0) return null;
+  return (
+    <select
+      className="doc-move-select"
+      value={doc.folder_id ?? ''}
+      onChange={(e) => onMove(doc.id, e.target.value || null)}
+      title="Move to folder"
+    >
+      <option value="">— Root —</option>
+      {flattenFolders(allFolders).map((f) => (
+        <option key={f.id} value={f.id}>
+          {f.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 function FolderNode({
   folder,
   depth,
@@ -107,6 +149,7 @@ function FolderNode({
   onDeleteFolder,
   onRenameFolder,
   onRenameDocument,
+  onMoveDocument,
   enabledLayerIds,
   onToggleLayer,
   layerErrors,
@@ -181,6 +224,7 @@ function FolderNode({
               onDeleteFolder={onDeleteFolder}
               onRenameFolder={onRenameFolder}
               onRenameDocument={onRenameDocument}
+              onMoveDocument={onMoveDocument}
               enabledLayerIds={enabledLayerIds}
               onToggleLayer={onToggleLayer}
               layerErrors={layerErrors}
@@ -203,6 +247,7 @@ function FolderNode({
                   </a>
                 </RenamableText>
               </span>
+              {editable && <MoveToFolder doc={doc} allFolders={allFolders} onMove={onMoveDocument} />}
               {editable && (
                 <button
                   type="button"
@@ -382,6 +427,12 @@ export function ProjectDocumentsPanel({
     await refresh();
   }
 
+  async function handleMoveDocument(docId: string, folderId: string | null) {
+    await moveProjectDocument(docId, folderId);
+    await refresh();
+    onLayersChanged?.();
+  }
+
   async function handleCreateFolder(name: string, parentFolderId: string | null) {
     if (!name.trim() || !user) return;
     await createDocumentFolder(projectId, name, user.id, section, parentFolderId);
@@ -455,6 +506,7 @@ export function ProjectDocumentsPanel({
             onDeleteFolder={handleDeleteFolder}
             onRenameFolder={handleRenameFolder}
             onRenameDocument={handleRenameDocument}
+            onMoveDocument={handleMoveDocument}
             enabledLayerIds={enabledLayerIds}
             onToggleLayer={onToggleLayer}
             layerErrors={layerErrors}
@@ -479,6 +531,7 @@ export function ProjectDocumentsPanel({
                   </a>
                 </RenamableText>
               </span>
+              {editable && <MoveToFolder doc={doc} allFolders={folders} onMove={handleMoveDocument} />}
               {editable && (
                 <button
                   type="button"

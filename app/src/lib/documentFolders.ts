@@ -24,6 +24,12 @@ export async function renameDocumentFolder(folderId: string, newName: string) {
   if (error) throw error;
 }
 
+/** Moves a document to a different folder, or to the section root if `folderId` is null. */
+export async function moveProjectDocument(documentId: string, folderId: string | null) {
+  const { error } = await supabase.from('documents').update({ folder_id: folderId }).eq('id', documentId);
+  if (error) throw error;
+}
+
 /** Deletes a folder, every sub-folder beneath it (any depth), and every document in all
  * of them: the Storage objects first, then the folder row (whose sub-folders and
  * `documents` rows cascade-delete via FKs). */
