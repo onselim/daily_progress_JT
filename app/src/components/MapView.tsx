@@ -91,16 +91,6 @@ const BASEMAPS: Record<string, { label: string; url: string; options: L.TileLaye
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     options: { maxZoom: 19, attribution: 'ESRI ArcGIS' },
   },
-  esriClarity: {
-    label: 'ESRI Imagery (Clarity)',
-    url: 'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    options: { maxZoom: 19, attribution: 'ESRI World Imagery Clarity' },
-  },
-  esriTopo: {
-    label: 'ESRI Topographic',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-    options: { maxZoom: 19, attribution: 'ESRI World Topo Map' },
-  },
 };
 
 function restrictedIconHtml(size: number, code: string): string {
