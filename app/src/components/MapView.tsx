@@ -359,8 +359,8 @@ export function MapView({
                 const header = [p.tower, p.tower_type, p.stub ? `Leg ${p.leg} (${p.stub})` : null, bWidth ? `B (pad width): ${bWidth} m` : null]
                   .filter(Boolean)
                   .join(' — ');
-                const cornerLines = Array.isArray(p.corners)
-                  ? p.corners.map((c: [number, number], i: number) => `C${i + 1}: ${c[0]}, ${c[1]}`).join('<br/>')
+                const cornerLines = Array.isArray(p.corners_utm)
+                  ? p.corners_utm.map((c: [number, number], i: number) => `C${i + 1}: ${c[0]}, ${c[1]}`).join('<br/>')
                   : '';
                 featureLayer.bindTooltip(`${header}${cornerLines ? `<br/>${cornerLines}` : ''}`, { sticky: true });
                 return;

@@ -148,8 +148,6 @@ export function buildExcavationFeatureCollection(
         const [lat, lng] = utmToLatLng(x, y, coordinateSystem);
         return [lng, lat];
       });
-      const cornersLatLng = result.cornersUtm.map(([x, y]) => utmToLatLng(x, y, coordinateSystem));
-
       features.push({
         type: 'Feature',
         properties: {
@@ -159,7 +157,8 @@ export function buildExcavationFeatureCollection(
           leg: result.leg,
           stub: result.stub,
           b_width_m: Number(result.bWidthM.toFixed(3)),
-          corners: cornersLatLng.map(([lat, lng]) => [Number(lat.toFixed(6)), Number(lng.toFixed(6))]),
+          // Site engineers work in UTM, not lat/lng -- shown on hover in MapView.
+          corners_utm: result.cornersUtm.map(([x, y]) => [Number(x.toFixed(3)), Number(y.toFixed(3))]),
         },
         geometry: { type: 'Polygon', coordinates: [ring] },
       });
