@@ -168,7 +168,7 @@ function geoLayerStyle(category?: string): L.PathOptions {
     // These are drawn at true physical scale (a few metres per side), so they're only
     // meaningfully visible once zoomed into a specific tower -- a solid, saturated fill
     // reads clearly at that scale instead of getting lost against satellite imagery.
-    return { color: '#dc2626', weight: 1.5, fillColor: '#dc2626', fillOpacity: 0.45, opacity: 0.95 };
+    return { color: '#78350f', weight: 1.5, fillColor: '#facc15', fillOpacity: 0.5, opacity: 0.95 };
   }
   return { color: '#f59e0b', weight: 3, dashArray: '6 4', opacity: 0.85 };
 }
@@ -350,7 +350,7 @@ export function MapView({
             onLayerError?.(geoLayer.id, `Not a GeoJSON file (found "${data?.type ?? typeof data}" instead)`);
             return;
           }
-          const layer = L.geoJSON(data, {
+          const layer = L.geoJSON(undefined, {
             style: (feature) => geoLayerStyle(feature?.properties?.category),
             onEachFeature: (feature, featureLayer) => {
               const p = feature.properties ?? {};
@@ -360,16 +360,32 @@ export function MapView({
                 const header = [p.tower, p.tower_type, p.stub ? `Leg ${p.leg} (${p.stub})` : null, legExt, bWidth ? `B (pad width): ${bWidth} m` : null]
                   .filter(Boolean)
                   .join(' — ');
-                const cornerLines = Array.isArray(p.corners_utm)
-                  ? p.corners_utm.map((c: [number, number], i: number) => `C${i + 1}: ${c[0]}, ${c[1]}`).join('<br/>')
-                  : '';
-                featureLayer.bindTooltip(`${header}${cornerLines ? `<br/>${cornerLines}` : ''}`, { sticky: true });
+                featureLayer.bindTooltip(header, { sticky: true });
+
+                // Snap-to-corner: a small marker at each corner showing just that
+                // corner's own UTM coordinate, instead of dumping all 4 on the polygon.
+                if (feature.geometry.type === 'Polygon' && Array.isArray(p.corners_utm)) {
+                  const ring = feature.geometry.coordinates[0];
+                  (p.corners_utm as [number, number][]).forEach(([x, y], i) => {
+                    const [lng, lat] = ring[i];
+                    L.circleMarker([lat, lng], {
+                      radius: 4,
+                      color: '#78350f',
+                      weight: 1,
+                      fillColor: '#facc15',
+                      fillOpacity: 1,
+                    })
+                      .bindTooltip(`Corner ${i + 1}: ${x}, ${y}`, { sticky: true })
+                      .addTo(layer);
+                  });
+                }
                 return;
               }
               const bits = [p.name, p.voltage ? `${Number(p.voltage) / 1000} kV` : null, p.man_made ?? p.power];
               featureLayer.bindTooltip(bits.filter(Boolean).join(' — ') || geoLayer.name, { sticky: true });
             },
           });
+          layer.addData(data);
           layer.addTo(map);
           geoLayersRef.current[geoLayer.id] = layer;
         })
