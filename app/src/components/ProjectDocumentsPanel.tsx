@@ -39,6 +39,11 @@ interface ProjectDocumentsPanelProps {
     foundationTypes: FoundationTypeConfig[];
     coordinateSystem: string | null;
   };
+  /** The map's active-layers list (`useMapLayers`) is a separate `useProjectDocuments`
+   * instance from this panel's own, so it doesn't see this panel's `refresh()` -- call
+   * this too whenever a layers-section file is added/replaced/removed so the map picks
+   * up the change without a full page reload. */
+  onLayersChanged?: () => void;
 }
 
 interface FolderNodeProps {
@@ -269,6 +274,7 @@ export function ProjectDocumentsPanel({
   layerErrors,
   osmFetchContext,
   excavationContext,
+  onLayersChanged,
 }: ProjectDocumentsPanelProps) {
   const { user } = useAuth();
   const { documents, folders, loading, refresh } = useProjectDocuments(projectId, section);
@@ -310,6 +316,7 @@ export function ProjectDocumentsPanel({
         replaceNamedDocument(OSM_LAYER_NAMES.railways, railways),
       ]);
       await refresh();
+      onLayersChanged?.();
     } catch (err) {
       setOsmFetchError(err instanceof Error ? err.message : 'Fetch failed');
     } finally {
@@ -335,6 +342,7 @@ export function ProjectDocumentsPanel({
       }
       await replaceNamedDocument(EXCAVATION_LAYER_NAME, geojson);
       await refresh();
+      onLayersChanged?.();
     } catch (err) {
       setExcavationError(err instanceof Error ? err.message : 'Generation failed');
     } finally {
@@ -351,6 +359,7 @@ export function ProjectDocumentsPanel({
         await uploadProjectDocument({ projectId, file, uploadedBy: user.id, folderId, section });
       }
       await refresh();
+      onLayersChanged?.();
     } finally {
       setUploadingKey(null);
       e.target.value = '';
@@ -360,6 +369,7 @@ export function ProjectDocumentsPanel({
   async function handleDeleteDocument(docId: string, fileUrl: string) {
     await deleteProjectDocument(docId, fileUrl);
     await refresh();
+    onLayersChanged?.();
   }
 
   async function handleRenameFolder(folderId: string, newName: string) {
@@ -395,6 +405,7 @@ export function ProjectDocumentsPanel({
     if (!confirm(`Delete folder "${folderName}" and every file in it?`)) return;
     await deleteDocumentFolder(folderId);
     await refresh();
+    onLayersChanged?.();
   }
 
   if (loading) return <p className="accordion-empty">Loading…</p>;

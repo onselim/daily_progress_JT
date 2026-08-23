@@ -39,7 +39,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
   const [heatMetric, setHeatMetric] = useState<HeatMetric | null>(null);
   const [heatmapRangeFrom, setHeatmapRangeFrom] = useState('');
   const [heatmapRangeTo, setHeatmapRangeTo] = useState('');
-  const { layers: mapLayers } = useMapLayers(projectId);
+  const { layers: mapLayers, refresh: refreshMapLayers } = useMapLayers(projectId);
   const [enabledLayerIds, setEnabledLayerIds] = useState<Set<string>>(new Set());
   const [layerErrors, setLayerErrors] = useState<Record<string, string>>({});
 
@@ -242,6 +242,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           assets={assets}
           foundationTypes={foundationTypes}
           coordinateSystem={coordinateSystem}
+          onLayersChanged={refreshMapLayers}
         />
         {selectedAssetId && (
           <div className="floating-editor">

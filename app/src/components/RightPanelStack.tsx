@@ -27,6 +27,7 @@ interface RightPanelStackProps {
   assets: AssetListItem[];
   foundationTypes: FoundationTypeConfig[];
   coordinateSystem: string | null;
+  onLayersChanged?: () => void;
 }
 
 export function RightPanelStack({
@@ -49,6 +50,7 @@ export function RightPanelStack({
   assets,
   foundationTypes,
   coordinateSystem,
+  onLayersChanged,
 }: RightPanelStackProps) {
   return (
     <div className="right-panel-stack">
@@ -84,6 +86,7 @@ export function RightPanelStack({
           layerErrors={layerErrors}
           osmFetchContext={{ assets, coordinateSystem }}
           excavationContext={{ assets, foundationTypes, coordinateSystem }}
+          onLayersChanged={onLayersChanged}
         />
       </AccordionPanel>
 
