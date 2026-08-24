@@ -149,17 +149,11 @@ export function AssetList({
                 type="button"
                 className={`asset-list-item${a.id === selectedAssetId ? ' active' : ''}${isHeatCentroid ? ' heat-centroid' : ''}`}
                 onClick={() => onSelect(a.id)}
+                onDoubleClick={() => onZoomToAsset?.(a.id)}
+                title="Double-click to zoom to this tower"
               >
                 <div className="asset-list-item-row">
-                  <span
-                    className="asset-num"
-                    style={{ color: numColor }}
-                    onDoubleClick={(e) => {
-                      e.stopPropagation();
-                      onZoomToAsset?.(a.id);
-                    }}
-                    title="Double-click to zoom to this tower"
-                  >
+                  <span className="asset-num" style={{ color: numColor }}>
                     {a.asset_code}
                   </span>
                   <span className="asset-type">
