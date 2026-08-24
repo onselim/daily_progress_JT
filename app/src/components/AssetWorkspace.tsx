@@ -25,6 +25,12 @@ interface AssetWorkspaceProps {
 
 export function AssetWorkspace({ projectId, coordinateSystem, editable = true, onAssetSaved }: AssetWorkspaceProps) {
   const [selectedAssetId, setSelectedAssetId] = useState('');
+  const [zoomRequest, setZoomRequest] = useState<{ assetId: string; nonce: number } | null>(null);
+
+  function zoomToAsset(assetId: string) {
+    setSelectedAssetId(assetId);
+    setZoomRequest({ assetId, nonce: Date.now() });
+  }
   const { assets } = useAssets(projectId);
   const { workItems } = useWorkItemsConfig(projectId);
   const {
@@ -209,6 +215,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
         restrictedAssetIds={restrictedAssetIds}
         activeAssetIds={activeAssetIds}
         heatCentroidAssetId={heatCentroidAssetId}
+        onZoomToAsset={zoomToAsset}
       />
       <div className="map-stage">
         <MapView
@@ -218,6 +225,7 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           onSelect={setSelectedAssetId}
           restrictedAssetIds={restrictedAssetIds}
           activeAssetIds={activeAssetIds}
+          zoomRequest={zoomRequest}
           percentByAssetAndKey={percentByAssetAndKey}
           groundWireConfig={groundWireConfig}
           heatmapEnabled={heatMetric != null}

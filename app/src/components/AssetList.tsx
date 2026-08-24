@@ -53,6 +53,7 @@ interface AssetListProps {
   restrictedAssetIds: Set<string>;
   activeAssetIds: Set<string>;
   heatCentroidAssetId?: string | null;
+  onZoomToAsset?: (assetId: string) => void;
 }
 
 export function AssetList({
@@ -65,6 +66,7 @@ export function AssetList({
   restrictedAssetIds,
   activeAssetIds,
   heatCentroidAssetId = null,
+  onZoomToAsset,
 }: AssetListProps) {
   const { assets, loading } = useAssets(projectId);
   const [search, setSearch] = useState('');
@@ -149,7 +151,15 @@ export function AssetList({
                 onClick={() => onSelect(a.id)}
               >
                 <div className="asset-list-item-row">
-                  <span className="asset-num" style={{ color: numColor }}>
+                  <span
+                    className="asset-num"
+                    style={{ color: numColor }}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      onZoomToAsset?.(a.id);
+                    }}
+                    title="Double-click to zoom to this tower"
+                  >
                     {a.asset_code}
                   </span>
                   <span className="asset-type">

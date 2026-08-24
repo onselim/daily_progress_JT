@@ -188,6 +188,7 @@ interface MapViewProps {
   onSelect: (assetId: string) => void;
   restrictedAssetIds: Set<string>;
   activeAssetIds: Set<string>;
+  zoomRequest?: { assetId: string; nonce: number } | null;
   percentByAssetAndKey: Record<string, Record<string, number>>;
   groundWireConfig: GroundWireConfig;
   heatmapEnabled?: boolean;
@@ -204,6 +205,7 @@ export function MapView({
   onSelect,
   restrictedAssetIds,
   activeAssetIds,
+  zoomRequest,
   percentByAssetAndKey,
   groundWireConfig,
   heatmapEnabled = false,
@@ -626,6 +628,14 @@ export function MapView({
     if (!map || !marker) return;
     map.flyTo(marker.getLatLng(), Math.max(map.getZoom(), 17));
   }
+
+  useEffect(() => {
+    if (!zoomRequest) return;
+    const map = mapRef.current;
+    const marker = markersRef.current[zoomRequest.assetId];
+    if (!map || !marker) return;
+    map.flyTo(marker.getLatLng(), Math.max(map.getZoom(), 17));
+  }, [zoomRequest]);
 
   return (
     <>
