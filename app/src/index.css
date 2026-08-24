@@ -902,11 +902,27 @@ button:disabled {
 .foundation-stub-row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 4px 12px;
   font-size: 11px;
   color: var(--text);
   opacity: 0.75;
   margin: -4px 0 10px;
+}
+
+.soil-type-picker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.soil-type-picker select {
+  background: var(--bg-alt, #1a1d29);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 11px;
+  padding: 1px 4px;
 }
 
 .access-banner {

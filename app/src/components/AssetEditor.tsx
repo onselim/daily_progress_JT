@@ -2,7 +2,11 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 import { useWorkItemsConfig, type WorkItemConfig } from '../lib/useProjectConfig';
-import { useFoundationTypesConfig, getFoundationTypeForAsset } from '../lib/useFoundationTypesConfig';
+import {
+  useFoundationTypesConfig,
+  getFoundationTypeForAsset,
+  getFoundationOptionsForAsset,
+} from '../lib/useFoundationTypesConfig';
 import { useAssetPhotos, type AssetPhoto } from '../lib/useAssetPhotos';
 import { uploadAssetPhoto } from '../lib/uploadAssetPhoto';
 import { deleteAssetPhoto } from '../lib/deleteAssetPhoto';
@@ -293,7 +297,7 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
         },
         { onConflict: 'asset_id,log_date' },
       ),
-      supabase.from('assets').update({ notes }).eq('id', assetId),
+      supabase.from('assets').update({ notes, soil_type: soilType ?? 3 }).eq('id', assetId),
     ]);
 
     setSaving(false);
@@ -432,7 +436,8 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
   }
 
   const isRestricted = siteAccessStatus === 'restricted';
-  const foundation = getFoundationTypeForAsset(assetType, foundationTypes);
+  const foundationOptions = getFoundationOptionsForAsset(assetType, foundationTypes);
+  const foundation = getFoundationTypeForAsset(assetType, foundationTypes, soilType);
 
   return (
     <form className="asset-editor" onSubmit={handleSubmit}>
@@ -516,7 +521,19 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
               )}
               {group.name.toUpperCase() === 'FOUNDATION' && (legExtM || soilType != null) && (
                 <div className="foundation-stub-row" title="Per-leg extension and soil type, used for the excavation-pit layer">
-                  {soilType != null && <span>Soil Type {soilType}</span>}
+                  {soilType != null && editable && foundationOptions.length > 0 && (
+                    <label className="soil-type-picker">
+                      Soil Type
+                      <select value={soilType} onChange={(e) => setSoilType(Number(e.target.value))}>
+                        {foundationOptions.map((f) => (
+                          <option key={f.soilTypeCode} value={f.soilTypeCode}>
+                            {f.soilTypeCode} — {f.soilType}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  {soilType != null && (!editable || foundationOptions.length === 0) && <span>Soil Type {soilType}</span>}
                   {legExtM && (
                     <span>
                       Leg Ext (m):{' '}

@@ -123,7 +123,7 @@ export function buildExcavationFeatureCollection(
     const stub = stubSettings.find((s) => s.type === lookupType);
     if (!stub) return;
 
-    const foundation = getFoundationTypeForAsset(asset.asset_type, foundationTypes);
+    const foundation = getFoundationTypeForAsset(asset.asset_type, foundationTypes, asset.soil_type);
     if (!foundation) return;
 
     const center: Vec2 = [asset.x, asset.y];
