@@ -2129,6 +2129,13 @@ button:disabled {
   cursor: default;
 }
 
+.doc-folder-add-btn.active {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0, 212, 170, 0.08);
+}
+
 .osm-fetch-row {
   margin-bottom: 10px;
 }

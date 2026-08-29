@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { utmToLatLng } from '../lib/utmToLatLng';
 import { resolveLinePath, bearingDeg } from '../lib/lineGeometry';
 import type { AssetListItem } from '../lib/useAssets';
 import type { GroundWireConfig } from '../lib/useGroundWireConfig';
+import type { PhotoLocation } from '../lib/useProjectPhotoLocations';
 
 const STATUS_COLOR: Record<string, string> = {
   not_started: '#3d4259',
@@ -196,6 +200,8 @@ interface MapViewProps {
   heatCentroid?: [number, number] | null;
   geoLayers?: { id: string; name: string; url: string }[];
   onLayerError?: (layerId: string, message: string) => void;
+  photoLocations?: PhotoLocation[];
+  photosLayerEnabled?: boolean;
 }
 
 export function MapView({
@@ -211,6 +217,8 @@ export function MapView({
   heatmapEnabled = false,
   heatPoints = [],
   heatCentroid = null,
+  photoLocations = [],
+  photosLayerEnabled = false,
   geoLayers = [],
   onLayerError,
 }: MapViewProps) {
@@ -224,6 +232,7 @@ export function MapView({
   const heatLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const heatCentroidMarkerRef = useRef<L.Marker | null>(null);
   const geoLayersRef = useRef<Record<string, L.GeoJSON>>({});
+  const photoClusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const hasFitBounds = useRef(false);
   const [basemap, setBasemap] = useState<keyof typeof BASEMAPS>('satellite');
   const [basemapMenuOpen, setBasemapMenuOpen] = useState(false);
@@ -402,6 +411,38 @@ export function MapView({
       cancelled = true;
     };
   }, [geoLayers, onLayerError]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (photoClusterRef.current) {
+      map.removeLayer(photoClusterRef.current);
+      photoClusterRef.current = null;
+    }
+    if (!photosLayerEnabled || photoLocations.length === 0) return;
+
+    const cluster = L.markerClusterGroup({ maxClusterRadius: 50 });
+    for (const photo of photoLocations) {
+      const marker = L.marker([photo.lat, photo.lng], {
+        icon: L.divIcon({
+          className: '',
+          html: `<div style="width:22px;height:22px;border-radius:50%;background:#0ea5e9;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:11px;">📷</div>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        }),
+      });
+      const label = [photo.asset_code ? `Tower ${photo.asset_code}` : null, photo.category]
+        .filter(Boolean)
+        .join(' — ');
+      marker.bindPopup(
+        `<div style="text-align:center"><a href="${photo.file_url}" target="_blank" rel="noreferrer"><img src="${photo.file_url}" style="max-width:180px;max-height:140px;border-radius:4px;display:block;margin-bottom:4px;" /></a>${label ? `<div style="font-size:12px;">${label}</div>` : ''}</div>`,
+      );
+      cluster.addLayer(marker);
+    }
+    cluster.addTo(map);
+    photoClusterRef.current = cluster;
+  }, [photoLocations, photosLayerEnabled]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -8,6 +8,7 @@ import { useAssets } from '../lib/useAssets';
 import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress';
 import { useRestrictedToday } from '../lib/useRestrictedToday';
 import { useActiveAssetIds } from '../lib/useActiveAssetIds';
+import { useProjectPhotoLocations } from '../lib/useProjectPhotoLocations';
 import { useWorkItemsConfig } from '../lib/useProjectConfig';
 import { useGroundWireConfig } from '../lib/useGroundWireConfig';
 import { useLineSummary } from '../lib/useLineSummary';
@@ -40,6 +41,8 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
   } = useProjectWorkItemsProgress(projectId, workItems);
   const { restrictedAssetIds, refresh: refreshRestricted } = useRestrictedToday(projectId);
   const { activeAssetIds } = useActiveAssetIds(projectId);
+  const { photoLocations } = useProjectPhotoLocations(projectId);
+  const [photosLayerEnabled, setPhotosLayerEnabled] = useState(false);
   const groundWireConfig = useGroundWireConfig(projectId);
   const lineSummary = useLineSummary(projectId, assets, coordinateSystem);
   const { foundationTypes } = useFoundationTypesConfig(projectId);
@@ -233,6 +236,8 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           heatCentroid={heatCentroid}
           geoLayers={activeMapLayers}
           onLayerError={(layerId, message) => setLayerErrors((prev) => ({ ...prev, [layerId]: message }))}
+          photoLocations={photoLocations}
+          photosLayerEnabled={photosLayerEnabled}
         />
         <RightPanelStack
           projectId={projectId}
@@ -255,6 +260,9 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
           foundationTypes={foundationTypes}
           coordinateSystem={coordinateSystem}
           onLayersChanged={refreshMapLayers}
+          photoCount={photoLocations.length}
+          photosLayerEnabled={photosLayerEnabled}
+          onTogglePhotosLayer={() => setPhotosLayerEnabled((v) => !v)}
         />
         {selectedAssetId && (
           <div className="floating-editor">

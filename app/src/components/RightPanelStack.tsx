@@ -28,6 +28,9 @@ interface RightPanelStackProps {
   foundationTypes: FoundationTypeConfig[];
   coordinateSystem: string | null;
   onLayersChanged?: () => void;
+  photoCount: number;
+  photosLayerEnabled: boolean;
+  onTogglePhotosLayer: () => void;
 }
 
 export function RightPanelStack({
@@ -51,6 +54,9 @@ export function RightPanelStack({
   foundationTypes,
   coordinateSystem,
   onLayersChanged,
+  photoCount,
+  photosLayerEnabled,
+  onTogglePhotosLayer,
 }: RightPanelStackProps) {
   return (
     <div className="right-panel-stack">
@@ -76,6 +82,15 @@ export function RightPanelStack({
       </AccordionPanel>
 
       <AccordionPanel title="Layers">
+        <div className="osm-fetch-row">
+          <button
+            type="button"
+            className={`doc-folder-add-btn${photosLayerEnabled ? ' active' : ''}`}
+            onClick={onTogglePhotosLayer}
+          >
+            📷 {photosLayerEnabled ? 'Hide' : 'Show'} geotagged photos ({photoCount})
+          </button>
+        </div>
         <ProjectDocumentsPanel
           projectId={projectId}
           editable={editable}
