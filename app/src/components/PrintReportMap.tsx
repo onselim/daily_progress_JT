@@ -16,6 +16,7 @@ interface PrintReportMapProps {
 export function PrintReportMap({ assets, coordinateSystem, highlightedAssetIds }: PrintReportMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const layerGroupRef = useRef<L.LayerGroup | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -36,11 +37,17 @@ export function PrintReportMap({ assets, coordinateSystem, highlightedAssetIds }
     const map = mapRef.current;
     if (!map) return;
 
+    if (layerGroupRef.current) {
+      layerGroupRef.current.remove();
+      layerGroupRef.current = null;
+    }
+
     const path = resolveLinePath(assets, coordinateSystem);
     if (path.length === 0) return;
 
+    const group = L.layerGroup();
     const points: [number, number][] = path.map((p) => [p.lat, p.lng]);
-    L.polyline(points, { color: '#f59e0b', weight: 2, opacity: 0.7 }).addTo(map);
+    L.polyline(points, { color: '#f59e0b', weight: 2, opacity: 0.7 }).addTo(group);
 
     for (const p of path) {
       if (highlightedAssetIds.has(p.id)) {
@@ -51,7 +58,7 @@ export function PrintReportMap({ assets, coordinateSystem, highlightedAssetIds }
             iconSize: [22, 22],
             iconAnchor: [11, 11],
           }),
-        }).addTo(map);
+        }).addTo(group);
       } else {
         L.circleMarker([p.lat, p.lng], {
           radius: 2.5,
@@ -59,9 +66,12 @@ export function PrintReportMap({ assets, coordinateSystem, highlightedAssetIds }
           weight: 1,
           fillColor: '#9ca3af',
           fillOpacity: 0.9,
-        }).addTo(map);
+        }).addTo(group);
       }
     }
+
+    group.addTo(map);
+    layerGroupRef.current = group;
 
     map.fitBounds(points, { padding: [20, 20] });
     setTimeout(() => map.invalidateSize(), 50);

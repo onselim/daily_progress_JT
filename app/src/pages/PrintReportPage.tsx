@@ -12,6 +12,8 @@ import { useDesignBreakdown } from '../lib/useDesignBreakdown';
 import { useSupplyBreakdown } from '../lib/useSupplyBreakdown';
 import { computeOverallPercent } from '../lib/overallProgress';
 import { useDailyLogEntries } from '../lib/useDailyLogEntries';
+import { usePlanForToday } from '../lib/usePlanForToday';
+import { usePlannedTomorrow } from '../lib/usePlannedTomorrow';
 import { useWeatherForecast } from '../lib/useWeatherForecast';
 import { utmToLatLng } from '../lib/utmToLatLng';
 import { PrintReportMap } from '../components/PrintReportMap';
@@ -44,6 +46,8 @@ export default function PrintReportPage() {
   const { items: supplyItems, overallPercent: supplyPercent } = useSupplyBreakdown(project?.id);
   const overallPercent = computeOverallPercent(designPercent, constructionPercent, supplyPercent);
   const { entries } = useDailyLogEntries(project?.id);
+  const { entries: workEntriesToday } = usePlanForToday(project?.id, workItems);
+  const { entries: workEntriesTomorrow } = usePlannedTomorrow(project?.id);
 
   const [weatherLat, weatherLng] = useMemo((): [number | null, number | null] => {
     if (!project?.coordinate_system || assets.length === 0) return [null, null];
@@ -94,11 +98,44 @@ export default function PrintReportPage() {
   const shownRestricted = restrictedCodes.slice(0, 14);
   const extraRestricted = restrictedCodes.length - shownRestricted.length;
 
-  const activeEntries = entries.filter((e) => e.completedToday.trim() || e.plannedTomorrow.trim());
-  const activeAssetsByCode = new Map(assets.map((a) => [a.asset_code, a]));
-  const highlightedAssetIds = new Set(
-    activeEntries.map((e) => activeAssetsByCode.get(e.assetCode)?.id).filter((id): id is string => !!id),
-  );
+  // Page 2's map/list: "active" towers are exactly the ones that already light up the
+  // Active badge elsewhere in the app -- a work item completed today, or one planned
+  // for tomorrow -- not the free-text daily notes (those are a separate, unrelated
+  // per-tower field).
+  function workItemLabel(key: string | null): string | null {
+    if (!key) return null;
+    return workItems.find((w) => w.key === key)?.label ?? key;
+  }
+
+  const assetTypeById = new Map(assets.map((a) => [a.id, a.asset_type]));
+  const activeTowerMap = new Map<
+    string,
+    { assetCode: string; completed: string[]; ongoing: string[]; tomorrow: string[] }
+  >();
+  function activeTower(assetId: string, assetCode: string) {
+    let entry = activeTowerMap.get(assetId);
+    if (!entry) {
+      entry = { assetCode, completed: [], ongoing: [], tomorrow: [] };
+      activeTowerMap.set(assetId, entry);
+    }
+    return entry;
+  }
+  for (const e of workEntriesToday) {
+    const label = workItemLabel(e.workItemKey);
+    if (!label) continue;
+    const entry = activeTower(e.assetId, e.assetCode);
+    (e.kind === 'completed' ? entry.completed : entry.ongoing).push(label);
+  }
+  for (const e of workEntriesTomorrow) {
+    const label = workItemLabel(e.workItemKey);
+    if (!label) continue;
+    activeTower(e.assetId, e.assetCode).tomorrow.push(label);
+  }
+
+  const activeTowers = Array.from(activeTowerMap.entries())
+    .map(([assetId, v]) => ({ assetId, assetType: assetTypeById.get(assetId) ?? null, ...v }))
+    .sort((a, b) => a.assetCode.localeCompare(b.assetCode, undefined, { numeric: true }));
+  const highlightedAssetIds = new Set(activeTowers.map((t) => t.assetId));
 
   return (
     <div className="pd-page">
@@ -396,16 +433,18 @@ export default function PrintReportPage() {
                 <th>Tower</th>
                 <th>Type</th>
                 <th>Completed today</th>
+                <th>Ongoing</th>
                 <th>Planned for tomorrow</th>
               </tr>
             </thead>
             <tbody>
-              {activeEntries.map((e) => (
-                <tr key={e.assetCode}>
-                  <td>T{e.assetCode}</td>
-                  <td>{e.assetType}</td>
-                  <td>{e.completedToday || '—'}</td>
-                  <td>{e.plannedTomorrow || '—'}</td>
+              {activeTowers.map((t) => (
+                <tr key={t.assetId}>
+                  <td>T{t.assetCode}</td>
+                  <td>{t.assetType}</td>
+                  <td>{t.completed.join(', ') || '—'}</td>
+                  <td>{t.ongoing.join(', ') || '—'}</td>
+                  <td>{t.tomorrow.join(', ') || '—'}</td>
                 </tr>
               ))}
             </tbody>
