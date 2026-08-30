@@ -23,8 +23,9 @@ export async function uploadAssetPhoto(params: {
   file: File;
   uploadedBy: string;
   category?: string;
+  caption?: string;
 }) {
-  const { projectId, assetCode, assetId, file, uploadedBy, category = 'site' } = params;
+  const { projectId, assetCode, assetId, file, uploadedBy, category = 'site', caption } = params;
   const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
   const path = `${projectId}/${assetCode}/${category}/${Date.now()}-${safeName}`;
 
@@ -42,6 +43,7 @@ export async function uploadAssetPhoto(params: {
     file_url: urlData.publicUrl,
     gps_lat: gps?.lat ?? null,
     gps_lng: gps?.lng ?? null,
+    caption: caption?.trim() || null,
     uploaded_by: uploadedBy,
   });
   if (insertError) throw insertError;

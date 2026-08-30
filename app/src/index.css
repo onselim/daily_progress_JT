@@ -626,6 +626,41 @@ button:disabled {
   margin-top: 4px;
 }
 
+.photo-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.photo-upload-row .photo-upload-label,
+.photo-upload-row .photo-upload-label-sm {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.photo-note-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 11px;
+  color: var(--text-h);
+}
+
+.photo-caption {
+  display: block;
+  font-size: 9px;
+  color: var(--text);
+  opacity: 0.75;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .photo-toggle-btn {
   flex-shrink: 0;
   background: transparent;

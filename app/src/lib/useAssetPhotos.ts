@@ -5,6 +5,7 @@ export interface AssetPhoto {
   id: string;
   file_url: string;
   category: string | null;
+  caption: string | null;
   uploaded_at: string;
 }
 
@@ -17,7 +18,7 @@ export function useAssetPhotos(assetId: string | undefined) {
     setLoading(true);
     return supabase
       .from('photos')
-      .select('id, file_url, category, uploaded_at')
+      .select('id, file_url, category, caption, uploaded_at')
       .eq('asset_id', assetId)
       .order('uploaded_at', { ascending: false })
       .then(({ data, error }) => {

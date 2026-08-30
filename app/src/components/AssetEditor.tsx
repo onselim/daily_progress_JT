@@ -92,9 +92,10 @@ function PhotoThumbs({
     <div className={`photo-grid${inline ? ' photo-grid-inline' : ''}`}>
       {photos.map((p) => (
         <div key={p.id} className="photo-thumb-wrap">
-          <a href={p.file_url} target="_blank" rel="noreferrer" className="photo-thumb">
+          <a href={p.file_url} target="_blank" rel="noreferrer" className="photo-thumb" title={p.caption ?? undefined}>
             <img src={p.file_url} alt="" />
           </a>
+          {p.caption && <span className="photo-caption">{p.caption}</span>}
           {editable && (
             <button
               type="button"
@@ -186,6 +187,7 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
   const [message, setMessage] = useState<string | null>(null);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [expandedPhotoKey, setExpandedPhotoKey] = useState<string | null>(null);
+  const [noteDraftByKey, setNoteDraftByKey] = useState<Record<string, string>>({});
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [expandedDocKey, setExpandedDocKey] = useState<string | null>(null);
   const [uploadingDocKey, setUploadingDocKey] = useState<string | null>(null);
@@ -330,12 +332,14 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
     if (!files || files.length === 0 || !user) return;
     setUploadingKey(category);
     setMessage(null);
+    const caption = noteDraftByKey[category];
 
     try {
       for (const file of Array.from(files)) {
-        await uploadAssetPhoto({ projectId, assetCode, assetId, file, uploadedBy: user.id, category });
+        await uploadAssetPhoto({ projectId, assetCode, assetId, file, uploadedBy: user.id, category, caption });
       }
       await refreshPhotos();
+      setNoteDraftByKey((prev) => ({ ...prev, [category]: '' }));
     } catch (err) {
       setMessage(`Photo upload failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -683,16 +687,25 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
                           inline
                         />
                         {editable && (
-                          <label className="photo-upload-label photo-upload-label-sm">
-                            {uploadingKey === item.key ? 'Uploading…' : `+ Add ${item.label} photo`}
+                          <div className="photo-upload-row">
                             <input
-                              type="file"
-                              accept="image/*"
-                              multiple
-                              onChange={(e) => handlePhotoUpload(e, item.key)}
-                              disabled={uploadingKey === item.key}
+                              type="text"
+                              className="photo-note-input"
+                              placeholder="Note (optional)"
+                              value={noteDraftByKey[item.key] ?? ''}
+                              onChange={(e) => setNoteDraftByKey((prev) => ({ ...prev, [item.key]: e.target.value }))}
                             />
-                          </label>
+                            <label className="photo-upload-label photo-upload-label-sm">
+                              {uploadingKey === item.key ? 'Uploading…' : `+ Add ${item.label} photo`}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={(e) => handlePhotoUpload(e, item.key)}
+                                disabled={uploadingKey === item.key}
+                              />
+                            </label>
+                          </div>
                         )}
                       </div>
                     )}
@@ -826,16 +839,25 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
           onDelete={handleDeletePhoto}
         />
         {editable && (
-          <label className="photo-upload-label">
-            {uploadingKey === 'location' ? 'Uploading…' : '+ Add location photo'}
+          <div className="photo-upload-row">
             <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => handlePhotoUpload(e, 'location')}
-              disabled={uploadingKey === 'location'}
+              type="text"
+              className="photo-note-input"
+              placeholder="Note (optional)"
+              value={noteDraftByKey.location ?? ''}
+              onChange={(e) => setNoteDraftByKey((prev) => ({ ...prev, location: e.target.value }))}
             />
-          </label>
+            <label className="photo-upload-label">
+              {uploadingKey === 'location' ? 'Uploading…' : '+ Add location photo'}
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => handlePhotoUpload(e, 'location')}
+                disabled={uploadingKey === 'location'}
+              />
+            </label>
+          </div>
         )}
       </fieldset>
 
