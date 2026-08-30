@@ -108,21 +108,31 @@ function restrictedIconHtml(size: number, code: string): string {
   </div>`;
 }
 
-function activeIconHtml(size: number, color: string, code: string): string {
-  return `<div style="position:relative;width:${size}px;height:${size}px;">
+// Fixed, high-contrast color for the "active" pulse -- deliberately not the tower's own
+// STATUS_COLOR, which is often the muted not_started gray and made the flash nearly
+// invisible against satellite imagery.
+const ACTIVE_PULSE_COLOR = '#fbbf24';
+
+function activeIconHtml(size: number, code: string): string {
+  const half = size / 2;
+  return `<div style="position:relative;width:100%;height:100%;">
     <svg style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);overflow:visible;pointer-events:none;" width="${size}" height="${size}">
-      <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="none" stroke="${color}" stroke-width="2">
-        <animate attributeName="r" from="${size / 2}" to="${size}" dur="1.5s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" from="0.8" to="0" dur="1.5s" repeatCount="indefinite"/>
+      <circle cx="${half}" cy="${half}" r="${half}" fill="none" stroke="${ACTIVE_PULSE_COLOR}" stroke-width="3">
+        <animate attributeName="r" from="${half}" to="${size * 1.6}" dur="1.4s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" from="0.9" to="0" dur="1.4s" repeatCount="indefinite"/>
       </circle>
-      <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="none" stroke="${color}" stroke-width="1.5">
-        <animate attributeName="r" from="${size / 2}" to="${size * 1.4}" dur="1.5s" begin="0.4s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" from="0.5" to="0" dur="1.5s" begin="0.4s" repeatCount="indefinite"/>
+      <circle cx="${half}" cy="${half}" r="${half}" fill="none" stroke="${ACTIVE_PULSE_COLOR}" stroke-width="2.5">
+        <animate attributeName="r" from="${half}" to="${size * 2.1}" dur="1.4s" begin="0.45s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" from="0.7" to="0" dur="1.4s" begin="0.45s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="${half}" cy="${half}" r="${half}" fill="none" stroke="${ACTIVE_PULSE_COLOR}" stroke-width="2">
+        <animate attributeName="r" from="${half}" to="${size * 2.6}" dur="1.4s" begin="0.9s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" from="0.5" to="0" dur="1.4s" begin="0.9s" repeatCount="indefinite"/>
       </circle>
     </svg>
-    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:${size}px;height:${size}px;background:${color};border:2px solid rgba(255,255,255,0.9);border-radius:50%;color:#fff;font-size:${
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:${size}px;height:${size}px;background:${ACTIVE_PULSE_COLOR};border:2px solid rgba(255,255,255,0.95);border-radius:50%;color:#1f2937;font-size:${
       size > 26 ? 10 : 8
-    }px;font-weight:600;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px ${color},0 2px 8px rgba(0,0,0,.5);font-family:ui-monospace,monospace;">${code}</div>
+    }px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px ${ACTIVE_PULSE_COLOR},0 2px 10px rgba(0,0,0,.6);font-family:ui-monospace,monospace;">${code}</div>
   </div>`;
 }
 
@@ -474,8 +484,8 @@ export function MapView({
       if (restricted) {
         html = restrictedIconHtml(baseSize, asset.asset_code);
       } else if (isActive) {
-        iconSize = baseSize * 2;
-        html = activeIconHtml(baseSize, color, asset.asset_code);
+        iconSize = baseSize * 3.2;
+        html = activeIconHtml(baseSize, asset.asset_code);
       } else {
         html = plainIconHtml(baseSize, color, asset.asset_code, isSelected);
       }

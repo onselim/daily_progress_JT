@@ -67,14 +67,14 @@ export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSi
       <div className="daily-plan-tabs">
         <button
           type="button"
-          className={`daily-plan-tab${activeTab === 'today' ? ' active' : ''}`}
+          className={`daily-plan-tab daily-plan-tab-today${activeTab === 'today' ? ' active' : ''}`}
           onClick={() => toggle('today')}
         >
           Plan for Today <span className="daily-plan-tab-count">{todayEntries.length}</span>
         </button>
         <button
           type="button"
-          className={`daily-plan-tab${activeTab === 'tomorrow' ? ' active' : ''}`}
+          className={`daily-plan-tab daily-plan-tab-tomorrow${activeTab === 'tomorrow' ? ' active' : ''}`}
           onClick={() => toggle('tomorrow')}
         >
           Plan for Tomorrow <span className="daily-plan-tab-count">{tomorrowEntries.length}</span>

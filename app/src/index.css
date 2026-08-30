@@ -2258,6 +2258,40 @@ button:disabled {
   background: rgba(0, 212, 170, 0.15);
 }
 
+.daily-plan-tab-today {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.45);
+  color: #86efac;
+}
+
+.daily-plan-tab-today:hover {
+  border-color: #4ade80;
+  color: #bbf7d0;
+}
+
+.daily-plan-tab-today.active {
+  background: rgba(34, 197, 94, 0.35);
+  border-color: #4ade80;
+  color: #dcfce7;
+}
+
+.daily-plan-tab-tomorrow {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #7dd3fc;
+}
+
+.daily-plan-tab-tomorrow:hover {
+  border-color: #38bdf8;
+  color: #bae6fd;
+}
+
+.daily-plan-tab-tomorrow.active {
+  background: rgba(56, 189, 248, 0.35);
+  border-color: #38bdf8;
+  color: #e0f2fe;
+}
+
 .daily-plan-tab-count {
   font-family: var(--mono);
   font-weight: 700;
@@ -2913,7 +2947,7 @@ button:disabled {
     margin-top: 0;
   }
   .pd-report-map {
-    height: 150mm;
+    height: 130mm;
   }
   @page {
     size: A4 landscape;
