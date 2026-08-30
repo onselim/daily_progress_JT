@@ -3001,6 +3001,9 @@ button:disabled {
   .pd-stat-bar {
     margin-top: 4px;
   }
+  .pd-footer {
+    padding-top: 4px;
+  }
   @page {
     size: A4 landscape;
     margin: 10mm;
