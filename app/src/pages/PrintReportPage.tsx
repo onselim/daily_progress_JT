@@ -14,6 +14,7 @@ import { computeOverallPercent } from '../lib/overallProgress';
 import { useDailyLogEntries } from '../lib/useDailyLogEntries';
 import { useWeatherForecast } from '../lib/useWeatherForecast';
 import { utmToLatLng } from '../lib/utmToLatLng';
+import { PrintReportMap } from '../components/PrintReportMap';
 
 const HEADLINE_GROUPS = [
   { name: 'FOUNDATION', label: 'Foundation' },
@@ -92,6 +93,12 @@ export default function PrintReportPage() {
   const tomorrowEntries = entries.filter((e) => e.plannedTomorrow.trim());
   const shownRestricted = restrictedCodes.slice(0, 14);
   const extraRestricted = restrictedCodes.length - shownRestricted.length;
+
+  const activeEntries = entries.filter((e) => e.completedToday.trim() || e.plannedTomorrow.trim());
+  const activeAssetsByCode = new Map(assets.map((a) => [a.asset_code, a]));
+  const highlightedAssetIds = new Set(
+    activeEntries.map((e) => activeAssetsByCode.get(e.assetCode)?.id).filter((id): id is string => !!id),
+  );
 
   return (
     <div className="pd-page">
@@ -371,6 +378,40 @@ export default function PrintReportPage() {
           </span>
         </footer>
       </div>
+
+      {highlightedAssetIds.size > 0 && (
+        <div className="pd-sheet pd-sheet-map">
+          <div className="pd-map-header">
+            <div className="pd-title">{project.name}</div>
+            <div className="pd-sub">TODAY&#39;S ACTIVE TOWERS — {formatDate()}</div>
+          </div>
+          <PrintReportMap
+            assets={assets}
+            coordinateSystem={project.coordinate_system}
+            highlightedAssetIds={highlightedAssetIds}
+          />
+          <table className="pd-table pd-map-table">
+            <thead>
+              <tr>
+                <th>Tower</th>
+                <th>Type</th>
+                <th>Completed today</th>
+                <th>Planned for tomorrow</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeEntries.map((e) => (
+                <tr key={e.assetCode}>
+                  <td>T{e.assetCode}</td>
+                  <td>{e.assetType}</td>
+                  <td>{e.completedToday || '—'}</td>
+                  <td>{e.plannedTomorrow || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

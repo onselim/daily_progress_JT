@@ -179,6 +179,8 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
   const [quantityPercentByKey, setQuantityPercentByKey] = useState<Record<string, number>>({});
   const [siteAccessStatus, setSiteAccessStatus] = useState('normal');
   const [restrictionReason, setRestrictionReason] = useState('');
+  const [completedToday, setCompletedToday] = useState('');
+  const [plannedTomorrow, setPlannedTomorrow] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -208,7 +210,7 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
         .eq('asset_id', assetId),
       supabase
         .from('asset_daily_log')
-        .select('site_access_status, restriction_reason')
+        .select('site_access_status, restriction_reason, completed_today, planned_tomorrow')
         .eq('asset_id', assetId)
         .eq('log_date', todayIso())
         .maybeSingle(),
@@ -256,6 +258,8 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
 
       setSiteAccessStatus(logRes.data?.site_access_status ?? 'normal');
       setRestrictionReason(logRes.data?.restriction_reason ?? '');
+      setCompletedToday(logRes.data?.completed_today ?? '');
+      setPlannedTomorrow(logRes.data?.planned_tomorrow ?? '');
 
       setLoading(false);
     });
@@ -293,6 +297,8 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
           log_date: todayIso(),
           site_access_status: siteAccessStatus,
           restriction_reason: siteAccessStatus === 'restricted' ? restrictionReason || null : null,
+          completed_today: completedToday.trim() || null,
+          planned_tomorrow: plannedTomorrow.trim() || null,
           updated_by: user.id,
         },
         { onConflict: 'asset_id,log_date' },
@@ -760,11 +766,47 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
             </label>
           )}
 
+          <label title="Feeds the Daily Progress Report PDF's 'Today's progress' table">
+            Completed today
+            <textarea
+              value={completedToday}
+              onChange={(e) => setCompletedToday(e.target.value)}
+              rows={2}
+              placeholder="What was done here today…"
+            />
+          </label>
+
+          <label title="Feeds the Daily Progress Report PDF's 'Plan for tomorrow' table">
+            Planned for tomorrow
+            <textarea
+              value={plannedTomorrow}
+              onChange={(e) => setPlannedTomorrow(e.target.value)}
+              rows={2}
+              placeholder="What's planned here tomorrow…"
+            />
+          </label>
+
           <label>
             Notes
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </label>
         </>
+      )}
+
+      {!editable && (completedToday || plannedTomorrow) && (
+        <p className="readonly-field">
+          {completedToday && (
+            <>
+              <strong>Completed today:</strong> {completedToday}
+              <br />
+            </>
+          )}
+          {plannedTomorrow && (
+            <>
+              <strong>Planned for tomorrow:</strong> {plannedTomorrow}
+            </>
+          )}
+        </p>
       )}
 
       {!editable && notes && (
