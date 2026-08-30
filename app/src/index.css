@@ -2941,7 +2941,7 @@ button:disabled {
   .pd-sheet {
     box-shadow: none;
     max-width: 100%;
-    padding: 16px 24px;
+    padding: 10px 24px;
   }
   .pd-sheet-map {
     break-before: page;
@@ -2965,7 +2965,7 @@ button:disabled {
     margin-bottom: 6px;
   }
   .pd-2col {
-    margin-bottom: 4px;
+    margin-bottom: 0;
   }
   .pd-bar-row {
     margin-bottom: 1px;
