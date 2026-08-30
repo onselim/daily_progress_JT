@@ -2955,23 +2955,26 @@ button:disabled {
      construction items, and the whole Today's-progress/Plan-for-tomorrow row,
      onto an unwanted extra page. */
   .pd-header {
-    padding-bottom: 10px;
-    margin-bottom: 10px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
   }
   .pd-stat-row {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
   .pd-3col {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
   .pd-bar-row {
-    margin-bottom: 3px;
+    margin-bottom: 1px;
   }
   .pd-headline-counts {
     margin-top: 2px;
   }
   .pd-box {
-    padding: 10px 12px;
+    padding: 8px 10px;
+  }
+  .pd-box-title {
+    margin-bottom: 4px;
   }
   @page {
     size: A4 landscape;
