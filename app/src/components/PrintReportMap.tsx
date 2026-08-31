@@ -73,8 +73,15 @@ export function PrintReportMap({ assets, coordinateSystem, highlightedAssetIds }
     group.addTo(map);
     layerGroupRef.current = group;
 
+    // invalidateSize() has to run BEFORE fitBounds(), not after: this container isn't
+    // full width yet when the map is first created (the first effect runs before the
+    // page layout settles), so calling fitBounds with the stale narrow size zooms in
+    // too far for the eventual real width. Correcting the size after already having
+    // fit bounds left a gap on the right that Leaflet only starts loading tiles for
+    // once invalidateSize() fires -- fine live, but a static PDF capture (Browserless)
+    // can snapshot before those late tile requests finish, showing blank gray there.
+    map.invalidateSize();
     map.fitBounds(points, { padding: [20, 20] });
-    setTimeout(() => map.invalidateSize(), 50);
   }, [assets, coordinateSystem, highlightedAssetIds]);
 
   return <div ref={containerRef} className="pd-report-map" />;
