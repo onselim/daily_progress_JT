@@ -48,6 +48,11 @@ Deno.serve(async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         url: REPORT_URL,
+        gotoOptions: { waitUntil: 'networkidle2' },
+        // The report is a React app that fetches its data from Supabase and loads a
+        // Leaflet/satellite map after the initial page load -- without this, Browserless
+        // captures the page mid-"Loading..." with nothing rendered yet.
+        waitForTimeout: 4000,
         options: { printBackground: true, format: 'A4', landscape: true, preferCSSPageSize: true },
       }),
     });
