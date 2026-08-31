@@ -2891,7 +2891,6 @@ button:disabled {
      there's no reflow and no gap. 264mm = A4 landscape content width (277mm) minus
      .pd-sheet-map's own horizontal padding. */
   width: 264mm;
-  max-width: 100%;
   height: 420px;
   border-radius: 6px;
   overflow: hidden;
