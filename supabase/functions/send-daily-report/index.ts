@@ -6,9 +6,7 @@
 
 const REPORT_URL = 'https://svkdk.com/print/jvari-tskaltubo';
 const RECIPIENT = 'son@bozlaryapi.com';
-// No custom sending domain verified in Resend yet -- switch this to something like
-// "500kV Jvari-Tskaltubo Daily Report <reports@svkdk.com>" once svkdk.com is verified.
-const FROM = 'onboarding@resend.dev';
+const FROM = '500kV Jvari-Tskaltubo Daily Report <reports@svkdk.com>';
 
 /** Converts a large ArrayBuffer to base64 without spreading it into
  * String.fromCharCode all at once (which throws "Maximum call stack size exceeded"
