@@ -2883,7 +2883,15 @@ button:disabled {
 }
 
 .pd-report-map {
-  width: 100%;
+  /* Fixed physical width (not 100%) on purpose: Leaflet sizes its tiles to whatever
+     width it measures on first mount, using the browser's normal on-screen viewport --
+     but converting the page to a PDF then reflows this container to the print page's
+     width, and Leaflet doesn't retroactively load tiles for the newly-revealed space,
+     leaving it blank. An absolute mm width is identical in screen and print layout, so
+     there's no reflow and no gap. 264mm = A4 landscape content width (277mm) minus
+     .pd-sheet-map's own horizontal padding. */
+  width: 264mm;
+  max-width: 100%;
   height: 420px;
   border-radius: 6px;
   overflow: hidden;
