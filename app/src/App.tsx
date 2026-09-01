@@ -9,6 +9,7 @@ import NewProjectPage from './pages/admin/NewProjectPage';
 import EditWorkItemsPage from './pages/admin/EditWorkItemsPage';
 import EditDesignItemsPage from './pages/admin/EditDesignItemsPage';
 import EditSupplyItemsPage from './pages/admin/EditSupplyItemsPage';
+import ReportSettingsPage from './pages/admin/ReportSettingsPage';
 import FieldProjectPage from './pages/field/FieldProjectPage';
 import PublicViewerPage from './pages/PublicViewerPage';
 import PrintReportPage from './pages/PrintReportPage';
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/admin/:slug/work-items" element={<EditWorkItemsPage />} />
           <Route path="/admin/:slug/design-items" element={<EditDesignItemsPage />} />
           <Route path="/admin/:slug/supply-items" element={<EditSupplyItemsPage />} />
+          <Route path="/admin/:slug/report-settings" element={<ReportSettingsPage />} />
           <Route path="/admin/:slug" element={<AdminProjectPage />} />
 
           <Route

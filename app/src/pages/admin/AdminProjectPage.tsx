@@ -84,6 +84,9 @@ export default function AdminProjectPage() {
           <button type="button" onClick={() => window.open(`/print/${project.slug}`, '_blank')}>
             Print PDF
           </button>
+          <button type="button" onClick={() => navigate(`/admin/${project.slug}/report-settings`)}>
+            Report settings
+          </button>
           <button type="button" className="modal-danger-btn" onClick={() => setShowDelete(true)}>
             Delete
           </button>
