@@ -64,6 +64,56 @@ function georgiaDateParts(d: Date): { iso: string; formatted: string } {
   return { iso: `${yyyy}-${mm}-${dd}`, formatted: `${dd}.${mm}.${yyyy}` };
 }
 
+/** Archives today's PDF to the existing public `project-media` storage bucket and
+ * records it in daily_report_snapshots, so the public viewer's "Report history"
+ * dropdown can list and re-open past days. Best-effort: a failure here must not stop
+ * the email from sending, since that's the primary job of this function. */
+async function archiveReportSnapshot(pdfBytes: Uint8Array, reportDateIso: string): Promise<string | null> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceRoleKey) return null;
+
+  try {
+    const path = `${PROJECT_ID}/reports/${reportDateIso}.pdf`;
+    const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/project-media/${path}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/pdf',
+        'x-upsert': 'true',
+      },
+      body: pdfBytes,
+    });
+    if (!uploadRes.ok) {
+      console.error('snapshot upload failed', uploadRes.status, await uploadRes.text());
+      return null;
+    }
+
+    const pdfUrl = `${supabaseUrl}/storage/v1/object/public/project-media/${path}`;
+    const upsertRes = await fetch(
+      `${supabaseUrl}/rest/v1/daily_report_snapshots?on_conflict=project_id,report_date`,
+      {
+        method: 'POST',
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates',
+        },
+        body: JSON.stringify([{ project_id: PROJECT_ID, report_date: reportDateIso, pdf_url: pdfUrl }]),
+      },
+    );
+    if (!upsertRes.ok) {
+      console.error('snapshot row upsert failed', upsertRes.status, await upsertRes.text());
+      return null;
+    }
+    return pdfUrl;
+  } catch (err) {
+    console.error('archiveReportSnapshot threw', err);
+    return null;
+  }
+}
+
 Deno.serve(async () => {
   try {
     const config = await fetchReportConfig();
@@ -113,10 +163,13 @@ Deno.serve(async () => {
       });
     }
 
-    const pdfBase64 = arrayBufferToBase64(await pdfRes.arrayBuffer());
+    const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer());
+    const pdfBase64 = arrayBufferToBase64(pdfBytes.buffer);
     const dateStr = today.formatted;
     const subject = `DailyProgress Report-500kV Jvari-Tskaltubo - ${dateStr}`;
     const filename = `DailyProgress_Report_500kV_Jvari-Tskaltubo_${dateStr.replace(/\./g, '-')}.pdf`;
+
+    const snapshotUrl = await archiveReportSnapshot(pdfBytes, today.iso);
 
     const emailRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -141,7 +194,7 @@ Deno.serve(async () => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, emailId: emailResult.id, subject }), {
+    return new Response(JSON.stringify({ success: true, emailId: emailResult.id, subject, snapshotUrl }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
