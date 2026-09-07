@@ -1,4 +1,5 @@
 import type { LineSummary } from '../lib/useLineSummary';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 interface LineSummaryPanelProps {
   summary: LineSummary;
@@ -25,15 +26,16 @@ function formatPercent(p: number | null): string {
 }
 
 export function LineSummaryPanel({ summary }: LineSummaryPanelProps) {
+  const { t } = useLanguage();
   const items: { label: string; value: string; note?: string | null }[] = [
-    { label: 'Total length', value: formatKm(summary.totalLengthM) },
-    { label: 'Towers', value: summary.towerCount.toLocaleString() },
-    { label: 'Suspension', value: formatPercent(summary.suspensionPercent) },
-    { label: 'Tension', value: formatPercent(summary.tensionPercent) },
-    { label: 'Angle points', value: summary.angleCount != null ? summary.angleCount.toLocaleString() : '—' },
-    { label: 'Longest span', value: formatM(summary.longestSpanM), note: summary.longestSpanLabel },
-    { label: 'Highest elevation', value: formatElevation(summary.maxElevation), note: summary.maxElevationCode },
-    { label: 'Lowest elevation', value: formatElevation(summary.minElevation), note: summary.minElevationCode },
+    { label: t('panels.totalLength'), value: formatKm(summary.totalLengthM) },
+    { label: t('status.towers'), value: summary.towerCount.toLocaleString() },
+    { label: t('panels.suspension'), value: formatPercent(summary.suspensionPercent) },
+    { label: t('panels.tension'), value: formatPercent(summary.tensionPercent) },
+    { label: t('panels.anglePoints'), value: summary.angleCount != null ? summary.angleCount.toLocaleString() : '—' },
+    { label: t('panels.longestSpan'), value: formatM(summary.longestSpanM), note: summary.longestSpanLabel },
+    { label: t('panels.highestElevation'), value: formatElevation(summary.maxElevation), note: summary.maxElevationCode },
+    { label: t('panels.lowestElevation'), value: formatElevation(summary.minElevation), note: summary.minElevationCode },
   ];
 
   return (
@@ -48,9 +50,7 @@ export function LineSummaryPanel({ summary }: LineSummaryPanelProps) {
         </div>
       ))}
       {!summary.classified && (
-        <p className="accordion-empty line-summary-note">
-          Suspension/Tension % needs tower types set during the structure list import.
-        </p>
+        <p className="accordion-empty line-summary-note">{t('panels.suspensionTensionHint')}</p>
       )}
     </div>
   );

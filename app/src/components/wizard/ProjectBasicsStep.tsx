@@ -4,8 +4,11 @@ import { createProject } from '../../lib/wizard/createProject';
 import { utmZoneToEpsg } from '../../lib/utmToLatLng';
 import { UtmZoneSelect } from './UtmZoneSelect';
 import { TowerHeadPreview } from './TowerHeadPreview';
+import { useLanguage } from '../../lib/i18n/LanguageContext';
 import type { ProjectRow } from '../../lib/useProject';
 
+// Tower-head shapes are engineering configuration names, kept in English across
+// languages -- the SVG preview next to the dropdown carries the visual meaning.
 const TOWER_HEAD_OPTIONS = [
   { value: 'delta', label: 'Delta' },
   { value: 'cat_head', label: 'Cat-head / Portal' },
@@ -24,6 +27,7 @@ interface ProjectBasicsStepProps {
 
 export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [client, setClient] = useState('');
   const [contractor, setContractor] = useState('');
@@ -91,71 +95,67 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
 
   return (
     <form className="wizard-form" onSubmit={handleSubmit}>
-      <h2>1. Project basics</h2>
+      <h2>{t('wizard.basicsTitle')}</h2>
 
       <label>
-        Project name *
+        {t('wizard.projectName')}
         <input value={name} onChange={(e) => setName(e.target.value)} required />
       </label>
 
       <div className="wizard-form-row">
         <label>
-          Client
+          {t('wizard.client')}
           <input value={client} onChange={(e) => setClient(e.target.value)} />
         </label>
         <label>
-          Contractor
+          {t('wizard.contractor')}
           <input value={contractor} onChange={(e) => setContractor(e.target.value)} />
         </label>
       </div>
 
       <label>
-        Contract number
+        {t('wizard.contractNumber')}
         <input value={contractNo} onChange={(e) => setContractNo(e.target.value)} />
       </label>
 
       <label>
-        Industry type
+        {t('wizard.industryType')}
         <select value={industryType} onChange={(e) => setIndustryType(e.target.value)}>
-          <option value="transmission_line">Transmission line</option>
-          <option value="pipeline">Pipeline</option>
-          <option value="road">Road</option>
-          <option value="rail">Rail</option>
+          <option value="transmission_line">{t('wizard.industryTransmissionLine')}</option>
+          <option value="pipeline">{t('wizard.industryPipeline')}</option>
+          <option value="road">{t('wizard.industryRoad')}</option>
+          <option value="rail">{t('wizard.industryRail')}</option>
         </select>
       </label>
 
-      <p className="wizard-hint">
-        UTM zone — needed for X/Y (Excel) imports to show on the map. Not needed for KML/KMZ import.
-      </p>
+      <p className="wizard-hint">{t('wizard.utmZoneHint')}</p>
       <UtmZoneSelect value={utmZone} onChange={setUtmZone} />
 
       <label className="wizard-checkbox-label">
         <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
-        Publish a public read-only report link for this project
+        {t('wizard.publishPublicLink')}
       </label>
 
-      <h3>Line parameters</h3>
-      <p className="wizard-hint">
-        These are project-wide defaults. Individual towers/spans can still be recorded differently later.
-      </p>
+      <h3>{t('wizard.lineParameters')}</h3>
+      <p className="wizard-hint">{t('wizard.lineParametersHint')}</p>
 
       <div className="wizard-form-row">
         <label>
-          Voltage
+          {t('wizard.voltage')}
           <input value={voltage} onChange={(e) => setVoltage(e.target.value)} placeholder="400kV" />
         </label>
         <label>
-          Circuit type
+          {t('wizard.circuitType')}
           <select value={circuitType} onChange={(e) => setCircuitType(e.target.value)}>
-            <option value="single">Single</option>
-            <option value="double">Double</option>
+            <option value="single">{t('wizard.circuitSingle')}</option>
+            <option value="double">{t('wizard.circuitDouble')}</option>
           </select>
         </label>
       </div>
 
       <div className="wizard-tower-head-row">
         <label>
-          Tower head configuration
+          {t('wizard.towerHeadConfig')}
           <select value={towerHeadType} onChange={(e) => setTowerHeadType(e.target.value)}>
             {TOWER_HEAD_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -168,14 +168,14 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
       </div>
       {towerHeadType === 'other' && (
         <label>
-          Describe the tower head configuration
+          {t('wizard.describeTowerHead')}
           <input value={towerHeadCustom} onChange={(e) => setTowerHeadCustom(e.target.value)} />
         </label>
       )}
 
       <div className="wizard-form-row">
         <label>
-          Conductors per phase (bundle)
+          {t('wizard.conductorsPerPhase')}
           <input
             type="number"
             min={1}
@@ -184,7 +184,7 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
           />
         </label>
         <label>
-          Conductor type
+          {t('wizard.conductorType')}
           <input
             value={conductorType}
             onChange={(e) => setConductorType(e.target.value)}
@@ -195,18 +195,18 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
 
       <div className="wizard-form-row">
         <label>
-          OPGW count
+          {t('wizard.opgwCount')}
           <input type="number" min={0} value={opgwCount} onChange={(e) => setOpgwCount(Number(e.target.value))} />
         </label>
         <label>
-          OPGW type
+          {t('wizard.opgwType')}
           <input value={opgwType} onChange={(e) => setOpgwType(e.target.value)} placeholder="e.g. OPGW 24F 95mm²" />
         </label>
       </div>
 
       <div className="wizard-form-row">
         <label>
-          Earthwire count
+          {t('wizard.earthwireCount')}
           <input
             type="number"
             min={0}
@@ -215,7 +215,7 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
           />
         </label>
         <label>
-          Earthwire type
+          {t('wizard.earthwireType')}
           <input value={ewType} onChange={(e) => setEwType(e.target.value)} placeholder="e.g. EHS 73mm²" />
         </label>
       </div>
@@ -223,7 +223,7 @@ export function ProjectBasicsStep({ onComplete }: ProjectBasicsStepProps) {
       {error && <p className="form-message">{error}</p>}
 
       <button type="submit" disabled={saving || !name.trim()}>
-        {saving ? 'Creating…' : 'Next: Work items'}
+        {saving ? t('wizard.creating') : t('wizard.nextWorkItems')}
       </button>
     </form>
   );

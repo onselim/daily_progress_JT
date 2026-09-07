@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import type { WorkItemConfig } from '../../lib/useProjectConfig';
+import { useLanguage } from '../../lib/i18n/LanguageContext';
 
 export const DEFAULT_WORK_ITEM_TEMPLATE: WorkItemConfig[] = [
   { group: 'PRE-CONSTRUCTION WORKS', key: 'ar', label: 'Access Road', weight: 8 },
@@ -42,11 +43,14 @@ interface WorkItemsStepProps {
 export function WorkItemsStep({
   projectId,
   initialItems,
-  title = '2. Work items',
-  submitLabel = 'Next: Import structure list',
+  title,
+  submitLabel,
   onComplete,
   onBack,
 }: WorkItemsStepProps) {
+  const { t } = useLanguage();
+  const resolvedTitle = title ?? t('wizard.stepWorkItems');
+  const resolvedSubmitLabel = submitLabel ?? t('wizard.nextImport');
   const allItems = mergeTemplate(initialItems);
   const enabledKeys = new Set((initialItems ?? DEFAULT_WORK_ITEM_TEMPLATE).map((item) => item.key));
   const weightByKey = new Map((initialItems ?? DEFAULT_WORK_ITEM_TEMPLATE).map((item) => [item.key, item.weight]));
@@ -79,7 +83,7 @@ export function WorkItemsStep({
   for (const item of allItems) {
     let group = groups.find((g) => g.name === item.group);
     if (!group) {
-      group = { name: item.group ?? 'Work items', items: [] };
+      group = { name: item.group ?? t('assetEditor.workItems'), items: [] };
       groups.push(group);
     }
     group.items.push(item);
@@ -107,12 +111,8 @@ export function WorkItemsStep({
 
   return (
     <div className="wizard-form">
-      <h2>{title}</h2>
-      <p className="wizard-hint">
-        Uncheck anything that doesn't apply to this project — its weight is automatically redistributed to the
-        other items in the same group, so that group's overall share doesn't shrink. Weights feed the
-        Construction% formula.
-      </p>
+      <h2>{resolvedTitle}</h2>
+      <p className="wizard-hint">{t('wizard.workItemsHint')}</p>
 
       {groups.map((group) => (
         <fieldset key={group.name} className="wizard-fieldset">
@@ -160,11 +160,11 @@ export function WorkItemsStep({
 
       <div className={`wizard-weight-total${totalRounded === 100 ? ' ok' : ' warn'}`}>
         <span>
-          Total weight: <strong>{totalRounded}</strong> / 100
+          {t('items.totalWeight')}: <strong>{totalRounded}</strong> / 100
           {totalRounded === 100 ? ' ✓' : ''}
         </span>
         <button type="button" className="wizard-secondary-btn" onClick={handleAutoDistribute}>
-          Auto-distribute
+          {t('items.autoDistribute')}
         </button>
       </div>
 
@@ -173,13 +173,13 @@ export function WorkItemsStep({
       <div className="wizard-actions">
         {onBack ? (
           <button type="button" onClick={onBack} className="wizard-secondary-btn">
-            Back
+            {t('common.back')}
           </button>
         ) : (
           <span />
         )}
         <button type="button" onClick={handleSubmit} disabled={saving}>
-          {saving ? 'Saving…' : submitLabel}
+          {saving ? t('common.saving') : resolvedSubmitLabel}
         </button>
       </div>
     </div>

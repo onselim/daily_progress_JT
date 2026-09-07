@@ -11,6 +11,7 @@ import type { FoundationTypeConfig } from '../lib/useFoundationTypesConfig';
 import { useStubSettingsConfig } from '../lib/useStubSettingsConfig';
 import { buildExcavationFeatureCollection } from '../lib/stubGeometry';
 import { RenamableText } from './RenamableText';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 const GEO_LAYER_EXTENSIONS = /\.(geojson|json)$/i;
 
@@ -118,15 +119,16 @@ function MoveToFolder({
   allFolders: DocumentFolder[];
   onMove: (docId: string, folderId: string | null) => void;
 }) {
+  const { t } = useLanguage();
   if (allFolders.length === 0) return null;
   return (
     <select
       className="doc-move-select"
       value={doc.folder_id ?? ''}
       onChange={(e) => onMove(doc.id, e.target.value || null)}
-      title="Move to folder"
+      title={t('documents.moveToFolder')}
     >
-      <option value="">— Root —</option>
+      <option value="">{t('documents.root')}</option>
       {flattenFolders(allFolders).map((f) => (
         <option key={f.id} value={f.id}>
           {f.label}
@@ -154,6 +156,7 @@ function FolderNode({
   onToggleLayer,
   layerErrors,
 }: FolderNodeProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [addingSubfolder, setAddingSubfolder] = useState(false);
   const [newName, setNewName] = useState('');
@@ -201,7 +204,7 @@ function FolderNode({
             type="button"
             className="items-editor-remove-btn"
             onClick={() => onDeleteFolder(folder.id, folder.name)}
-            title="Delete folder"
+            title={t('documents.deleteFolder')}
           >
             ×
           </button>
@@ -231,7 +234,7 @@ function FolderNode({
             />
           ))}
 
-          {docs.length === 0 && children.length === 0 && <p className="accordion-empty">Empty.</p>}
+          {docs.length === 0 && children.length === 0 && <p className="accordion-empty">{t('documents.empty')}</p>}
 
           {docs.map((doc) => (
             <div key={doc.id} className="doc-row">
@@ -253,7 +256,7 @@ function FolderNode({
                   type="button"
                   className="items-editor-remove-btn"
                   onClick={() => onDeleteDocument(doc.id, doc.file_url)}
-                  title="Delete file"
+                  title={t('documents.deleteFile')}
                 >
                   ×
                 </button>
@@ -264,7 +267,7 @@ function FolderNode({
           {editable && (
             <div className="doc-actions-row">
               <label className="photo-upload-label photo-upload-label-sm">
-                {uploadingKey === folder.id ? 'Uploading…' : '+ Add file'}
+                {uploadingKey === folder.id ? t('assetEditor.uploading') : t('documents.addFile')}
                 <input
                   type="file"
                   multiple
@@ -278,12 +281,12 @@ function FolderNode({
                   <input
                     type="text"
                     autoFocus
-                    placeholder="Folder name"
+                    placeholder={t('documents.folderName')}
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                   />
                   <button className="doc-form-btn" type="submit" disabled={creating || !newName.trim()}>
-                    {creating ? '…' : 'Create'}
+                    {creating ? '…' : t('documents.create')}
                   </button>
                   <button
                     className="doc-form-btn"
@@ -293,12 +296,12 @@ function FolderNode({
                       setNewName('');
                     }}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </form>
               ) : (
                 <button type="button" className="doc-folder-add-btn" onClick={() => setAddingSubfolder(true)}>
-                  + Add subfolder
+                  {t('documents.addSubfolder')}
                 </button>
               )}
             </div>
@@ -313,7 +316,7 @@ export function ProjectDocumentsPanel({
   projectId,
   editable,
   section = 'documents',
-  emptyLabel = 'No documents uploaded yet.',
+  emptyLabel,
   enabledLayerIds,
   onToggleLayer,
   layerErrors,
@@ -321,6 +324,7 @@ export function ProjectDocumentsPanel({
   excavationContext,
   onLayersChanged,
 }: ProjectDocumentsPanelProps) {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { documents, folders, loading, refresh } = useProjectDocuments(projectId, section);
   const { stubSettings } = useStubSettingsConfig(excavationContext ? projectId : undefined);
@@ -459,7 +463,7 @@ export function ProjectDocumentsPanel({
     onLayersChanged?.();
   }
 
-  if (loading) return <p className="accordion-empty">Loading…</p>;
+  if (loading) return <p className="accordion-empty">{t('common.loading')}</p>;
 
   const rootDocs = documents.filter((d) => d.folder_id === null);
   const rootFolders = folders.filter((f) => f.parent_folder_id === null);
@@ -469,7 +473,7 @@ export function ProjectDocumentsPanel({
       {editable && osmFetchContext && (
         <div className="osm-fetch-row">
           <button type="button" className="doc-folder-add-btn" onClick={handleFetchOsmLayers} disabled={fetchingOsm}>
-            {fetchingOsm ? (osmFetchProgress ?? 'Fetching from OpenStreetMap…') : '🌐 Fetch existing infrastructure (OSM)'}
+            {fetchingOsm ? (osmFetchProgress ?? t('documents.fetchingOsm')) : `🌐 ${t('documents.fetchOsm')}`}
           </button>
           {osmFetchError && <p className="osm-fetch-error">{osmFetchError}</p>}
         </div>
@@ -483,13 +487,15 @@ export function ProjectDocumentsPanel({
             onClick={handleGenerateExcavationLayer}
             disabled={generatingExcavation}
           >
-            {generatingExcavation ? 'Generating…' : '🏗 Generate excavation-pit layer'}
+            {generatingExcavation ? t('documents.generating') : `🏗 ${t('documents.generateExcavationLayer')}`}
           </button>
           {excavationError && <p className="osm-fetch-error">{excavationError}</p>}
         </div>
       )}
 
-      {folders.length === 0 && rootDocs.length === 0 && <p className="accordion-empty">{emptyLabel}</p>}
+      {folders.length === 0 && rootDocs.length === 0 && (
+        <p className="accordion-empty">{emptyLabel ?? t('documents.noDocuments')}</p>
+      )}
 
       {rootFolders.map((folder) => (
         <div key={folder.id}>
@@ -550,7 +556,7 @@ export function ProjectDocumentsPanel({
       {editable && (
         <div className="doc-actions-row">
           <label className="photo-upload-label">
-            {uploadingKey === 'root' ? 'Uploading…' : '+ Add document'}
+            {uploadingKey === 'root' ? t('assetEditor.uploading') : t('documents.addDocument')}
             <input
               type="file"
               multiple
@@ -564,12 +570,12 @@ export function ProjectDocumentsPanel({
               <input
                 type="text"
                 autoFocus
-                placeholder="Folder name"
+                placeholder={t('documents.folderName')}
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
               />
               <button className="doc-form-btn" type="submit" disabled={creatingFolder || !newFolderName.trim()}>
-                {creatingFolder ? '…' : 'Create'}
+                {creatingFolder ? '…' : t('documents.create')}
               </button>
               <button
                 className="doc-form-btn"
@@ -579,12 +585,12 @@ export function ProjectDocumentsPanel({
                   setNewFolderName('');
                 }}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </form>
           ) : (
             <button type="button" className="doc-folder-add-btn" onClick={() => setAddingFolder(true)}>
-              + Add folder
+              {t('documents.addFolder')}
             </button>
           )}
         </div>

@@ -1,21 +1,23 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useProjectBySlug } from '../../lib/useProject';
 import { ItemsEditor } from '../../components/ItemsEditor';
+import { useLanguage } from '../../lib/i18n/LanguageContext';
 
 export default function EditSupplyItemsPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { project, loading, error } = useProjectBySlug(slug);
 
-  if (loading) return <div className="page-loading">Loading…</div>;
-  if (error || !project) return <div className="page-loading">Project not found.</div>;
+  if (loading) return <div className="page-loading">{t('common.loading')}</div>;
+  if (error || !project) return <div className="page-loading">{t('common.projectNotFound')}</div>;
 
   return (
     <div className="project-shell">
       <header className="project-topbar">
         <div className="project-topbar-left">
           <Link to={`/admin/${project.slug}`}>← {project.name}</Link>
-          <h1>Edit supply items</h1>
+          <h1>{t('items.editSupplyItemsTitle')}</h1>
         </div>
       </header>
 
@@ -23,8 +25,8 @@ export default function EditSupplyItemsPage() {
         <ItemsEditor
           projectId={project.id}
           configKey="supply_items"
-          title="Supply items"
-          hint="Add or remove materials and adjust their weights. Removing an item redistributes its weight to the others; adding one takes a share from the rest — weights stay at 100 total automatically unless you edit them by hand afterward. Each item is still tracked as Manufactured (2/3) + Delivered (1/3)."
+          title={t('items.supplyItemsTitle')}
+          hint={t('items.supplyItemsHint')}
           onComplete={() => navigate(`/admin/${project.slug}`)}
         />
       </div>

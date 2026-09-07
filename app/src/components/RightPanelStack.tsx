@@ -90,14 +90,14 @@ export function RightPanelStack({
             className={`doc-folder-add-btn${photosLayerEnabled ? ' active' : ''}`}
             onClick={onTogglePhotosLayer}
           >
-            📷 {photosLayerEnabled ? 'Hide' : 'Show'} geotagged photos ({photoCount})
+            📷 {photosLayerEnabled ? t('panels.hideGeotaggedPhotos') : t('panels.showGeotaggedPhotos')} ({photoCount})
           </button>
         </div>
         <ProjectDocumentsPanel
           projectId={projectId}
           editable={editable}
           section="layers"
-          emptyLabel="No extra map layers configured yet."
+          emptyLabel={t('panels.noExtraLayers')}
           enabledLayerIds={enabledLayerIds}
           onToggleLayer={onToggleLayer}
           layerErrors={layerErrors}

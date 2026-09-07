@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { WorkItemConfig } from '../lib/useProjectConfig';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 function newItemKey(): string {
   return `item_${Math.random().toString(36).slice(2, 10)}`;
@@ -16,6 +17,7 @@ interface ItemsEditorProps {
 }
 
 export function ItemsEditor({ projectId, configKey, title, hint, onComplete, onBack }: ItemsEditorProps) {
+  const { t } = useLanguage();
   const [items, setItems] = useState<WorkItemConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -96,7 +98,7 @@ export function ItemsEditor({ projectId, configKey, title, hint, onComplete, onB
     onComplete();
   }
 
-  if (loading) return <p className="accordion-empty">Loading…</p>;
+  if (loading) return <p className="accordion-empty">{t('common.loading')}</p>;
 
   return (
     <div className="wizard-form">
@@ -104,14 +106,14 @@ export function ItemsEditor({ projectId, configKey, title, hint, onComplete, onB
       <p className="wizard-hint">{hint}</p>
 
       <fieldset className="wizard-fieldset">
-        {items.length === 0 && <p className="accordion-empty">No items yet — add one below.</p>}
+        {items.length === 0 && <p className="accordion-empty">{t('items.noItemsYet')}</p>}
         {items.map((item) => (
           <div key={item.key} className="wizard-work-item-row">
             <input
               type="text"
               className="wizard-label-input"
               value={item.label}
-              placeholder="Item name…"
+              placeholder={t('items.namePlaceholder')}
               onChange={(e) => handleLabelChange(item.key, e.target.value)}
             />
             <input
@@ -125,7 +127,7 @@ export function ItemsEditor({ projectId, configKey, title, hint, onComplete, onB
               type="button"
               className="items-editor-remove-btn"
               onClick={() => handleRemove(item.key)}
-              title="Remove item"
+              title={t('items.removeItem')}
             >
               ×
             </button>
@@ -134,16 +136,16 @@ export function ItemsEditor({ projectId, configKey, title, hint, onComplete, onB
       </fieldset>
 
       <button type="button" className="wizard-secondary-btn" onClick={handleAdd}>
-        + Add item
+        {t('items.addItem')}
       </button>
 
       <div className={`wizard-weight-total${totalRounded === 100 ? ' ok' : ' warn'}`}>
         <span>
-          Total weight: <strong>{totalRounded}</strong> / 100
+          {t('items.totalWeight')}: <strong>{totalRounded}</strong> / 100
           {totalRounded === 100 ? ' ✓' : ''}
         </span>
         <button type="button" className="wizard-secondary-btn" onClick={handleAutoDistribute}>
-          Auto-distribute
+          {t('items.autoDistribute')}
         </button>
       </div>
 
@@ -152,13 +154,13 @@ export function ItemsEditor({ projectId, configKey, title, hint, onComplete, onB
       <div className="wizard-actions">
         {onBack ? (
           <button type="button" onClick={onBack} className="wizard-secondary-btn">
-            Back
+            {t('common.back')}
           </button>
         ) : (
           <span />
         )}
         <button type="button" onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? t('common.saving') : t('common.save')}
         </button>
       </div>
     </div>

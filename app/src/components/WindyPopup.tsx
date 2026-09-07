@@ -1,3 +1,5 @@
+import { useLanguage } from '../lib/i18n/LanguageContext';
+
 interface WindyPopupProps {
   lat: number;
   lng: number;
@@ -8,6 +10,7 @@ interface WindyPopupProps {
 /** Corner-docked, closeable Windy.com embed (iframe, no API key needed — see CLAUDE.md
  * Section 2) centered on one tower's exact coordinates. */
 export function WindyPopup({ lat, lng, label, onClose }: WindyPopupProps) {
+  const { t } = useLanguage();
   const src =
     `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lng}` +
     `&detailLat=${lat}&detailLon=${lng}&width=650&height=450&zoom=11` +
@@ -18,8 +21,8 @@ export function WindyPopup({ lat, lng, label, onClose }: WindyPopupProps) {
   return (
     <div className="windy-popup">
       <div className="windy-popup-header">
-        <span>Wind — {label}</span>
-        <button type="button" className="windy-popup-close" onClick={onClose} title="Close" aria-label="Close">
+        <span>{t('assetEditor.windForecast')} — {label}</span>
+        <button type="button" className="windy-popup-close" onClick={onClose} title={t('common.close')} aria-label={t('common.close')}>
           ×
         </button>
       </div>

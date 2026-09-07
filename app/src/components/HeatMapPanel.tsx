@@ -1,19 +1,16 @@
+import { useLanguage } from '../lib/i18n/LanguageContext';
+import type { TranslationKey } from '../lib/i18n/translations/en';
+
 export type HeatMetric = 'concrete' | 'excavation' | 'reinforcement' | 'weight';
 
 export type MetricTotals = Record<HeatMetric, { total: number; count: number }>;
 
-const METRICS: { key: HeatMetric; label: string; icon: string; unit: 'm3' | 'kg' }[] = [
-  { key: 'excavation', label: 'Excavation', icon: '⛏', unit: 'm3' },
-  { key: 'reinforcement', label: 'Reinforcement', icon: '🔩', unit: 'kg' },
-  { key: 'concrete', label: 'Concrete', icon: '🧱', unit: 'm3' },
-  { key: 'weight', label: 'Tower Weight', icon: '⚙', unit: 'kg' },
+const METRICS: { key: HeatMetric; labelKey: TranslationKey; icon: string; unit: 'm3' | 'kg' }[] = [
+  { key: 'excavation', labelKey: 'assetEditor.excavation', icon: '⛏', unit: 'm3' },
+  { key: 'reinforcement', labelKey: 'assetEditor.reinforcement', icon: '🔩', unit: 'kg' },
+  { key: 'concrete', labelKey: 'assetEditor.concrete', icon: '🧱', unit: 'm3' },
+  { key: 'weight', labelKey: 'panels.towerWeight', icon: '⚙', unit: 'kg' },
 ];
-
-function formatTotal(total: number, count: number, unit: 'm3' | 'kg'): string {
-  if (count === 0) return 'No data for this range';
-  const value = unit === 'm3' ? `${total.toFixed(2)} m³` : `${Math.round(total).toLocaleString()} kg`;
-  return `${value} · ${count} tower${count === 1 ? '' : 's'}`;
-}
 
 interface HeatMapPanelProps {
   activeMetric: HeatMetric | null;
@@ -36,6 +33,14 @@ export function HeatMapPanel({
   heatPointCount,
   metricTotals,
 }: HeatMapPanelProps) {
+  const { t } = useLanguage();
+
+  function formatTotal(total: number, count: number, unit: 'm3' | 'kg'): string {
+    if (count === 0) return t('panels.noDataForRange');
+    const value = unit === 'm3' ? `${total.toFixed(2)} m³` : `${Math.round(total).toLocaleString()} kg`;
+    return `${value} · ${t('panels.towersInRange', { count })}`;
+  }
+
   return (
     <div className="heatmap-panel">
       <div className="heatmap-range-row">
@@ -43,7 +48,7 @@ export function HeatMapPanel({
           type="text"
           inputMode="numeric"
           className="heatmap-range-input"
-          placeholder="From #"
+          placeholder={t('panels.fromNum')}
           value={rangeFrom}
           onChange={(e) => onRangeFromChange(e.target.value)}
         />
@@ -52,7 +57,7 @@ export function HeatMapPanel({
           type="text"
           inputMode="numeric"
           className="heatmap-range-input"
-          placeholder="To #"
+          placeholder={t('panels.toNum')}
           value={rangeTo}
           onChange={(e) => onRangeToChange(e.target.value)}
         />
@@ -69,7 +74,7 @@ export function HeatMapPanel({
               onClick={() => onSelectMetric(m.key)}
             >
               <span className="heatmap-metric-icon">{m.icon}</span>
-              {m.label}
+              {t(m.labelKey)}
               <span className="heatmap-metric-tooltip">{formatTotal(total, count, m.unit)}</span>
             </button>
           );
@@ -78,8 +83,10 @@ export function HeatMapPanel({
 
       {activeMetric && (
         <p className="accordion-empty">
-          {heatPointCount} tower{heatPointCount === 1 ? '' : 's'}
-          {rangeFrom.trim() && rangeTo.trim() ? ` between #${rangeFrom} and #${rangeTo}` : ' (all towers)'}
+          {t('panels.towersInRange', { count: heatPointCount })}{' '}
+          {rangeFrom.trim() && rangeTo.trim()
+            ? t('panels.betweenRange', { from: rangeFrom, to: rangeTo })
+            : t('panels.allTowers')}
         </p>
       )}
     </div>

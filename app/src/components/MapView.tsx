@@ -5,6 +5,7 @@ import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { utmToLatLng } from '../lib/utmToLatLng';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 import { resolveLinePath, bearingDeg } from '../lib/lineGeometry';
 import type { AssetListItem } from '../lib/useAssets';
 import type { GroundWireConfig } from '../lib/useGroundWireConfig';
@@ -232,6 +233,7 @@ export function MapView({
   geoLayers = [],
   onLayerError,
 }: MapViewProps) {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
@@ -693,7 +695,7 @@ export function MapView({
       <div ref={containerRef} className="map-view" />
       {selectedAssetId && markersRef.current[selectedAssetId] && (
         <button type="button" className="zoom-to-location-btn" onClick={zoomToSelected}>
-          🎯 Zoom to location
+          🎯 {t('map.zoomToLocation')}
         </button>
       )}
       <div className="basemap-control">
@@ -715,7 +717,7 @@ export function MapView({
           </div>
         )}
         <button type="button" className="basemap-btn" onClick={() => setBasemapMenuOpen((v) => !v)}>
-          🗺 Base Map ▾
+          🗺 {t('map.baseMap')} ▾
         </button>
       </div>
     </>

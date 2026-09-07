@@ -5,30 +5,34 @@ import { importAssets, type AssetImportRow } from '../../lib/wizard/importAssets
 import { parseKmlOrKmzFile, type KmlAsset } from '../../lib/wizard/parseKml';
 import { utmZoneToEpsg } from '../../lib/utmToLatLng';
 import { UtmZoneSelect } from './UtmZoneSelect';
+import { useLanguage } from '../../lib/i18n/LanguageContext';
+import type { TranslationKey } from '../../lib/i18n/translations/en';
 import type { ProjectRow } from '../../lib/useProject';
 
 type FieldKey = 'asset_code' | 'asset_type' | 'x' | 'y' | 'z' | 'station';
 
-const FIELDS: { key: FieldKey; label: string; required: boolean; guesses: string[] }[] = [
+// `guesses` search real spreadsheet header text, which stays English regardless of UI
+// language -- only `labelKey` (what's shown on screen) is translated.
+const FIELDS: { key: FieldKey; labelKey: TranslationKey; required: boolean; guesses: string[] }[] = [
   {
     key: 'asset_code',
-    label: 'Asset code',
+    labelKey: 'wizard.fieldAssetCode',
     required: true,
     guesses: ['construction no', 'construction', 'tower no', 'tower code', 'structure no', 'code'],
   },
-  { key: 'asset_type', label: 'Asset type', required: false, guesses: ['tower type', 'type'] },
-  { key: 'x', label: 'X coordinate', required: true, guesses: ['x coord', 'x-coord', ' x', 'x(', 'easting'] },
-  { key: 'y', label: 'Y coordinate', required: true, guesses: ['y coord', 'y-coord', ' y', 'y(', 'northing'] },
-  { key: 'z', label: 'Z coordinate / elevation', required: false, guesses: ['z coord', 'z-coord', ' z', 'elev'] },
-  { key: 'station', label: 'Station / chainage', required: false, guesses: ['station', 'chainage', 'sta'] },
+  { key: 'asset_type', labelKey: 'wizard.fieldAssetType', required: false, guesses: ['tower type', 'type'] },
+  { key: 'x', labelKey: 'wizard.fieldX', required: true, guesses: ['x coord', 'x-coord', ' x', 'x(', 'easting'] },
+  { key: 'y', labelKey: 'wizard.fieldY', required: true, guesses: ['y coord', 'y-coord', ' y', 'y(', 'northing'] },
+  { key: 'z', labelKey: 'wizard.fieldZ', required: false, guesses: ['z coord', 'z-coord', ' z', 'elev'] },
+  { key: 'station', labelKey: 'wizard.fieldStation', required: false, guesses: ['station', 'chainage', 'sta'] },
 ];
 
-const TYPE_CATEGORY_OPTIONS = [
-  { value: 'suspension', label: 'Suspension' },
-  { value: 'tension', label: 'Tension / Angle' },
-  { value: 'terminal', label: 'Terminal / Dead-end' },
-  { value: 'gantry', label: 'Gantry' },
-  { value: 'other', label: 'Other' },
+const TYPE_CATEGORY_OPTIONS: { value: string; labelKey: TranslationKey }[] = [
+  { value: 'suspension', labelKey: 'wizard.typeCategorySuspension' },
+  { value: 'tension', labelKey: 'wizard.typeCategoryTension' },
+  { value: 'terminal', labelKey: 'wizard.typeCategoryTerminal' },
+  { value: 'gantry', labelKey: 'wizard.typeCategoryGantry' },
+  { value: 'other', labelKey: 'wizard.typeCategoryOther' },
 ];
 
 const MAX_HEADER_SCAN_ROWS = 25;
@@ -120,6 +124,7 @@ interface AssetImportStepProps {
 }
 
 export function AssetImportStep({ project, onComplete, onBack }: AssetImportStepProps) {
+  const { t } = useLanguage();
   const projectId = project.id;
   const [mode, setMode] = useState<'spreadsheet' | 'kml'>('spreadsheet');
   const [utmZone, setUtmZone] = useState(project.utm_zone ?? '');
@@ -190,7 +195,7 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
       const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' });
 
       if (rows.length < 2) {
-        setParseError('No data rows found in the first sheet.');
+        setParseError(t('wizard.noDataRows'));
         return;
       }
 
@@ -289,7 +294,7 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
     try {
       const assets = await parseKmlOrKmzFile(file);
       if (assets.length === 0) {
-        setKmlError('No Point placemarks found in this file.');
+        setKmlError(t('wizard.noPlacemarks'));
         return;
       }
       setKmlAssets(assets);
@@ -323,7 +328,7 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
 
   return (
     <div className="wizard-form">
-      <h2>3. Import structure list</h2>
+      <h2>{t('wizard.importTitle')}</h2>
 
       <div className="wizard-mode-toggle">
         <button
@@ -331,25 +336,22 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
           className={mode === 'spreadsheet' ? 'active' : ''}
           onClick={() => setMode('spreadsheet')}
         >
-          Excel / CSV
+          {t('wizard.excelCsv')}
         </button>
         <button type="button" className={mode === 'kml' ? 'active' : ''} onClick={() => setMode('kml')}>
-          KML / KMZ
+          {t('wizard.kmlKmz')}
         </button>
       </div>
 
       {mode === 'spreadsheet' ? (
         <>
-          <p className="wizard-hint">
-            Upload the project's structure list as .xlsx or .csv — supports asset type, tower head classification
-            and full column mapping. PDF exports vary too much between projects to parse automatically.
-          </p>
+          <p className="wizard-hint">{t('wizard.uploadStructureListHint')}</p>
 
-          <p className="wizard-hint">UTM zone — required to convert X/Y into map coordinates.</p>
+          <p className="wizard-hint">{t('wizard.utmZoneRequiredHint')}</p>
           <UtmZoneSelect value={utmZone} onChange={setUtmZone} />
 
           <label className="photo-upload-label">
-            {fileName || '+ Choose file'}
+            {fileName || t('wizard.chooseFile')}
             <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} />
           </label>
 
@@ -357,15 +359,10 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
         </>
       ) : (
         <>
-          <p className="wizard-hint">
-            For a quick setup: upload a .kml or .kmz with one Point placemark per tower. No column mapping needed —
-            placemark names become asset codes, coordinates are read directly as lat/lng. PLS-CADD's "Structure
-            locations" folder is detected automatically (route/tour placemarks elsewhere in the file are skipped),
-            and its tower type + station text is read from each placemark's description.
-          </p>
+          <p className="wizard-hint">{t('wizard.kmlHint')}</p>
 
           <label className="photo-upload-label">
-            {kmlFileName || '+ Choose file'}
+            {kmlFileName || t('wizard.chooseFile')}
             <input type="file" accept=".kml,.kmz" onChange={handleKmlFile} />
           </label>
 
@@ -373,19 +370,17 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
 
           {kmlAssets.length > 0 && (
             <fieldset className="wizard-fieldset">
-              <legend>
-                Preview ({kmlAssets.length} placemark{kmlAssets.length === 1 ? '' : 's'} detected)
-              </legend>
+              <legend>{t('wizard.previewPlacemarksCount', { count: kmlAssets.length })}</legend>
               <div className="wizard-preview-scroll">
                 <table className="pd-table">
                   <thead>
                     <tr>
-                      <th>Code</th>
-                      <th>Type</th>
-                      <th>Station</th>
-                      <th>Lat</th>
-                      <th>Lng</th>
-                      <th>Elevation</th>
+                      <th>{t('wizard.code')}</th>
+                      <th>{t('common.type')}</th>
+                      <th>{t('common.station')}</th>
+                      <th>{t('wizard.lat')}</th>
+                      <th>{t('wizard.lng')}</th>
+                      <th>{t('wizard.elevation')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -407,10 +402,10 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
 
           <div className="wizard-actions">
             <button type="button" onClick={onBack} className="wizard-secondary-btn">
-              Back
+              {t('common.back')}
             </button>
             <button type="button" onClick={handleKmlImport} disabled={kmlAssets.length === 0 || kmlImporting}>
-              {kmlImporting ? 'Importing…' : `Import ${kmlAssets.length || ''} assets & finish`}
+              {kmlImporting ? t('wizard.importing') : t('wizard.importAndFinish', { count: kmlAssets.length || '' })}
             </button>
           </div>
         </>
@@ -419,29 +414,24 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
       {mode === 'spreadsheet' && allRows.length > 0 && (
         <>
           <label>
-            Header row (the row with column titles like "Construction No", "X Coordinate"…)
+            {t('wizard.headerRowLabel')}
             <select value={headerRowIndex} onChange={(e) => setHeaderRowIndex(Number(e.target.value))}>
               {headerCandidates.map((row, i) => (
                 <option key={i} value={i}>
-                  Row {i + 1}: {rowPreview(row)}
+                  {t('wizard.rowPreview', { n: i + 1, preview: rowPreview(row) })}
                 </option>
               ))}
             </select>
           </label>
 
-          {autoCorrectedXY && (
-            <p className="wizard-hint">
-              Auto-corrected: the X and Y columns looked swapped (based on typical UTM digit counts — eastings
-              ~6 digits, northings ~7), so they were flipped automatically. Double-check the preview below.
-            </p>
-          )}
+          {autoCorrectedXY && <p className="wizard-hint">{t('wizard.autoCorrectedHint')}</p>}
 
           <fieldset className="wizard-fieldset">
-            <legend>Map columns</legend>
+            <legend>{t('wizard.mapColumns')}</legend>
             {FIELDS.map((field) => (
               <div key={field.key} className="wizard-work-item-row">
                 <span>
-                  {field.label}
+                  {t(field.labelKey)}
                   {field.required && ' *'}
                 </span>
                 <select
@@ -450,10 +440,10 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
                     setMapping((prev) => ({ ...prev, [field.key]: Number(e.target.value) }))
                   }
                 >
-                  <option value={-1}>— none —</option>
+                  <option value={-1}>{t('wizard.none')}</option>
                   {headers.map((h, i) => (
                     <option key={i} value={i}>
-                      {h || `Column ${i + 1}`}
+                      {h || t('wizard.column', { n: i + 1 })}
                     </option>
                   ))}
                 </select>
@@ -462,19 +452,17 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
           </fieldset>
 
           <fieldset className="wizard-fieldset">
-            <legend>
-              Preview ({dataRows.length} row{dataRows.length === 1 ? '' : 's'} detected)
-            </legend>
+            <legend>{t('wizard.previewRowsCount', { count: dataRows.length })}</legend>
             <div className="wizard-preview-scroll">
               <table className="pd-table">
                 <thead>
                   <tr>
-                    <th>Code</th>
-                    <th>Type</th>
+                    <th>{t('wizard.code')}</th>
+                    <th>{t('common.type')}</th>
                     <th>X</th>
                     <th>Y</th>
                     <th>Z</th>
-                    <th>Station</th>
+                    <th>{t('common.station')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -495,20 +483,18 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
 
           {uniqueTypes.length > 0 && (
             <fieldset className="wizard-fieldset">
-              <legend>Classify tower types ({uniqueTypes.length})</legend>
-              <p className="wizard-hint">
-                Used to compute suspension/tension ratios later — not required to import.
-              </p>
-              {uniqueTypes.map((t) => (
-                <div key={t} className="wizard-work-item-row">
-                  <span>{t}</span>
+              <legend>{t('wizard.classifyTowerTypes', { count: uniqueTypes.length })}</legend>
+              <p className="wizard-hint">{t('wizard.classifyHint')}</p>
+              {uniqueTypes.map((assetType) => (
+                <div key={assetType} className="wizard-work-item-row">
+                  <span>{assetType}</span>
                   <select
-                    value={typeCategories[t] ?? 'other'}
-                    onChange={(e) => setTypeCategories((prev) => ({ ...prev, [t]: e.target.value }))}
+                    value={typeCategories[assetType] ?? 'other'}
+                    onChange={(e) => setTypeCategories((prev) => ({ ...prev, [assetType]: e.target.value }))}
                   >
                     {TYPE_CATEGORY_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
-                        {opt.label}
+                        {t(opt.labelKey)}
                       </option>
                     ))}
                   </select>
@@ -525,10 +511,10 @@ export function AssetImportStep({ project, onComplete, onBack }: AssetImportStep
 
           <div className="wizard-actions">
             <button type="button" onClick={onBack} className="wizard-secondary-btn">
-              Back
+              {t('common.back')}
             </button>
             <button type="button" onClick={handleImport} disabled={!canImport}>
-              {importing ? 'Importing…' : `Import ${dataRows.length || ''} assets & finish`}
+              {importing ? t('wizard.importing') : t('wizard.importAndFinish', { count: dataRows.length || '' })}
             </button>
           </div>
         </>
