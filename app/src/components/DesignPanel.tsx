@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { updateProjectWorkItem } from '../lib/updateProjectWorkItem';
 import type { DesignItemBreakdown } from '../lib/useDesignBreakdown';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 interface DesignPanelProps {
   projectId: string;
@@ -26,6 +27,7 @@ export function DesignPanel({
   onSaved,
 }: DesignPanelProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savedKey, setSavedKey] = useState<string | null>(null);
@@ -62,15 +64,15 @@ export function DesignPanel({
 
   const editItemsLink = isAdmin && (
     <Link to={`/admin/${projectSlug}/design-items`} className="pw-edit-items-link">
-      Edit items
+      {t('common.editItems')}
     </Link>
   );
 
-  if (loading) return <p className="accordion-empty">Loading…</p>;
+  if (loading) return <p className="accordion-empty">{t('common.loading')}</p>;
   if (items.length === 0) {
     return (
       <div className="pw-item-list">
-        <p className="accordion-empty">No design items configured for this project.</p>
+        <p className="accordion-empty">{t('progress.noDesignItems')}</p>
         {editItemsLink}
       </div>
     );
@@ -85,8 +87,8 @@ export function DesignPanel({
           {editable ? (
             <div className="pw-percent-input-wrap">
               <div className="pw-percent-input">
-                {savingKey === item.key && <span className="pw-save-indicator">Saving…</span>}
-                {savedKey === item.key && <span className="pw-save-indicator pw-save-ok">✓ Saved</span>}
+                {savingKey === item.key && <span className="pw-save-indicator">{t('common.saving')}</span>}
+                {savedKey === item.key && <span className="pw-save-indicator pw-save-ok">✓ {t('common.saved')}</span>}
                 <input
                   type="number"
                   min={0}
@@ -101,7 +103,9 @@ export function DesignPanel({
                 />
                 <span>%</span>
               </div>
-              {errorKey?.key === item.key && <p className="pw-save-error">Save failed: {errorKey.message}</p>}
+              {errorKey?.key === item.key && (
+                <p className="pw-save-error">{t('common.saveFailed', { message: errorKey.message })}</p>
+              )}
             </div>
           ) : (
             <span className="pw-item-percent">{item.percentComplete.toFixed(1)}%</span>
@@ -109,7 +113,7 @@ export function DesignPanel({
         </div>
       ))}
       <div className="pw-subtotal">
-        <span>Overall</span>
+        <span>{t('common.overall')}</span>
         <span>{overallPercent.toFixed(1)}%</span>
       </div>
     </div>

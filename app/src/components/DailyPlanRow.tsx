@@ -4,6 +4,7 @@ import { usePlanForToday } from '../lib/usePlanForToday';
 import { usePlannedTomorrow, addPlannedActivity, removePlannedActivity } from '../lib/usePlannedTomorrow';
 import type { AssetListItem } from '../lib/useAssets';
 import type { WorkItemConfig } from '../lib/useProjectConfig';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 interface DailyPlanRowProps {
   projectId: string;
@@ -17,6 +18,7 @@ type Tab = 'today' | 'tomorrow' | null;
 
 export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSignal }: DailyPlanRowProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<Tab>(null);
   const { entries: todayEntries, loading: todayLoading, refresh: refreshToday } = usePlanForToday(projectId, workItems);
   const { entries: tomorrowEntries, loading: tomorrowLoading, refresh: refreshTomorrow } = usePlannedTomorrow(projectId);
@@ -33,7 +35,7 @@ export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSi
   }, [refreshSignal]);
 
   function labelFor(key: string | null) {
-    if (key === null) return 'Active';
+    if (key === null) return t('status.active');
     return workItems.find((w) => w.key === key)?.label ?? key;
   }
 
@@ -70,26 +72,26 @@ export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSi
           className={`daily-plan-tab daily-plan-tab-today${activeTab === 'today' ? ' active' : ''}`}
           onClick={() => toggle('today')}
         >
-          Plan for Today <span className="daily-plan-tab-count">{todayEntries.length}</span>
+          {t('dailyPlan.planForToday')} <span className="daily-plan-tab-count">{todayEntries.length}</span>
         </button>
         <button
           type="button"
           className={`daily-plan-tab daily-plan-tab-tomorrow${activeTab === 'tomorrow' ? ' active' : ''}`}
           onClick={() => toggle('tomorrow')}
         >
-          Plan for Tomorrow <span className="daily-plan-tab-count">{tomorrowEntries.length}</span>
+          {t('dailyPlan.planForTomorrow')} <span className="daily-plan-tab-count">{tomorrowEntries.length}</span>
         </button>
       </div>
 
       {activeTab === 'today' && (
         <div className="daily-plan-detail">
-          {todayLoading && <p className="accordion-empty">Loading…</p>}
+          {todayLoading && <p className="accordion-empty">{t('common.loading')}</p>}
           {!todayLoading && todayEntries.length === 0 && (
-            <p className="accordion-empty">Nothing completed or ongoing today.</p>
+            <p className="accordion-empty">{t('dailyPlan.nothingToday')}</p>
           )}
           {completedToday.length > 0 && (
             <div className="daily-plan-group">
-              <div className="daily-plan-group-title">✅ Completed today</div>
+              <div className="daily-plan-group-title">✅ {t('dailyPlan.completedToday')}</div>
               {completedToday.map((e, i) => (
                 <div key={i} className="daily-plan-row-item">
                   <span className="daily-plan-tower">{e.assetCode}</span>
@@ -100,7 +102,7 @@ export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSi
           )}
           {ongoingToday.length > 0 && (
             <div className="daily-plan-group">
-              <div className="daily-plan-group-title">🔧 Ongoing</div>
+              <div className="daily-plan-group-title">🔧 {t('dailyPlan.ongoing')}</div>
               {ongoingToday.map((e, i) => (
                 <div key={i} className="daily-plan-row-item">
                   <span className="daily-plan-tower">{e.assetCode}</span>
@@ -114,9 +116,9 @@ export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSi
 
       {activeTab === 'tomorrow' && (
         <div className="daily-plan-detail">
-          {tomorrowLoading && <p className="accordion-empty">Loading…</p>}
+          {tomorrowLoading && <p className="accordion-empty">{t('common.loading')}</p>}
           {!tomorrowLoading && tomorrowEntries.length === 0 && (
-            <p className="accordion-empty">Nothing planned for tomorrow yet.</p>
+            <p className="accordion-empty">{t('dailyPlan.nothingTomorrow')}</p>
           )}
           {tomorrowEntries.map((e) => (
             <div key={e.id} className="daily-plan-row-item">
@@ -127,7 +129,7 @@ export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSi
                   type="button"
                   className="items-editor-remove-btn"
                   onClick={() => handleRemove(e.id)}
-                  title="Remove"
+                  title={t('dailyPlan.remove')}
                 >
                   ×
                 </button>
@@ -138,7 +140,7 @@ export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSi
           {editable && (
             <div className="daily-plan-add-row">
               <select value={pickAsset} onChange={(e) => setPickAsset(e.target.value)}>
-                <option value="">Tower…</option>
+                <option value="">{t('dailyPlan.towerPlaceholder')}</option>
                 {assets.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.asset_code}
@@ -146,7 +148,7 @@ export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSi
                 ))}
               </select>
               <select value={pickWorkItem} onChange={(e) => setPickWorkItem(e.target.value)}>
-                <option value="">Activity…</option>
+                <option value="">{t('dailyPlan.activityPlaceholder')}</option>
                 {workItems.map((w) => (
                   <option key={w.key} value={w.key}>
                     {w.label}
@@ -159,7 +161,7 @@ export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSi
                 onClick={handleAdd}
                 disabled={adding || !pickAsset || !pickWorkItem}
               >
-                {adding ? '…' : 'Add'}
+                {adding ? '…' : t('common.add')}
               </button>
             </div>
           )}

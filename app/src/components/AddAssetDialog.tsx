@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 interface AddAssetDialogProps {
   projectId: string;
@@ -9,6 +10,7 @@ interface AddAssetDialogProps {
 }
 
 export function AddAssetDialog({ projectId, knownAssetTypes, onClose, onAdded }: AddAssetDialogProps) {
+  const { t } = useLanguage();
   const [assetCode, setAssetCode] = useState('');
   const [assetType, setAssetType] = useState('');
   const [station, setStation] = useState('');
@@ -39,8 +41,8 @@ export function AddAssetDialog({ projectId, knownAssetTypes, onClose, onAdded }:
     if (insertError) {
       setError(
         insertError.code === '23505'
-          ? 'That tower code is already in use on this project.'
-          : `Save failed: ${insertError.message}`,
+          ? t('assetEditor.codeInUse')
+          : t('common.saveFailed', { message: insertError.message }),
       );
       return;
     }
@@ -51,10 +53,10 @@ export function AddAssetDialog({ projectId, knownAssetTypes, onClose, onAdded }:
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2 className="modal-title-neutral">Add tower</h2>
+        <h2 className="modal-title-neutral">{t('addAsset.title')}</h2>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <label>
-            Tower code
+            {t('addAsset.towerCode')}
             <input
               value={assetCode}
               onChange={(e) => setAssetCode(e.target.value)}
@@ -64,7 +66,7 @@ export function AddAssetDialog({ projectId, knownAssetTypes, onClose, onAdded }:
             />
           </label>
           <label>
-            Type
+            {t('common.type')}
             <input
               value={assetType}
               onChange={(e) => setAssetType(e.target.value)}
@@ -72,13 +74,13 @@ export function AddAssetDialog({ projectId, knownAssetTypes, onClose, onAdded }:
               className="modal-confirm-input"
             />
             <datalist id="known-asset-types">
-              {knownAssetTypes.map((t) => (
-                <option key={t} value={t} />
+              {knownAssetTypes.map((type) => (
+                <option key={type} value={type} />
               ))}
             </datalist>
           </label>
           <label>
-            Station
+            {t('common.station')}
             <input value={station} onChange={(e) => setStation(e.target.value)} className="modal-confirm-input" />
           </label>
           <div className="wizard-form-row">
@@ -100,10 +102,10 @@ export function AddAssetDialog({ projectId, knownAssetTypes, onClose, onAdded }:
 
           <div className="wizard-actions">
             <button type="button" onClick={onClose} className="wizard-secondary-btn">
-              Cancel
+              {t('common.cancel')}
             </button>
             <button type="submit" disabled={saving || !assetCode.trim()}>
-              {saving ? 'Adding…' : 'Add tower'}
+              {saving ? t('addAsset.adding') : t('addAsset.submit')}
             </button>
           </div>
         </form>

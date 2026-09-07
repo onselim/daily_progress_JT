@@ -6,15 +6,18 @@ import { useAssetStats } from '../../lib/useAssetStats';
 import { useRestrictedToday } from '../../lib/useRestrictedToday';
 import { useAssets } from '../../lib/useAssets';
 import { useWorkItemsConfig } from '../../lib/useProjectConfig';
+import { useLanguage } from '../../lib/i18n/LanguageContext';
 import { AssetWorkspace } from '../../components/AssetWorkspace';
 import { ProjectProgressBar } from '../../components/ProjectProgressBar';
 import { DailyPlanRow } from '../../components/DailyPlanRow';
 import { DeleteProjectDialog } from '../../components/DeleteProjectDialog';
+import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 
 export default function AdminProjectPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { t, language } = useLanguage();
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
   const { restrictedAssetIds } = useRestrictedToday(project?.id);
@@ -23,18 +26,18 @@ export default function AdminProjectPage() {
   const [showDelete, setShowDelete] = useState(false);
   const [dailyRefreshSignal, setDailyRefreshSignal] = useState(0);
 
-  if (loading) return <div className="page-loading">Loading…</div>;
-  if (error || !project) return <div className="page-loading">Project not found.</div>;
+  if (loading) return <div className="page-loading">{t('common.loading')}</div>;
+  if (error || !project) return <div className="page-loading">{t('common.projectNotFound')}</div>;
 
   return (
     <div className="project-shell">
       <header className="project-topbar">
         <div className="project-topbar-left">
-          <Link to="/admin">← Projects</Link>
+          <Link to="/admin">{t('topbar.backToProjects')}</Link>
           <h1>{project.name}</h1>
           <p>
             <a href={`/reports/${project.slug}`} target="_blank" rel="noreferrer">
-              Public link: /reports/{project.slug}
+              {t('topbar.publicLink', { path: `/reports/${project.slug}` })}
             </a>
           </p>
         </div>
@@ -55,42 +58,43 @@ export default function AdminProjectPage() {
             <span className="stat-pill-val">
               {stats.inProgress}/{stats.total}
             </span>
-            <span className="stat-pill-lbl">Active</span>
+            <span className="stat-pill-lbl">{t('status.active')}</span>
           </span>
           <span className="stat-pill">
             <span className="stat-pill-dot" style={{ background: '#ef4444' }} />
             <span className="stat-pill-val">
               {restrictedAssetIds.size}/{stats.total}
             </span>
-            <span className="stat-pill-lbl">No Access</span>
+            <span className="stat-pill-lbl">{t('status.noAccess')}</span>
           </span>
           <span className="stat-pill">
             <span className="stat-pill-dot" style={{ background: '#3b82f6' }} />
             <span className="stat-pill-val">
               {stats.completed}/{stats.total}
             </span>
-            <span className="stat-pill-lbl">Completed</span>
+            <span className="stat-pill-lbl">{t('status.completed')}</span>
           </span>
           <span className="stat-pill">
             <span className="stat-pill-dot" style={{ background: '#3d4259' }} />
             <span className="stat-pill-val">{stats.total}</span>
-            <span className="stat-pill-lbl">Towers</span>
+            <span className="stat-pill-lbl">{t('status.towers')}</span>
           </span>
         </div>
         <div className="project-topbar-actions">
+          <LanguageSwitcher />
           <button type="button" onClick={() => navigate(`/admin/${project.slug}/work-items`)}>
-            Edit work items
+            {t('topbar.editWorkItems')}
           </button>
-          <button type="button" onClick={() => window.open(`/print/${project.slug}`, '_blank')}>
-            Print PDF
+          <button type="button" onClick={() => window.open(`/print/${project.slug}?lang=${language}`, '_blank')}>
+            {t('common.printPdf')}
           </button>
           <button type="button" onClick={() => navigate(`/admin/${project.slug}/report-settings`)}>
-            Report settings
+            {t('topbar.reportSettings')}
           </button>
           <button type="button" className="modal-danger-btn" onClick={() => setShowDelete(true)}>
-            Delete
+            {t('common.delete')}
           </button>
-          <button onClick={signOut}>Sign out</button>
+          <button onClick={signOut}>{t('common.signOut')}</button>
         </div>
       </header>
 

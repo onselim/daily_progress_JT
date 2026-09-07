@@ -20,11 +20,12 @@ function todayInGeorgia(): Date {
 interface ReportConfig {
   recipients: string[];
   pausedUntil: string | null;
+  language: string;
 }
 
-/** Reads the recipient list and pause date straight from project_config via the
- * service-role key Supabase auto-injects into every Edge Function -- no secret to set
- * up for this, unlike RESEND_API_KEY/BROWSERLESS_API_KEY. */
+/** Reads the recipient list, pause date, and report language straight from
+ * project_config via the service-role key Supabase auto-injects into every Edge
+ * Function -- no secret to set up for this, unlike RESEND_API_KEY/BROWSERLESS_API_KEY. */
 async function fetchReportConfig(): Promise<ReportConfig> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -33,7 +34,7 @@ async function fetchReportConfig(): Promise<ReportConfig> {
   }
 
   const res = await fetch(
-    `${supabaseUrl}/rest/v1/project_config?select=key,value&project_id=eq.${PROJECT_ID}&key=in.(report_recipients,report_paused_until)`,
+    `${supabaseUrl}/rest/v1/project_config?select=key,value&project_id=eq.${PROJECT_ID}&key=in.(report_recipients,report_paused_until,report_language)`,
     { headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` } },
   );
   if (!res.ok) throw new Error(`project_config fetch failed: ${res.status} ${await res.text()}`);
@@ -41,7 +42,8 @@ async function fetchReportConfig(): Promise<ReportConfig> {
   const rows: { key: string; value: unknown }[] = await res.json();
   const recipients = (rows.find((r) => r.key === 'report_recipients')?.value as string[] | undefined) ?? [];
   const pausedUntil = (rows.find((r) => r.key === 'report_paused_until')?.value as string | null | undefined) ?? null;
-  return { recipients, pausedUntil };
+  const language = (rows.find((r) => r.key === 'report_language')?.value as string | undefined) ?? 'en';
+  return { recipients, pausedUntil, language };
 }
 
 /** Converts a large ArrayBuffer to base64 without spreading it into
@@ -145,7 +147,7 @@ Deno.serve(async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        url: REPORT_URL,
+        url: `${REPORT_URL}?lang=${config.language}`,
         gotoOptions: { waitUntil: 'networkidle2' },
         // The report is a React app that fetches its data from Supabase and loads a
         // Leaflet/satellite map after the initial page load -- without this, Browserless

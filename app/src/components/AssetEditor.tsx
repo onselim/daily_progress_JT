@@ -18,12 +18,16 @@ import { RenamableText } from './RenamableText';
 import { WindyPopup } from './WindyPopup';
 import { DeleteAssetDialog } from './DeleteAssetDialog';
 import { utmToLatLng } from '../lib/utmToLatLng';
+import { useLanguage } from '../lib/i18n/LanguageContext';
+import type { TranslationKey } from '../lib/i18n/translations/en';
 
 type WorkItemStatus = 'not_started' | 'in_progress' | 'completed';
 
 // Work items that get a per-tower test-report/certificate upload (in addition to photos),
 // per the client's "Menu eklemeleri" spec: Soil Investigation Report, Concrete Test Cube
 // results, Backfill test results, Earthing measurement results.
+// Document type names are standardized engineering/test-report terms -- kept in English
+// even though the rest of the chrome around them is translated.
 const DOCUMENT_ENABLED_KEYS: Record<string, string> = {
   si_sw: 'Soil Investigation Report',
   fn_co: 'Concrete Test Cube results',
@@ -31,18 +35,18 @@ const DOCUMENT_ENABLED_KEYS: Record<string, string> = {
   er_te: 'Earthing measurement results',
 };
 
-const STATUS_OPTIONS: { value: WorkItemStatus; label: string }[] = [
-  { value: 'not_started', label: 'Not started' },
-  { value: 'in_progress', label: 'In progress' },
-  { value: 'completed', label: 'Completed' },
+const STATUS_OPTIONS: { value: WorkItemStatus; labelKey: TranslationKey }[] = [
+  { value: 'not_started', labelKey: 'status.notStarted' },
+  { value: 'in_progress', labelKey: 'status.inProgress' },
+  { value: 'completed', labelKey: 'status.completed' },
 ];
 
-const RESTRICTION_REASONS: { value: string; label: string }[] = [
-  { value: 'not_approved', label: 'Not approved' },
-  { value: 'no_permit', label: 'No Permit' },
-  { value: 'no_access', label: 'No Access' },
-  { value: 'land_owner_problem', label: 'Land Owner Problem' },
-  { value: 'other', label: 'Other' },
+const RESTRICTION_REASONS: { value: string; labelKey: TranslationKey }[] = [
+  { value: 'not_approved', labelKey: 'restriction.notApproved' },
+  { value: 'no_permit', labelKey: 'restriction.noPermit' },
+  { value: 'no_access', labelKey: 'restriction.noAccess' },
+  { value: 'land_owner_problem', labelKey: 'restriction.landOwnerProblem' },
+  { value: 'other', labelKey: 'restriction.other' },
 ];
 
 const PERCENT_BY_STATUS: Record<WorkItemStatus, number> = {
@@ -89,6 +93,7 @@ function PhotoThumbs({
   onDelete: (photo: AssetPhoto) => void;
   inline?: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <div className={`photo-grid${inline ? ' photo-grid-inline' : ''}`}>
       {photos.map((p) => (
@@ -103,7 +108,7 @@ function PhotoThumbs({
               className="photo-delete-btn"
               disabled={deletingIds.has(p.id)}
               onClick={() => onDelete(p)}
-              title="Delete photo"
+              title={t('assetEditor.deletePhoto')}
             >
               ×
             </button>
@@ -127,6 +132,7 @@ function DocumentLinks({
   onDelete: (doc: AssetDocument) => void;
   onRename: (doc: AssetDocument, newName: string) => void;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="doc-folder-body">
       {documents.map((d) => (
@@ -142,7 +148,7 @@ function DocumentLinks({
               className="items-editor-remove-btn"
               disabled={deletingIds.has(d.id)}
               onClick={() => onDelete(d)}
-              title="Delete document"
+              title={t('assetEditor.deleteDocument')}
             >
               ×
             </button>
@@ -177,6 +183,7 @@ export function AssetEditor({
   onDeleted,
 }: AssetEditorProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { workItems, loading: workItemsLoading } = useWorkItemsConfig(projectId);
   const { foundationTypes } = useFoundationTypesConfig(projectId);
   const { photos, loading: photosLoading, refresh: refreshPhotos } = useAssetPhotos(assetId);
@@ -337,7 +344,7 @@ export function AssetEditor({
 
     const firstError = workItemsResult.error ?? dailyLogResult.error ?? assetResult.error;
     if (firstError) {
-      setMessage(`Save failed: ${firstError.message}`);
+      setMessage(t('common.saveFailed', { message: firstError.message }));
       return;
     }
 
@@ -348,7 +355,7 @@ export function AssetEditor({
       details: { asset_id: assetId, log_date: todayIso() },
     });
 
-    setMessage('Saved.');
+    setMessage(t('common.saved'));
     onSaved?.();
   }
 
@@ -373,11 +380,11 @@ export function AssetEditor({
     setSavingDetails(false);
     if (error) {
       setDetailsMessage(
-        error.code === '23505' ? 'That tower code is already in use on this project.' : `Save failed: ${error.message}`,
+        error.code === '23505' ? t('assetEditor.codeInUse') : t('common.saveFailed', { message: error.message }),
       );
       return;
     }
-    setDetailsMessage('Tower details saved.');
+    setDetailsMessage(t('common.saved'));
     onDetailsSaved?.();
   }
 
@@ -464,7 +471,7 @@ export function AssetEditor({
     }
   }
 
-  if (loading) return <p>Loading asset…</p>;
+  if (loading) return <p>{t('assetEditor.loading')}</p>;
 
   // Work items form one strict pipeline in the project's canonical order (Pre-Construction
   // -> Foundation -> Erection -> Stringing, and sequential within each group too, e.g.
@@ -480,7 +487,7 @@ export function AssetEditor({
 
   const groups: { name: string; items: WorkItemConfig[] }[] = [];
   for (const item of workItems) {
-    const name = item.group ?? 'Work items';
+    const name = item.group ?? t('assetEditor.workItems');
     let group = groups.find((g) => g.name === name);
     if (!group) {
       group = { name, items: [] };
@@ -514,7 +521,7 @@ export function AssetEditor({
             type="button"
             className="wind-toggle-btn"
             onClick={() => setShowWindy((v) => !v)}
-            title="Wind forecast"
+            title={t('assetEditor.windForecast')}
           >
             🌬
           </button>
@@ -524,7 +531,7 @@ export function AssetEditor({
             type="button"
             className="wind-toggle-btn"
             onClick={() => setShowTowerDetails((v) => !v)}
-            title="Edit tower details"
+            title={t('assetEditor.editTowerDetails')}
           >
             ✏️
           </button>
@@ -534,7 +541,7 @@ export function AssetEditor({
             type="button"
             className="wind-toggle-btn"
             onClick={() => setShowDeleteDialog(true)}
-            title="Delete tower"
+            title={t('assetEditor.deleteTower')}
           >
             🗑
           </button>
@@ -561,22 +568,22 @@ export function AssetEditor({
 
       {isAdmin && showTowerDetails && (
         <fieldset className="tower-details-editor">
-          <legend>Tower details</legend>
+          <legend>{t('assetEditor.towerDetails')}</legend>
           <label>
-            Tower code
+            {t('assetEditor.towerCode')}
             <input value={assetCode} onChange={(e) => setAssetCode(e.target.value)} />
           </label>
           <label>
-            Type
+            {t('common.type')}
             <input value={assetType ?? ''} onChange={(e) => setAssetType(e.target.value)} list="tower-type-options" />
             <datalist id="tower-type-options">
-              {knownAssetTypes.map((t) => (
-                <option key={t} value={t} />
+              {knownAssetTypes.map((type) => (
+                <option key={type} value={type} />
               ))}
             </datalist>
           </label>
           <label>
-            Station
+            {t('common.station')}
             <input value={station ?? ''} onChange={(e) => setStation(e.target.value)} />
           </label>
           <div className="wizard-form-row">
@@ -609,7 +616,7 @@ export function AssetEditor({
             </label>
           </div>
           <button type="button" onClick={handleSaveDetails} disabled={savingDetails || !assetCode.trim()}>
-            {savingDetails ? 'Saving…' : 'Save tower details'}
+            {savingDetails ? t('common.saving') : t('assetEditor.saveTowerDetails')}
           </button>
           {detailsMessage && <p className="form-message">{detailsMessage}</p>}
         </fieldset>
@@ -630,9 +637,11 @@ export function AssetEditor({
         <div className="access-banner">
           <span className="access-banner-icon">⛔</span>
           <div>
-            <div className="access-banner-title">Site Access Restricted</div>
+            <div className="access-banner-title">{t('assetEditor.siteAccessRestricted')}</div>
             <div className="access-banner-sub">
-              {RESTRICTION_REASONS.find((r) => r.value === restrictionReason)?.label ?? 'Reason not set'}
+              {RESTRICTION_REASONS.find((r) => r.value === restrictionReason)?.labelKey
+                ? t(RESTRICTION_REASONS.find((r) => r.value === restrictionReason)!.labelKey)
+                : t('assetEditor.reasonNotSet')}
             </div>
           </div>
         </div>
@@ -651,19 +660,19 @@ export function AssetEditor({
               {group.name.toUpperCase() === 'FOUNDATION' && foundation && (
                 <div className="foundation-stats" title={`${foundation.type} — ${foundation.soilType}`}>
                   <div className="foundation-stat">
-                    <span className="foundation-stat-label">Concrete</span>
+                    <span className="foundation-stat-label">{t('assetEditor.concrete')}</span>
                     <span className="foundation-stat-value">{foundation.concreteM3.toFixed(2)} m³</span>
                   </div>
                   <div className="foundation-stat">
-                    <span className="foundation-stat-label">Excavation</span>
+                    <span className="foundation-stat-label">{t('assetEditor.excavation')}</span>
                     <span className="foundation-stat-value">{foundation.excavationM3.toFixed(1)} m³</span>
                   </div>
                   <div className="foundation-stat">
-                    <span className="foundation-stat-label">Reinforcement</span>
+                    <span className="foundation-stat-label">{t('assetEditor.reinforcement')}</span>
                     <span className="foundation-stat-value">{foundation.reinforcementKg.toLocaleString()} kg</span>
                   </div>
                   <div className="foundation-stat">
-                    <span className="foundation-stat-label">Lean Concrete</span>
+                    <span className="foundation-stat-label">{t('assetEditor.leanConcrete')}</span>
                     <span className="foundation-stat-value">{foundation.leanConcreteM3.toFixed(2)} m³</span>
                   </div>
                 </div>
@@ -672,7 +681,7 @@ export function AssetEditor({
                 <div className="foundation-stub-row" title="Per-leg extension and soil type, used for the excavation-pit layer">
                   {soilType != null && editable && foundationOptions.length > 0 && (
                     <label className="soil-type-picker">
-                      Soil Type
+                      {t('assetEditor.soilType')}
                       <select value={soilType} onChange={(e) => setSoilType(Number(e.target.value))}>
                         {foundationOptions.map((f) => (
                           <option key={f.soilTypeCode} value={f.soilTypeCode}>
@@ -682,10 +691,14 @@ export function AssetEditor({
                       </select>
                     </label>
                   )}
-                  {soilType != null && (!editable || foundationOptions.length === 0) && <span>Soil Type {soilType}</span>}
+                  {soilType != null && (!editable || foundationOptions.length === 0) && (
+                    <span>
+                      {t('assetEditor.soilType')} {soilType}
+                    </span>
+                  )}
                   {legExtM && (
                     <span>
-                      Leg Ext (m):{' '}
+                      {t('assetEditor.legExt')}:{' '}
                       {legExtM
                         .map((v, i) => `L${i + 1} ${v == null ? '—' : v > 0 ? `+${v}` : v}`)
                         .join(' · ')}
@@ -722,7 +735,10 @@ export function AssetEditor({
                       </div>
                       {!editable && (
                         <span className="task-status" style={{ color: itemColor }}>
-                          {STATUS_OPTIONS.find((o) => o.value === current)?.label}
+                          {(() => {
+                            const opt = STATUS_OPTIONS.find((o) => o.value === current);
+                            return opt ? t(opt.labelKey) : null;
+                          })()}
                           {current === 'completed' && completedDateByKey[item.key] && (
                             <span className="completed-date-stamp completed-date-stamp-inline">
                               {completedDateByKey[item.key]}
@@ -773,7 +789,7 @@ export function AssetEditor({
                                 }
                               }}
                             >
-                              {opt.label}
+                              {t(opt.labelKey)}
                               {opt.value === 'completed' && current === 'completed' && completedDateByKey[item.key] && (
                                 <span className="completed-date-stamp">{completedDateByKey[item.key]}</span>
                               )}
@@ -795,7 +811,7 @@ export function AssetEditor({
                             className="qty-percent-field"
                             title="Share of the designed quantity actually placed -- e.g. only 2 of 4 legs poured, or pad-only on a pad-and-chimney foundation"
                           >
-                            Qty
+                            {t('assetEditor.qty')}
                             <input
                               type="number"
                               className="qty-percent-input"
@@ -817,7 +833,9 @@ export function AssetEditor({
 
                     {isExpanded && (
                       <div className="item-photo-panel">
-                        {itemPhotos.length === 0 && <p className="accordion-empty">No photos for {item.label} yet.</p>}
+                        {itemPhotos.length === 0 && (
+                          <p className="accordion-empty">{t('assetEditor.noPhotosFor', { label: item.label })}</p>
+                        )}
                         <PhotoThumbs
                           photos={itemPhotos}
                           editable={editable}
@@ -830,12 +848,12 @@ export function AssetEditor({
                             <input
                               type="text"
                               className="photo-note-input"
-                              placeholder="Note (optional)"
+                              placeholder={t('assetEditor.notePlaceholder')}
                               value={noteDraftByKey[item.key] ?? ''}
                               onChange={(e) => setNoteDraftByKey((prev) => ({ ...prev, [item.key]: e.target.value }))}
                             />
                             <label className="photo-upload-label photo-upload-label-sm">
-                              {uploadingKey === item.key ? 'Uploading…' : `+ Add ${item.label} photo`}
+                              {uploadingKey === item.key ? t('assetEditor.uploading') : t('assetEditor.addPhoto', { label: item.label })}
                               <input
                                 type="file"
                                 accept="image/*"
@@ -851,7 +869,9 @@ export function AssetEditor({
 
                     {docLabel && isDocExpanded && (
                       <div className="item-photo-panel">
-                        {itemDocs.length === 0 && <p className="accordion-empty">No {docLabel} uploaded yet.</p>}
+                        {itemDocs.length === 0 && (
+                          <p className="accordion-empty">{t('assetEditor.noDocsUploaded', { label: docLabel })}</p>
+                        )}
                         <DocumentLinks
                           documents={itemDocs}
                           editable={editable}
@@ -861,7 +881,7 @@ export function AssetEditor({
                         />
                         {editable && (
                           <label className="photo-upload-label photo-upload-label-sm">
-                            {uploadingDocKey === item.key ? 'Uploading…' : `+ Add ${docLabel}`}
+                            {uploadingDocKey === item.key ? t('assetEditor.uploading') : t('assetEditor.addDoc', { label: docLabel })}
                             <input
                               type="file"
                               multiple
@@ -882,7 +902,7 @@ export function AssetEditor({
       {editable && (
         <>
           <label>
-            Site access
+            {t('assetEditor.siteAccess')}
             <div className="status-toggle site-access-toggle" role="group" aria-label="Site access">
               <button
                 type="button"
@@ -892,26 +912,26 @@ export function AssetEditor({
                   setRestrictionReason('');
                 }}
               >
-                Workable
+                {t('assetEditor.workable')}
               </button>
               <button
                 type="button"
                 className={`status-btn status-btn-restricted${siteAccessStatus === 'restricted' ? ' active' : ''}`}
                 onClick={() => setSiteAccessStatus('restricted')}
               >
-                Restricted
+                {t('assetEditor.restricted')}
               </button>
             </div>
           </label>
 
           {siteAccessStatus === 'restricted' && (
             <label>
-              Restriction reason
+              {t('assetEditor.restrictionReason')}
               <select value={restrictionReason} onChange={(e) => setRestrictionReason(e.target.value)}>
-                <option value="">— select —</option>
+                <option value="">{t('assetEditor.selectReason')}</option>
                 {RESTRICTION_REASONS.map((r) => (
                   <option key={r.value} value={r.value}>
-                    {r.label}
+                    {t(r.labelKey)}
                   </option>
                 ))}
               </select>
@@ -919,27 +939,27 @@ export function AssetEditor({
           )}
 
           <label title="Feeds the Daily Progress Report PDF's 'Today's progress' table">
-            Completed today
+            {t('assetEditor.completedToday')}
             <textarea
               value={completedToday}
               onChange={(e) => setCompletedToday(e.target.value)}
               rows={2}
-              placeholder="What was done here today…"
+              placeholder={t('assetEditor.completedTodayPlaceholder')}
             />
           </label>
 
           <label title="Feeds the Daily Progress Report PDF's 'Plan for tomorrow' table">
-            Planned for tomorrow
+            {t('assetEditor.plannedTomorrow')}
             <textarea
               value={plannedTomorrow}
               onChange={(e) => setPlannedTomorrow(e.target.value)}
               rows={2}
-              placeholder="What's planned here tomorrow…"
+              placeholder={t('assetEditor.plannedTomorrowPlaceholder')}
             />
           </label>
 
           <label>
-            Notes
+            {t('common.notes')}
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </label>
         </>
@@ -949,13 +969,13 @@ export function AssetEditor({
         <p className="readonly-field">
           {completedToday && (
             <>
-              <strong>Completed today:</strong> {completedToday}
+              <strong>{t('assetEditor.completedToday')}:</strong> {completedToday}
               <br />
             </>
           )}
           {plannedTomorrow && (
             <>
-              <strong>Planned for tomorrow:</strong> {plannedTomorrow}
+              <strong>{t('assetEditor.plannedTomorrow')}:</strong> {plannedTomorrow}
             </>
           )}
         </p>
@@ -963,14 +983,16 @@ export function AssetEditor({
 
       {!editable && notes && (
         <p className="readonly-field">
-          <strong>Notes:</strong> {notes}
+          <strong>{t('common.notes')}:</strong> {notes}
         </p>
       )}
 
       <fieldset>
-        <legend>Location</legend>
-        {photosLoading && <p>Loading photos…</p>}
-        {!photosLoading && locationPhotos.length === 0 && <p className="readonly-field">No location photos yet.</p>}
+        <legend>{t('assetEditor.location')}</legend>
+        {photosLoading && <p>{t('common.loading')}</p>}
+        {!photosLoading && locationPhotos.length === 0 && (
+          <p className="readonly-field">{t('assetEditor.noLocationPhotos')}</p>
+        )}
         <PhotoThumbs
           photos={locationPhotos}
           editable={editable}
@@ -982,12 +1004,12 @@ export function AssetEditor({
             <input
               type="text"
               className="photo-note-input"
-              placeholder="Note (optional)"
+              placeholder={t('assetEditor.notePlaceholder')}
               value={noteDraftByKey.location ?? ''}
               onChange={(e) => setNoteDraftByKey((prev) => ({ ...prev, location: e.target.value }))}
             />
             <label className="photo-upload-label">
-              {uploadingKey === 'location' ? 'Uploading…' : '+ Add location photo'}
+              {uploadingKey === 'location' ? t('assetEditor.uploading') : t('assetEditor.addLocationPhoto')}
               <input
                 type="file"
                 accept="image/*"
@@ -1002,7 +1024,7 @@ export function AssetEditor({
 
       {editable && (
         <button type="submit" disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? t('common.saving') : t('common.save')}
         </button>
       )}
 

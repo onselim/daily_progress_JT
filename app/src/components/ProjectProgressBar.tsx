@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useLanguage } from '../lib/i18n/LanguageContext';
+import type { TranslationKey } from '../lib/i18n/translations/en';
 import { useWorkItemsConfig } from '../lib/useProjectConfig';
 import { useConstructionBreakdown } from '../lib/useConstructionBreakdown';
 import { useDesignBreakdown } from '../lib/useDesignBreakdown';
@@ -23,10 +25,10 @@ const TAB_COLOR = {
 // "how many of the 201 towers have fully finished this phase", not an averaged percentage.
 // Pre-construction/soil-investigation items still count toward Construction% but aren't
 // prominent enough on their own to earn a topbar stat.
-const HEADLINE_GROUPS: { name: string; label: string; color: string }[] = [
-  { name: 'FOUNDATION', label: 'Foundation', color: '#3b82f6' },
-  { name: 'ERECTION', label: 'Erection', color: '#8b5cf6' },
-  { name: 'STRINGING', label: 'Stringing', color: '#f59e0b' },
+const HEADLINE_GROUPS: { name: string; labelKey: TranslationKey; color: string }[] = [
+  { name: 'FOUNDATION', labelKey: 'status.foundation', color: '#3b82f6' },
+  { name: 'ERECTION', labelKey: 'status.erection', color: '#8b5cf6' },
+  { name: 'STRINGING', labelKey: 'status.stringing', color: '#f59e0b' },
 ];
 
 interface ItemRow {
@@ -48,7 +50,8 @@ function ItemBar({ item, color }: { item: ItemRow; color: string }) {
 }
 
 function ConstructionGroups({ groups, color }: { groups: { name: string; items: ItemRow[] }[]; color: string }) {
-  if (groups.length === 0) return <p className="accordion-empty">No construction items configured for this project.</p>;
+  const { t } = useLanguage();
+  if (groups.length === 0) return <p className="accordion-empty">{t('progress.noConstructionItems')}</p>;
   return (
     <>
       {groups.map((group) => (
@@ -71,6 +74,7 @@ interface ProjectProgressBarProps {
 }
 
 export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }: ProjectProgressBarProps) {
+  const { t } = useLanguage();
   const { workItems } = useWorkItemsConfig(projectId);
   const construction = useConstructionBreakdown(projectId, workItems);
   const design = useDesignBreakdown(projectId);
@@ -86,7 +90,7 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
 
   const constructionGroups: { name: string; items: ItemRow[] }[] = [];
   for (const item of construction.items) {
-    const name = workItems.find((w) => w.key === item.key)?.group ?? 'Work items';
+    const name = workItems.find((w) => w.key === item.key)?.group ?? t('assetEditor.workItems');
     let group = constructionGroups.find((g) => g.name === name);
     if (!group) {
       group = { name, items: [] };
@@ -115,19 +119,19 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
             <span className="pgb-tab-val" style={{ color: TAB_COLOR.overall }}>
               {overallPercent.toFixed(1)}%
             </span>
-            <span className="pgb-tab-lbl">Overall</span>
+            <span className="pgb-tab-lbl">{t('common.overall')}</span>
           </button>
           <button type="button" className={`pgb-tab${activeTab === 'design' ? ' active' : ''}`} onClick={() => toggle('design')}>
             <span className="pgb-tab-val" style={{ color: TAB_COLOR.design }}>
               {design.overallPercent.toFixed(1)}%
             </span>
-            <span className="pgb-tab-lbl">Design</span>
+            <span className="pgb-tab-lbl">{t('status.design')}</span>
           </button>
           <button type="button" className={`pgb-tab${activeTab === 'supply' ? ' active' : ''}`} onClick={() => toggle('supply')}>
             <span className="pgb-tab-val" style={{ color: TAB_COLOR.supply }}>
               {supply.overallPercent.toFixed(1)}%
             </span>
-            <span className="pgb-tab-lbl">Supply</span>
+            <span className="pgb-tab-lbl">{t('status.supply')}</span>
           </button>
           <button
             type="button"
@@ -137,7 +141,7 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
             <span className="pgb-tab-val" style={{ color: TAB_COLOR.construction }}>
               {construction.overallPercent.toFixed(1)}%
             </span>
-            <span className="pgb-tab-lbl">Construction</span>
+            <span className="pgb-tab-lbl">{t('status.construction')}</span>
           </button>
         </div>
 
@@ -147,10 +151,10 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
               <div className="pgb-overall-summary">
                 <div className="pgb-overall-section">
                   <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.design }}>
-                    Design — {design.overallPercent.toFixed(1)}%
+                    {t('progress.designLabel', { percent: design.overallPercent.toFixed(1) })}
                   </div>
                   {design.items.length === 0 ? (
-                    <p className="accordion-empty">No design items configured for this project.</p>
+                    <p className="accordion-empty">{t('progress.noDesignItems')}</p>
                   ) : (
                     design.items.map((item) => <ItemBar key={item.key} item={item} color={TAB_COLOR.design} />)
                   )}
@@ -158,17 +162,17 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
 
                 <div className="pgb-overall-section">
                   <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.construction }}>
-                    Construction — {construction.overallPercent.toFixed(1)}%
+                    {t('progress.constructionLabel', { percent: construction.overallPercent.toFixed(1) })}
                   </div>
                   <ConstructionGroups groups={constructionGroups} color={TAB_COLOR.construction} />
                 </div>
 
                 <div className="pgb-overall-section">
                   <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.supply }}>
-                    Supply — {supply.overallPercent.toFixed(1)}%
+                    {t('progress.supplyLabel', { percent: supply.overallPercent.toFixed(1) })}
                   </div>
                   {supply.items.length === 0 ? (
-                    <p className="accordion-empty">No supply items configured for this project.</p>
+                    <p className="accordion-empty">{t('progress.noSupplyItems')}</p>
                   ) : (
                     supply.items.map((item) => <ItemBar key={item.key} item={item} color={TAB_COLOR.supply} />)
                   )}
@@ -214,7 +218,7 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
             <span className="stat-pill-val">
               {hg.done}/{stats.total}
             </span>
-            <span className="stat-pill-lbl">{hg.label}</span>
+            <span className="stat-pill-lbl">{t(hg.labelKey)}</span>
           </span>
         ))}
       </div>

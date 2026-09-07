@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { deleteAsset } from '../lib/deleteAsset';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 interface DeleteAssetDialogProps {
   assetId: string;
@@ -9,6 +10,7 @@ interface DeleteAssetDialogProps {
 }
 
 export function DeleteAssetDialog({ assetId, assetCode, onClose, onDeleted }: DeleteAssetDialogProps) {
+  const { t } = useLanguage();
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,13 +32,10 @@ export function DeleteAssetDialog({ assetId, assetCode, onClose, onDeleted }: De
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2 className="modal-title">Delete tower?</h2>
-        <p className="access-banner-sub">
-          This permanently deletes tower <strong>{assetCode}</strong> and everything attached to it — work-item
-          status, daily logs, photos, and documents. This cannot be undone.
-        </p>
+        <h2 className="modal-title">{t('deleteAsset.title')}</h2>
+        <p className="access-banner-sub">{t('deleteAsset.body', { code: assetCode })}</p>
         <label>
-          Type <strong>{assetCode}</strong> to confirm
+          {t('deleteAsset.typeToConfirm', { code: assetCode })}
           <input
             value={confirmText}
             onChange={(e) => setConfirmText(e.target.value)}
@@ -49,10 +48,10 @@ export function DeleteAssetDialog({ assetId, assetCode, onClose, onDeleted }: De
 
         <div className="wizard-actions">
           <button type="button" onClick={onClose} className="wizard-secondary-btn">
-            Cancel
+            {t('common.cancel')}
           </button>
           <button type="button" onClick={handleDelete} disabled={!canDelete} className="modal-danger-btn">
-            {deleting ? 'Deleting…' : 'Delete permanently'}
+            {deleting ? t('common.deleting') : t('deleteAsset.confirm')}
           </button>
         </div>
       </div>

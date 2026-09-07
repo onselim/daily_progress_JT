@@ -3,6 +3,8 @@ import type { AssetListItem } from '../lib/useAssets';
 import type { WorkItemConfig } from '../lib/useProjectConfig';
 import { computeGroupStatus } from '../lib/groupStatus';
 import { AddAssetDialog } from './AddAssetDialog';
+import { useLanguage } from '../lib/i18n/LanguageContext';
+import type { TranslationKey } from '../lib/i18n/translations/en';
 
 const STATUS_COLOR: Record<string, string> = {
   not_started: '#3d4259',
@@ -12,10 +14,10 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 // Same headline phases as the topbar stats — quick filters for "what's left to do".
-const FILTER_GROUPS = [
-  { key: 'FOUNDATION', label: 'Foundation' },
-  { key: 'ERECTION', label: 'Erection' },
-  { key: 'STRINGING', label: 'Stringing' },
+const FILTER_GROUPS: { key: string; labelKey: TranslationKey }[] = [
+  { key: 'FOUNDATION', labelKey: 'status.foundation' },
+  { key: 'ERECTION', labelKey: 'status.erection' },
+  { key: 'STRINGING', labelKey: 'status.stringing' },
 ];
 
 type Filter = 'all' | 'active' | 'noAccess' | string;
@@ -79,6 +81,7 @@ export function AssetList({
   knownAssetTypes = [],
   onAssetAdded,
 }: AssetListProps) {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [showAddAsset, setShowAddAsset] = useState(false);
@@ -108,14 +111,14 @@ export function AssetList({
     <div className="asset-list-panel">
       <input
         type="search"
-        placeholder="Search tower…"
+        placeholder={t('assetList.search')}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="asset-search"
       />
       {isAdmin && (
         <button type="button" className="add-tower-btn" onClick={() => setShowAddAsset(true)}>
-          + Add tower
+          {t('assetList.addTower')}
         </button>
       )}
       {showAddAsset && (
@@ -132,21 +135,21 @@ export function AssetList({
           className={`asset-filter-btn${filter === 'all' ? ' on' : ''}`}
           onClick={() => setFilter('all')}
         >
-          All
+          {t('assetList.all')}
         </button>
         <button
           type="button"
           className={`asset-filter-btn${filter === 'active' ? ' on' : ''}`}
           onClick={() => setFilter('active')}
         >
-          Active
+          {t('assetList.active')}
         </button>
         <button
           type="button"
           className={`asset-filter-btn asset-filter-btn-danger${filter === 'noAccess' ? ' on' : ''}`}
           onClick={() => setFilter('noAccess')}
         >
-          ⛔ No Access
+          {t('assetList.noAccess')}
         </button>
         {FILTER_GROUPS.map((g) => (
           <button
@@ -155,11 +158,11 @@ export function AssetList({
             className={`asset-filter-btn${filter === g.key ? ' on' : ''}`}
             onClick={() => setFilter(g.key)}
           >
-            {g.label}
+            {t(g.labelKey)}
           </button>
         ))}
       </div>
-      {loading && <p>Loading assets…</p>}
+      {loading && <p>{t('assetList.loading')}</p>}
       <ul className="asset-list">
         {filtered.map((a) => {
           const pct = progressByAsset[a.id] ?? 0;
@@ -189,13 +192,13 @@ export function AssetList({
                       ⚖ Center
                     </span>
                   )}
-                  {restricted && <span className="asset-badge asset-badge-restricted">No Access</span>}
+                  {restricted && <span className="asset-badge asset-badge-restricted">{t('status.noAccess')}</span>}
                   {!restricted && activeAssetIds.has(a.id) && (
-                    <span className="asset-badge asset-badge-active">Active</span>
+                    <span className="asset-badge asset-badge-active">{t('status.active')}</span>
                   )}
                 </div>
                 <div className="asset-mini-bar-row">
-                  <span className="asset-mini-bar-label">Overall</span>
+                  <span className="asset-mini-bar-label">{t('common.overall')}</span>
                   <div className="asset-mini-bar-track">
                     {segments.map((seg) => (
                       <div

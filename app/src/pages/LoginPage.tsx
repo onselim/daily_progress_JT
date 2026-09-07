@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 export default function LoginPage() {
   const { session, signInWithPassword } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,9 +29,9 @@ export default function LoginPage() {
   return (
     <div className="auth-screen">
       <form className="auth-card" onSubmit={handleSubmit}>
-        <h1>Sign in</h1>
+        <h1>{t('login.title')}</h1>
         <label>
-          Email
+          {t('login.email')}
           <input
             type="email"
             value={email}
@@ -39,7 +41,7 @@ export default function LoginPage() {
           />
         </label>
         <label>
-          Password
+          {t('login.password')}
           <input
             type="password"
             value={password}
@@ -50,7 +52,7 @@ export default function LoginPage() {
         </label>
         {error && <p className="auth-error">{error}</p>}
         <button type="submit" disabled={submitting}>
-          {submitting ? 'Signing in…' : 'Sign in'}
+          {submitting ? t('login.signingIn') : t('login.signIn')}
         </button>
       </form>
     </div>

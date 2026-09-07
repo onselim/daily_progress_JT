@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { useProjectRoles, type ProjectRole } from '../lib/useProjectRoles';
+import { useLanguage } from '../lib/i18n/LanguageContext';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 interface ProjectPickerPageProps {
   basePath: '/admin' | '/field';
@@ -10,6 +12,7 @@ interface ProjectPickerPageProps {
 
 export default function ProjectPickerPage({ basePath, allowedRoles, title }: ProjectPickerPageProps) {
   const { signOut } = useAuth();
+  const { t } = useLanguage();
   const { roles, loading } = useProjectRoles();
 
   const visible = roles.filter((r) => allowedRoles.includes(r.role));
@@ -21,20 +24,19 @@ export default function ProjectPickerPage({ basePath, allowedRoles, title }: Pro
         <header className="picker-header">
           <h1>{title}</h1>
           <div className="picker-actions">
+            <LanguageSwitcher />
             {basePath === '/admin' && isAdminSomewhere && (
               <Link to="/admin/new" className="picker-new-btn">
-                + New project
+                {t('picker.newProject')}
               </Link>
             )}
-            <button onClick={signOut}>Sign out</button>
+            <button onClick={signOut}>{t('common.signOut')}</button>
           </div>
         </header>
 
-        {loading && <p className="wizard-hint">Loading your projects…</p>}
+        {loading && <p className="wizard-hint">{t('picker.loadingProjects')}</p>}
 
-        {!loading && visible.length === 0 && (
-          <p className="wizard-hint">No projects are assigned to your account yet. Ask an admin to invite you.</p>
-        )}
+        {!loading && visible.length === 0 && <p className="wizard-hint">{t('picker.noProjects')}</p>}
 
         <div className="picker-grid">
           {visible.map((r) => (

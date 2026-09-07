@@ -6,6 +6,7 @@ import { HeatMapPanel, type HeatMetric, type MetricTotals } from './HeatMapPanel
 import type { LineSummary } from '../lib/useLineSummary';
 import type { AssetListItem } from '../lib/useAssets';
 import type { FoundationTypeConfig } from '../lib/useFoundationTypesConfig';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 interface RightPanelStackProps {
   projectId: string;
@@ -58,13 +59,14 @@ export function RightPanelStack({
   photosLayerEnabled,
   onTogglePhotosLayer,
 }: RightPanelStackProps) {
+  const { t } = useLanguage();
   return (
     <div className="right-panel-stack">
-      <AccordionPanel title="Line summary">
+      <AccordionPanel title={t('panels.lineSummary')}>
         <LineSummaryPanel summary={lineSummary} />
       </AccordionPanel>
 
-      <AccordionPanel title="Heat Map">
+      <AccordionPanel title={t('panels.heatMap')}>
         <HeatMapPanel
           activeMetric={heatMetric}
           onSelectMetric={onSelectHeatMetric}
@@ -77,11 +79,11 @@ export function RightPanelStack({
         />
       </AccordionPanel>
 
-      <AccordionPanel title="Project documents">
+      <AccordionPanel title={t('panels.projectDocuments')}>
         <ProjectDocumentsPanel projectId={projectId} editable={editable} section="documents" />
       </AccordionPanel>
 
-      <AccordionPanel title="Layers">
+      <AccordionPanel title={t('panels.layers')}>
         <div className="osm-fetch-row">
           <button
             type="button"
@@ -105,7 +107,7 @@ export function RightPanelStack({
         />
       </AccordionPanel>
 
-      <AccordionPanel title="Weather forecast">
+      <AccordionPanel title={t('panels.weatherForecast')}>
         <WeatherPanel lat={weatherLat} lng={weatherLng} />
       </AccordionPanel>
     </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import type { SupplyItemBreakdown } from '../lib/useSupplyBreakdown';
 import { updateProjectWorkItem } from '../lib/updateProjectWorkItem';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 type Stage = 'mfg' | 'del';
 
@@ -28,6 +29,7 @@ export function SupplyPanel({
   onSaved,
 }: SupplyPanelProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savedKey, setSavedKey] = useState<string | null>(null);
@@ -70,15 +72,15 @@ export function SupplyPanel({
 
   const editItemsLink = isAdmin && (
     <Link to={`/admin/${projectSlug}/supply-items`} className="pw-edit-items-link">
-      Edit items
+      {t('common.editItems')}
     </Link>
   );
 
-  if (loading) return <p className="accordion-empty">Loading…</p>;
+  if (loading) return <p className="accordion-empty">{t('common.loading')}</p>;
   if (items.length === 0) {
     return (
       <div className="pw-item-list">
-        <p className="accordion-empty">No supply items configured for this project.</p>
+        <p className="accordion-empty">{t('progress.noSupplyItems')}</p>
         {editItemsLink}
       </div>
     );
@@ -99,9 +101,9 @@ export function SupplyPanel({
             {editable ? (
               <div className="pw-supply-stages">
                 <label className="pw-supply-stage">
-                  <span>Manufactured (2/3)</span>
+                  <span>{t('progress.manufactured')}</span>
                   <div className="pw-percent-input">
-                    {savingKey === mfgKey && <span className="pw-save-indicator">Saving…</span>}
+                    {savingKey === mfgKey && <span className="pw-save-indicator">{t('common.saving')}</span>}
                     {savedKey === mfgKey && <span className="pw-save-indicator pw-save-ok">✓</span>}
                     <input
                       type="number"
@@ -119,9 +121,9 @@ export function SupplyPanel({
                   </div>
                 </label>
                 <label className="pw-supply-stage">
-                  <span>Delivered (1/3)</span>
+                  <span>{t('progress.delivered')}</span>
                   <div className="pw-percent-input">
-                    {savingKey === delKey && <span className="pw-save-indicator">Saving…</span>}
+                    {savingKey === delKey && <span className="pw-save-indicator">{t('common.saving')}</span>}
                     {savedKey === delKey && <span className="pw-save-indicator pw-save-ok">✓</span>}
                     <input
                       type="number"
@@ -139,19 +141,20 @@ export function SupplyPanel({
                   </div>
                 </label>
                 {(errorKey?.key === mfgKey || errorKey?.key === delKey) && (
-                  <p className="pw-save-error">Save failed: {errorKey.message}</p>
+                  <p className="pw-save-error">{t('common.saveFailed', { message: errorKey.message })}</p>
                 )}
               </div>
             ) : (
               <span className="pw-item-status">
-                Manufactured {item.manufacturedPercent.toFixed(0)}% · Delivered {item.deliveredPercent.toFixed(0)}%
+                {t('progress.manufactured')} {item.manufacturedPercent.toFixed(0)}% · {t('progress.delivered')}{' '}
+                {item.deliveredPercent.toFixed(0)}%
               </span>
             )}
           </div>
         );
       })}
       <div className="pw-subtotal">
-        <span>Overall</span>
+        <span>{t('common.overall')}</span>
         <span>{overallPercent.toFixed(1)}%</span>
       </div>
     </div>

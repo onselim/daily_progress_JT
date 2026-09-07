@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './lib/AuthContext';
+import { LanguageProvider } from './lib/i18n/LanguageContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -17,6 +18,7 @@ import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
   return (
+    <LanguageProvider>
     <AuthProvider>
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -55,5 +57,6 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AuthProvider>
+    </LanguageProvider>
   );
 }

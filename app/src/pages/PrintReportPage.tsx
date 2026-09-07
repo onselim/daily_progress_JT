@@ -1,5 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
+import { useLanguage } from '../lib/i18n/LanguageContext';
+import type { TranslationKey } from '../lib/i18n/translations/en';
+import { formatLongDate, formatShortWeekday } from '../lib/i18n/formatDate';
 import { useProjectBySlug } from '../lib/useProject';
 import { useAssetStats } from '../lib/useAssetStats';
 import { useRestrictedAssetCodes } from '../lib/useRestrictedAssetCodes';
@@ -18,23 +21,15 @@ import { useWeatherForecast } from '../lib/useWeatherForecast';
 import { utmToLatLng } from '../lib/utmToLatLng';
 import { PrintReportMap } from '../components/PrintReportMap';
 
-const HEADLINE_GROUPS = [
-  { name: 'FOUNDATION', label: 'Foundation' },
-  { name: 'ERECTION', label: 'Erection' },
-  { name: 'STRINGING', label: 'Stringing' },
+const HEADLINE_GROUPS: { name: string; labelKey: TranslationKey }[] = [
+  { name: 'FOUNDATION', labelKey: 'status.foundation' },
+  { name: 'ERECTION', labelKey: 'status.erection' },
+  { name: 'STRINGING', labelKey: 'status.stringing' },
 ];
-
-function formatDate() {
-  return new Date().toLocaleDateString('en-GB', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
 
 export default function PrintReportPage() {
   const { slug } = useParams<{ slug: string }>();
+  const { t, language } = useLanguage();
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
   const restrictedCodes = useRestrictedAssetCodes(project?.id);
@@ -69,11 +64,11 @@ export default function PrintReportPage() {
     document.title = project ? `${project.name} — Daily Progress Report` : 'Daily Progress Report';
   }, [project]);
 
-  if (loading) return <div className="page-loading">Loading…</div>;
+  if (loading) return <div className="page-loading">{t('common.loading')}</div>;
   if (error || !project) {
     return (
       <div className="page-loading">
-        <p>This project report is not available.</p>
+        <p>{t('print.notAvailable')}</p>
       </div>
     );
   }
@@ -140,7 +135,7 @@ export default function PrintReportPage() {
   return (
     <div className="pd-page">
       <div className="pd-toolbar">
-        <button onClick={() => window.print()}>Print / Save as PDF</button>
+        <button onClick={() => window.print()}>{t('print.printSaveAsPdf')}</button>
       </div>
 
       <div className="pd-sheet">
@@ -160,46 +155,48 @@ export default function PrintReportPage() {
             </div>
             <div>
               <div className="pd-title">{project.name}</div>
-              <div className="pd-sub">DAILY PROGRESS REPORT — FIELD STATUS SUMMARY</div>
+              <div className="pd-sub">{t('print.subtitle')}</div>
             </div>
           </div>
           <div className="pd-header-right">
-            <div className="pd-date">{formatDate()}</div>
-            {project.contract_no && <div className="pd-contract">Contract No: {project.contract_no}</div>}
+            <div className="pd-date">{formatLongDate(new Date(), language)}</div>
+            {project.contract_no && (
+              <div className="pd-contract">{t('print.contractNo', { no: project.contract_no })}</div>
+            )}
           </div>
         </header>
 
         <div className="pd-stat-row">
           <div className="pd-stat-main">
             <div className="pd-stat-main-val">{overallPercent.toFixed(2)}%</div>
-            <div className="pd-stat-lbl">OVERALL PROJECT COMPLETION</div>
+            <div className="pd-stat-lbl">{t('print.overallCompletion')}</div>
             <div className="pd-stat-bar">
               <div className="pd-stat-bar-fill" style={{ width: `${Math.min(overallPercent, 100)}%` }} />
             </div>
           </div>
           <div className="pd-stat pd-stat-green">
             <div className="pd-stat-val">{stats.inProgress}</div>
-            <div className="pd-stat-lbl">Active today</div>
+            <div className="pd-stat-lbl">{t('print.activeToday')}</div>
           </div>
           <div className="pd-stat pd-stat-red">
             <div className="pd-stat-val">{restrictedCodes.length}</div>
-            <div className="pd-stat-lbl">No access</div>
+            <div className="pd-stat-lbl">{t('print.noAccess')}</div>
           </div>
           <div className="pd-stat">
             <div className="pd-stat-val">{stats.total}</div>
-            <div className="pd-stat-lbl">Total towers</div>
+            <div className="pd-stat-lbl">{t('print.totalTowers')}</div>
           </div>
           <div className="pd-stat pd-stat-purple">
             <div className="pd-stat-val">{designPercent.toFixed(1)}%</div>
-            <div className="pd-stat-lbl">Design</div>
+            <div className="pd-stat-lbl">{t('print.design')}</div>
           </div>
           <div className="pd-stat pd-stat-green">
             <div className="pd-stat-val">{constructionPercent.toFixed(1)}%</div>
-            <div className="pd-stat-lbl">Construction</div>
+            <div className="pd-stat-lbl">{t('print.construction')}</div>
           </div>
           <div className="pd-stat pd-stat-blue">
             <div className="pd-stat-val">{supplyPercent.toFixed(1)}%</div>
-            <div className="pd-stat-lbl">Supply</div>
+            <div className="pd-stat-lbl">{t('print.supply')}</div>
           </div>
         </div>
 
@@ -207,7 +204,7 @@ export default function PrintReportPage() {
           <div className="pd-box">
             <div className="pd-box-title">
               <span className="pd-dot" style={{ background: '#10b981' }} />
-              Construction progress
+              {t('print.constructionProgress')}
             </div>
             {items.map((item) => (
               <div key={item.key} className="pd-bar-row">
@@ -225,13 +222,13 @@ export default function PrintReportPage() {
               </div>
             ))}
             <div className="pd-subtotal">
-              <span>Overall</span>
+              <span>{t('common.overall')}</span>
               <span style={{ color: '#10b981' }}>{constructionPercent.toFixed(2)}%</span>
             </div>
             <div className="pd-headline-counts">
               {headlineCounts.map((hg) => (
                 <span key={hg.name}>
-                  {hg.label} <strong>{hg.done}/{stats.total}</strong>
+                  {t(hg.labelKey)} <strong>{hg.done}/{stats.total}</strong>
                 </span>
               ))}
             </div>
@@ -240,7 +237,7 @@ export default function PrintReportPage() {
           <div className="pd-box">
             <div className="pd-box-title">
               <span className="pd-dot" style={{ background: '#2563eb' }} />
-              Supply status
+              {t('print.supplyStatus')}
             </div>
             {supplyItems.map((item) => (
               <div key={item.key} className="pd-bar-row">
@@ -257,7 +254,7 @@ export default function PrintReportPage() {
               </div>
             ))}
             <div className="pd-subtotal">
-              <span>Overall</span>
+              <span>{t('common.overall')}</span>
               <span style={{ color: '#2563eb' }}>{supplyPercent.toFixed(2)}%</span>
             </div>
           </div>
@@ -266,7 +263,7 @@ export default function PrintReportPage() {
             <div className="pd-box">
               <div className="pd-box-title">
                 <span className="pd-dot" style={{ background: '#9333ea' }} />
-                Design status
+                {t('print.designStatus')}
               </div>
               {designItems.map((item) => (
                 <div key={item.key} className="pd-bar-row">
@@ -283,7 +280,7 @@ export default function PrintReportPage() {
                 </div>
               ))}
               <div className="pd-subtotal">
-                <span>Overall</span>
+                <span>{t('common.overall')}</span>
                 <span style={{ color: '#9333ea' }}>{designPercent.toFixed(2)}%</span>
               </div>
             </div>
@@ -291,14 +288,14 @@ export default function PrintReportPage() {
             <div className="pd-box">
               <div className="pd-box-title">
                 <span className="pd-dot" style={{ background: '#f59e0b' }} />
-                Weather forecast
+                {t('print.weatherForecast')}
               </div>
               {weatherDays ? (
                 <div className="pd-weather-row">
                   {weatherDays.slice(0, 5).map((d) => (
                     <div key={d.date} className="pd-weather-day">
                       <div className="day">
-                        {new Date(`${d.date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short' })}
+                        {formatShortWeekday(new Date(`${d.date}T12:00:00`), language)}
                       </div>
                       <div className="temp">
                         {d.tempMin}°/{d.tempMax}°
@@ -310,22 +307,22 @@ export default function PrintReportPage() {
                   ))}
                 </div>
               ) : (
-                <p className="pd-muted">No tower location available.</p>
+                <p className="pd-muted">{t('print.noTowerLocation')}</p>
               )}
             </div>
 
             <div className="pd-box">
-              <div className="pd-box-title">Site conditions</div>
+              <div className="pd-box-title">{t('print.siteConditions')}</div>
               <div className="pd-condition">
                 <span style={{ color: '#059669' }}>✓</span>
-                <span style={{ color: '#059669', fontWeight: 700 }}>Normal working day</span>
+                <span style={{ color: '#059669', fontWeight: 700 }}>{t('print.normalWorkingDay')}</span>
               </div>
             </div>
 
             {restrictedCodes.length > 0 && (
               <div className="pd-box pd-box-red">
                 <div className="pd-box-title" style={{ color: '#dc2626' }}>
-                  No access — {restrictedCodes.length} towers
+                  {t('print.noAccessCount', { count: restrictedCodes.length })}
                 </div>
                 <div className="pd-badges">
                   {shownRestricted.map((code) => (
@@ -344,21 +341,21 @@ export default function PrintReportPage() {
           <div className="pd-box">
             <div className="pd-box-title">
               <span className="pd-dot pd-dot-round" style={{ background: '#059669' }} />
-              Today&#39;s progress
+              {t('print.todaysProgress')}
             </div>
             <table className="pd-table">
               <thead>
                 <tr>
-                  <th>Tower</th>
-                  <th>Type</th>
-                  <th>Activity completed</th>
+                  <th>{t('print.tower')}</th>
+                  <th>{t('print.type')}</th>
+                  <th>{t('print.activityCompleted')}</th>
                 </tr>
               </thead>
               <tbody>
                 {todayEntries.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="pd-empty-row">
-                      No activities recorded
+                      {t('print.noActivities')}
                     </td>
                   </tr>
                 ) : (
@@ -377,21 +374,21 @@ export default function PrintReportPage() {
           <div className="pd-box">
             <div className="pd-box-title">
               <span className="pd-dot pd-dot-round" style={{ background: '#2563eb' }} />
-              Plan for tomorrow
+              {t('print.planForTomorrow')}
             </div>
             <table className="pd-table">
               <thead>
                 <tr>
-                  <th>Tower</th>
-                  <th>Type</th>
-                  <th>Planned activity</th>
+                  <th>{t('print.tower')}</th>
+                  <th>{t('print.type')}</th>
+                  <th>{t('print.plannedActivity')}</th>
                 </tr>
               </thead>
               <tbody>
                 {tomorrowEntries.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="pd-empty-row">
-                      No plans recorded
+                      {t('print.noPlans')}
                     </td>
                   </tr>
                 ) : (
@@ -409,7 +406,9 @@ export default function PrintReportPage() {
         </div>
 
         <footer className="pd-footer">
-          <span>Prepared by: Site Engineer &nbsp;·&nbsp; Approved by: Resident Engineer</span>
+          <span>
+            {t('print.preparedBy')} &nbsp;·&nbsp; {t('print.approvedBy')}
+          </span>
           <span>
             {project.name} &nbsp;·&nbsp; Lot 1 &nbsp;·&nbsp; © {new Date().getFullYear()}
           </span>
@@ -420,7 +419,7 @@ export default function PrintReportPage() {
         <div className="pd-sheet pd-sheet-map">
           <div className="pd-map-header">
             <div className="pd-title">{project.name}</div>
-            <div className="pd-sub">TODAY&#39;S ACTIVE TOWERS — {formatDate()}</div>
+            <div className="pd-sub">{t('print.todaysActiveTowers', { date: formatLongDate(new Date(), language) })}</div>
           </div>
           <PrintReportMap
             assets={assets}
@@ -430,11 +429,11 @@ export default function PrintReportPage() {
           <table className="pd-table pd-map-table">
             <thead>
               <tr>
-                <th>Tower</th>
-                <th>Type</th>
-                <th>Completed today</th>
-                <th>Ongoing</th>
-                <th>Planned for tomorrow</th>
+                <th>{t('print.tower')}</th>
+                <th>{t('print.type')}</th>
+                <th>{t('print.completedTodayCol')}</th>
+                <th>{t('print.ongoingCol')}</th>
+                <th>{t('print.plannedTomorrowCol')}</th>
               </tr>
             </thead>
             <tbody>
