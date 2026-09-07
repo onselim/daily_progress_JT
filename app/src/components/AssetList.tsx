@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAssets } from '../lib/useAssets';
+import type { AssetListItem } from '../lib/useAssets';
 import type { WorkItemConfig } from '../lib/useProjectConfig';
 import { computeGroupStatus } from '../lib/groupStatus';
+import { AddAssetDialog } from './AddAssetDialog';
 
 const STATUS_COLOR: Record<string, string> = {
   not_started: '#3d4259',
@@ -45,6 +46,8 @@ function groupSegments(
 
 interface AssetListProps {
   projectId: string;
+  assets: AssetListItem[];
+  loading: boolean;
   selectedAssetId: string;
   onSelect: (assetId: string) => void;
   progressByAsset: Record<string, number>;
@@ -54,10 +57,15 @@ interface AssetListProps {
   activeAssetIds: Set<string>;
   heatCentroidAssetId?: string | null;
   onZoomToAsset?: (assetId: string) => void;
+  isAdmin?: boolean;
+  knownAssetTypes?: string[];
+  onAssetAdded?: () => void;
 }
 
 export function AssetList({
   projectId,
+  assets,
+  loading,
   selectedAssetId,
   onSelect,
   progressByAsset,
@@ -67,10 +75,13 @@ export function AssetList({
   activeAssetIds,
   heatCentroidAssetId = null,
   onZoomToAsset,
+  isAdmin = false,
+  knownAssetTypes = [],
+  onAssetAdded,
 }: AssetListProps) {
-  const { assets, loading } = useAssets(projectId);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const [showAddAsset, setShowAddAsset] = useState(false);
   const centroidRowRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
@@ -102,6 +113,19 @@ export function AssetList({
         onChange={(e) => setSearch(e.target.value)}
         className="asset-search"
       />
+      {isAdmin && (
+        <button type="button" className="add-tower-btn" onClick={() => setShowAddAsset(true)}>
+          + Add tower
+        </button>
+      )}
+      {showAddAsset && (
+        <AddAssetDialog
+          projectId={projectId}
+          knownAssetTypes={knownAssetTypes}
+          onClose={() => setShowAddAsset(false)}
+          onAdded={() => onAssetAdded?.()}
+        />
+      )}
       <div className="asset-filter-row">
         <button
           type="button"

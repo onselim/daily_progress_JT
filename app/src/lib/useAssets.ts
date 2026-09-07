@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase';
 
 export interface AssetListItem {
@@ -22,6 +22,9 @@ export interface AssetListItem {
 export function useAssets(projectId: string | undefined) {
   const [assets, setAssets] = useState<AssetListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshNonce, setRefreshNonce] = useState(0);
+
+  const refresh = useCallback(() => setRefreshNonce((n) => n + 1), []);
 
   useEffect(() => {
     if (!projectId) return;
@@ -48,7 +51,7 @@ export function useAssets(projectId: string | undefined) {
     return () => {
       cancelled = true;
     };
-  }, [projectId]);
+  }, [projectId, refreshNonce]);
 
-  return { assets, loading };
+  return { assets, loading, refresh };
 }

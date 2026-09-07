@@ -16,6 +16,7 @@ import { deleteAssetDocument } from '../lib/deleteAssetDocument';
 import { renameAssetDocument } from '../lib/renameDocument';
 import { RenamableText } from './RenamableText';
 import { WindyPopup } from './WindyPopup';
+import { DeleteAssetDialog } from './DeleteAssetDialog';
 import { utmToLatLng } from '../lib/utmToLatLng';
 
 type WorkItemStatus = 'not_started' | 'in_progress' | 'completed';
@@ -157,10 +158,24 @@ interface AssetEditorProps {
   assetId: string;
   coordinateSystem?: string | null;
   editable?: boolean;
+  isAdmin?: boolean;
+  knownAssetTypes?: string[];
   onSaved?: () => void;
+  onDetailsSaved?: () => void;
+  onDeleted?: () => void;
 }
 
-export function AssetEditor({ projectId, assetId, coordinateSystem = null, editable = true, onSaved }: AssetEditorProps) {
+export function AssetEditor({
+  projectId,
+  assetId,
+  coordinateSystem = null,
+  editable = true,
+  isAdmin = false,
+  knownAssetTypes = [],
+  onSaved,
+  onDetailsSaved,
+  onDeleted,
+}: AssetEditorProps) {
   const { user } = useAuth();
   const { workItems, loading: workItemsLoading } = useWorkItemsConfig(projectId);
   const { foundationTypes } = useFoundationTypesConfig(projectId);
@@ -170,6 +185,13 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
   const [assetCode, setAssetCode] = useState('');
   const [assetType, setAssetType] = useState<string | null>(null);
   const [station, setStation] = useState<string | null>(null);
+  const [assetX, setAssetX] = useState<number | null>(null);
+  const [assetY, setAssetY] = useState<number | null>(null);
+  const [assetZ, setAssetZ] = useState<number | null>(null);
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [detailsMessage, setDetailsMessage] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showTowerDetails, setShowTowerDetails] = useState(false);
   const [notes, setNotes] = useState('');
   const [assetLatLng, setAssetLatLng] = useState<[number, number] | null>(null);
   const [legExtM, setLegExtM] = useState<(number | null)[] | null>(null);
@@ -202,7 +224,7 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
       supabase
         .from('assets')
         .select(
-          'asset_code, asset_type, station, notes, lat, lng, x, y, leg1_ext_m, leg2_ext_m, leg3_ext_m, leg4_ext_m, soil_type',
+          'asset_code, asset_type, station, notes, lat, lng, x, y, z, leg1_ext_m, leg2_ext_m, leg3_ext_m, leg4_ext_m, soil_type',
         )
         .eq('id', assetId)
         .maybeSingle(),
@@ -222,6 +244,9 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
       setAssetCode(assetRes.data?.asset_code ?? '');
       setAssetType(assetRes.data?.asset_type ?? null);
       setStation(assetRes.data?.station ?? null);
+      setAssetX(assetRes.data?.x ?? null);
+      setAssetY(assetRes.data?.y ?? null);
+      setAssetZ(assetRes.data?.z ?? null);
       setNotes(assetRes.data?.notes ?? '');
       const legs = [
         assetRes.data?.leg1_ext_m,
@@ -325,6 +350,35 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
 
     setMessage('Saved.');
     onSaved?.();
+  }
+
+  async function handleSaveDetails() {
+    const code = assetCode.trim();
+    if (!code) return;
+    setSavingDetails(true);
+    setDetailsMessage(null);
+
+    const { error } = await supabase
+      .from('assets')
+      .update({
+        asset_code: code,
+        asset_type: assetType?.trim() || null,
+        station: station?.trim() || null,
+        x: assetX,
+        y: assetY,
+        z: assetZ,
+      })
+      .eq('id', assetId);
+
+    setSavingDetails(false);
+    if (error) {
+      setDetailsMessage(
+        error.code === '23505' ? 'That tower code is already in use on this project.' : `Save failed: ${error.message}`,
+      );
+      return;
+    }
+    setDetailsMessage('Tower details saved.');
+    onDetailsSaved?.();
   }
 
   async function handlePhotoUpload(e: ChangeEvent<HTMLInputElement>, category: string) {
@@ -465,6 +519,26 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
             🌬
           </button>
         )}
+        {isAdmin && (
+          <button
+            type="button"
+            className="wind-toggle-btn"
+            onClick={() => setShowTowerDetails((v) => !v)}
+            title="Edit tower details"
+          >
+            ✏️
+          </button>
+        )}
+        {isAdmin && (
+          <button
+            type="button"
+            className="wind-toggle-btn"
+            onClick={() => setShowDeleteDialog(true)}
+            title="Delete tower"
+          >
+            🗑
+          </button>
+        )}
       </h2>
 
       {showWindy && assetLatLng && (
@@ -474,6 +548,71 @@ export function AssetEditor({ projectId, assetId, coordinateSystem = null, edita
           label={assetCode}
           onClose={() => setShowWindy(false)}
         />
+      )}
+
+      {showDeleteDialog && (
+        <DeleteAssetDialog
+          assetId={assetId}
+          assetCode={assetCode}
+          onClose={() => setShowDeleteDialog(false)}
+          onDeleted={() => onDeleted?.()}
+        />
+      )}
+
+      {isAdmin && showTowerDetails && (
+        <fieldset className="tower-details-editor">
+          <legend>Tower details</legend>
+          <label>
+            Tower code
+            <input value={assetCode} onChange={(e) => setAssetCode(e.target.value)} />
+          </label>
+          <label>
+            Type
+            <input value={assetType ?? ''} onChange={(e) => setAssetType(e.target.value)} list="tower-type-options" />
+            <datalist id="tower-type-options">
+              {knownAssetTypes.map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
+          </label>
+          <label>
+            Station
+            <input value={station ?? ''} onChange={(e) => setStation(e.target.value)} />
+          </label>
+          <div className="wizard-form-row">
+            <label>
+              X
+              <input
+                type="number"
+                step="any"
+                value={assetX ?? ''}
+                onChange={(e) => setAssetX(e.target.value === '' ? null : Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Y
+              <input
+                type="number"
+                step="any"
+                value={assetY ?? ''}
+                onChange={(e) => setAssetY(e.target.value === '' ? null : Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Z
+              <input
+                type="number"
+                step="any"
+                value={assetZ ?? ''}
+                onChange={(e) => setAssetZ(e.target.value === '' ? null : Number(e.target.value))}
+              />
+            </label>
+          </div>
+          <button type="button" onClick={handleSaveDetails} disabled={savingDetails || !assetCode.trim()}>
+            {savingDetails ? 'Saving…' : 'Save tower details'}
+          </button>
+          {detailsMessage && <p className="form-message">{detailsMessage}</p>}
+        </fieldset>
       )}
 
       <div className="overall-bar">

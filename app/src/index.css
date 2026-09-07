@@ -224,6 +224,15 @@ button:disabled {
   gap: 8px;
 }
 
+.tower-details-editor input {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
 .asset-editor fieldset legend {
   font-size: 12px;
   font-weight: 600;
@@ -466,6 +475,24 @@ button:disabled {
   background: transparent;
   color: var(--text);
   cursor: pointer;
+}
+
+.add-tower-btn {
+  font: inherit;
+  font-size: 11px;
+  padding: 5px 8px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  width: 100%;
+}
+
+.add-tower-btn:hover {
+  color: var(--text-h);
+  border-color: var(--accent);
 }
 
 .asset-filter-btn:hover {
@@ -3358,6 +3385,12 @@ a.pw-edit-items-link {
   margin: 0;
   font-size: 18px;
   color: #ef4444;
+}
+
+.modal-title-neutral {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-h);
 }
 
 .modal-card label {

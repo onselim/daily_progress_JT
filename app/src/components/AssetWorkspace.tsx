@@ -21,10 +21,17 @@ interface AssetWorkspaceProps {
   projectId: string;
   coordinateSystem: string | null;
   editable?: boolean;
+  isAdmin?: boolean;
   onAssetSaved?: () => void;
 }
 
-export function AssetWorkspace({ projectId, coordinateSystem, editable = true, onAssetSaved }: AssetWorkspaceProps) {
+export function AssetWorkspace({
+  projectId,
+  coordinateSystem,
+  editable = true,
+  isAdmin = false,
+  onAssetSaved,
+}: AssetWorkspaceProps) {
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [zoomRequest, setZoomRequest] = useState<{ assetId: string; nonce: number } | null>(null);
 
@@ -32,7 +39,11 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
     setSelectedAssetId(assetId);
     setZoomRequest({ assetId, nonce: Date.now() });
   }
-  const { assets } = useAssets(projectId);
+  const { assets, loading: assetsLoading, refresh: refreshAssets } = useAssets(projectId);
+  const knownAssetTypes = useMemo(
+    () => Array.from(new Set(assets.map((a) => a.asset_type).filter((t): t is string => !!t))).sort(),
+    [assets],
+  );
   const { workItems } = useWorkItemsConfig(projectId);
   const {
     progressByAsset,
@@ -79,6 +90,17 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
   function handleAssetSaved() {
     refreshProgress();
     refreshRestricted();
+    onAssetSaved?.();
+  }
+
+  function handleAssetDetailsChanged() {
+    refreshAssets();
+    onAssetSaved?.();
+  }
+
+  function handleAssetDeleted() {
+    setSelectedAssetId('');
+    refreshAssets();
     onAssetSaved?.();
   }
 
@@ -210,6 +232,8 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
       <div className="project-body">
         <AssetList
         projectId={projectId}
+        assets={assets}
+        loading={assetsLoading}
         selectedAssetId={selectedAssetId}
         onSelect={setSelectedAssetId}
         progressByAsset={progressByAsset}
@@ -219,6 +243,9 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
         activeAssetIds={activeAssetIds}
         heatCentroidAssetId={heatCentroidAssetId}
         onZoomToAsset={zoomToAsset}
+        isAdmin={isAdmin}
+        knownAssetTypes={knownAssetTypes}
+        onAssetAdded={refreshAssets}
       />
       <div className="map-stage">
         <MapView
@@ -281,7 +308,11 @@ export function AssetWorkspace({ projectId, coordinateSystem, editable = true, o
               assetId={selectedAssetId}
               coordinateSystem={coordinateSystem}
               editable={editable}
+              isAdmin={isAdmin}
+              knownAssetTypes={knownAssetTypes}
               onSaved={handleAssetSaved}
+              onDetailsSaved={handleAssetDetailsChanged}
+              onDeleted={handleAssetDeleted}
             />
           </div>
         )}
