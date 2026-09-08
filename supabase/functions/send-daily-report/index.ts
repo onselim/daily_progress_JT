@@ -153,37 +153,51 @@ Deno.serve(async () => {
       );
     }
 
-    const pdfRes = await fetch(`https://production-sfo.browserless.io/pdf?token=${browserlessKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        url: `${REPORT_URL}?langs=${config.languages.join(',')}`,
-        gotoOptions: { waitUntil: 'networkidle2' },
-        // The report is a React app that fetches its data from Supabase and loads a
-        // Leaflet/satellite map after the initial page load -- without this, Browserless
-        // captures the page mid-"Loading..." with nothing rendered yet. A multi-language
-        // report mounts one active-towers map per selected language, so it gets a bit
-        // more time to let every map's tiles load.
-        waitForTimeout: config.languages.length > 1 ? 6000 : 4000,
-        options: { printBackground: true, format: 'A4', landscape: true, preferCSSPageSize: true },
-      }),
-    });
-
-    if (!pdfRes.ok) {
-      const detail = await pdfRes.text();
-      return new Response(JSON.stringify({ error: 'PDF generation failed', detail }), {
-        status: 502,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer());
-    const pdfBase64 = arrayBufferToBase64(pdfBytes.buffer);
     const dateStr = today.formatted;
     const subject = `DailyProgress Report-500kV Jvari-Tskaltubo - ${dateStr}`;
-    const filename = `DailyProgress_Report_500kV_Jvari-Tskaltubo_${dateStr.replace(/\./g, '-')}.pdf`;
 
-    const snapshotUrl = await archiveReportSnapshot(pdfBytes, today.iso);
+    // One Browserless call per selected language -- each is its own separate PDF file
+    // (not one combined multi-page document), all attached to the same email. With a
+    // single language configured (the common case), the filename is unchanged from
+    // before; with several, each gets a `_<lang>` suffix so they don't collide.
+    const attachments: { filename: string; content: string; content_type: string }[] = [];
+    let snapshotUrl: string | null = null;
+
+    for (const [index, lang] of config.languages.entries()) {
+      const pdfRes = await fetch(`https://production-sfo.browserless.io/pdf?token=${browserlessKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: `${REPORT_URL}?lang=${lang}`,
+          gotoOptions: { waitUntil: 'networkidle2' },
+          // The report is a React app that fetches its data from Supabase and loads a
+          // Leaflet/satellite map after the initial page load -- without this, Browserless
+          // captures the page mid-"Loading..." with nothing rendered yet.
+          waitForTimeout: 4000,
+          options: { printBackground: true, format: 'A4', landscape: true, preferCSSPageSize: true },
+        }),
+      });
+
+      if (!pdfRes.ok) {
+        const detail = await pdfRes.text();
+        return new Response(JSON.stringify({ error: `PDF generation failed for language "${lang}"`, detail }), {
+          status: 502,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer());
+      const langSuffix = config.languages.length > 1 ? `_${lang}` : '';
+      const filename = `DailyProgress_Report_500kV_Jvari-Tskaltubo_${dateStr.replace(/\./g, '-')}${langSuffix}.pdf`;
+      attachments.push({ filename, content: arrayBufferToBase64(pdfBytes.buffer), content_type: 'application/pdf' });
+
+      // Only the first (primary) language's PDF is archived for the public viewer's
+      // "Report history" dropdown -- that table has one row per project per day, not
+      // per language.
+      if (index === 0) {
+        snapshotUrl = await archiveReportSnapshot(pdfBytes, today.iso);
+      }
+    }
 
     const emailRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -196,7 +210,7 @@ Deno.serve(async () => {
         to: config.recipients,
         subject,
         html: '<p>Dear Sirs,</p><p>Daily progress report for abovementioned project is enclosed for your information.</p>',
-        attachments: [{ filename, content: pdfBase64, content_type: 'application/pdf' }],
+        attachments,
       }),
     });
 
