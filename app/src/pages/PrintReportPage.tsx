@@ -1,12 +1,14 @@
 import { useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
-import { useLanguage } from '../lib/i18n/LanguageContext';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { useLanguage, translate } from '../lib/i18n/LanguageContext';
 import type { TranslationKey } from '../lib/i18n/translations/en';
+import { translateConfigLabel } from '../lib/i18n/configLabelTranslations';
 import { formatLongDate, formatShortWeekday } from '../lib/i18n/formatDate';
-import { useProjectBySlug } from '../lib/useProject';
+import { isLanguageCode, parseLanguageList, type LanguageCode } from '../lib/i18n/languages';
+import { useProjectBySlug, type ProjectRow } from '../lib/useProject';
 import { useAssetStats } from '../lib/useAssetStats';
 import { useRestrictedAssetCodes } from '../lib/useRestrictedAssetCodes';
-import { useAssets } from '../lib/useAssets';
+import { useAssets, type AssetListItem } from '../lib/useAssets';
 import { useWorkItemsConfig } from '../lib/useProjectConfig';
 import { useConstructionBreakdown } from '../lib/useConstructionBreakdown';
 import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress';
@@ -14,10 +16,10 @@ import { computeGroupStatus } from '../lib/groupStatus';
 import { useDesignBreakdown } from '../lib/useDesignBreakdown';
 import { useSupplyBreakdown } from '../lib/useSupplyBreakdown';
 import { computeOverallPercent } from '../lib/overallProgress';
-import { useDailyLogEntries } from '../lib/useDailyLogEntries';
+import { useDailyLogEntries, type DailyLogEntry } from '../lib/useDailyLogEntries';
 import { usePlanForToday } from '../lib/usePlanForToday';
 import { usePlannedTomorrow } from '../lib/usePlannedTomorrow';
-import { useWeatherForecast } from '../lib/useWeatherForecast';
+import { useWeatherForecast, type DayForecast } from '../lib/useWeatherForecast';
 import { utmToLatLng } from '../lib/utmToLatLng';
 import { PrintReportMap } from '../components/PrintReportMap';
 
@@ -27,9 +29,25 @@ const HEADLINE_GROUPS: { name: string; labelKey: TranslationKey }[] = [
   { name: 'STRINGING', labelKey: 'status.stringing' },
 ];
 
+interface ItemBreakdownRow {
+  key: string;
+  label: string;
+  percentComplete: number;
+}
+
+interface ActiveTower {
+  assetId: string;
+  assetCode: string;
+  assetType: string | null;
+  completed: string[];
+  ongoing: string[];
+  tomorrow: string[];
+}
+
 export default function PrintReportPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { t, tLabel, language } = useLanguage();
+  const [searchParams] = useSearchParams();
+  const { t, language } = useLanguage();
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
   const restrictedCodes = useRestrictedAssetCodes(project?.id);
@@ -43,6 +61,19 @@ export default function PrintReportPage() {
   const { entries } = useDailyLogEntries(project?.id);
   const { entries: workEntriesToday } = usePlanForToday(project?.id, workItems);
   const { entries: workEntriesTomorrow } = usePlannedTomorrow(project?.id);
+
+  // Up to 3 languages can be requested at once (Report Settings' "Report language"
+  // picker, or a manually-built link) -- each renders its own copy of the report, one
+  // after another, so a single PDF carries all of them. `?langs=en,tr,ka` wins when
+  // present; `?lang=xx` (the existing single-language Print PDF button / old links)
+  // and the plain fallback keep working exactly as before.
+  const languages = useMemo((): LanguageCode[] => {
+    const multi = parseLanguageList(searchParams.get('langs'));
+    if (multi.length > 0) return multi;
+    const single = searchParams.get('lang');
+    return [isLanguageCode(single) ? single : language];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const [weatherLat, weatherLng] = useMemo((): [number | null, number | null] => {
     if (!project?.coordinate_system || assets.length === 0) return [null, null];
@@ -96,21 +127,20 @@ export default function PrintReportPage() {
   // Page 2's map/list: "active" towers are exactly the ones that already light up the
   // Active badge elsewhere in the app -- a work item completed today, or one planned
   // for tomorrow -- not the free-text daily notes (those are a separate, unrelated
-  // per-tower field).
+  // per-tower field). Labels are kept in their raw (English, project_config) form here
+  // -- this is computed once regardless of how many languages are being rendered, so
+  // translation happens per-language at render time in ReportSheet instead.
   function workItemLabel(key: string | null): string | null {
     if (!key) return null;
-    return tLabel(workItems.find((w) => w.key === key)?.label ?? key);
+    return workItems.find((w) => w.key === key)?.label ?? key;
   }
 
   const assetTypeById = new Map(assets.map((a) => [a.id, a.asset_type]));
-  const activeTowerMap = new Map<
-    string,
-    { assetCode: string; completed: string[]; ongoing: string[]; tomorrow: string[] }
-  >();
+  const activeTowerMap = new Map<string, ActiveTower>();
   function activeTower(assetId: string, assetCode: string) {
     let entry = activeTowerMap.get(assetId);
     if (!entry) {
-      entry = { assetCode, completed: [], ongoing: [], tomorrow: [] };
+      entry = { assetId, assetCode, assetType: assetTypeById.get(assetId) ?? null, completed: [], ongoing: [], tomorrow: [] };
       activeTowerMap.set(assetId, entry);
     }
     return entry;
@@ -127,10 +157,10 @@ export default function PrintReportPage() {
     activeTower(e.assetId, e.assetCode).tomorrow.push(label);
   }
 
-  const activeTowers = Array.from(activeTowerMap.entries())
-    .map(([assetId, v]) => ({ assetId, assetType: assetTypeById.get(assetId) ?? null, ...v }))
-    .sort((a, b) => a.assetCode.localeCompare(b.assetCode, undefined, { numeric: true }));
-  const highlightedAssetIds = new Set(activeTowers.map((t) => t.assetId));
+  const activeTowers = Array.from(activeTowerMap.values()).sort((a, b) =>
+    a.assetCode.localeCompare(b.assetCode, undefined, { numeric: true }),
+  );
+  const highlightedAssetIds = new Set(activeTowers.map((a) => a.assetId));
 
   return (
     <div className="pd-page">
@@ -138,7 +168,96 @@ export default function PrintReportPage() {
         <button onClick={() => window.print()}>{t('print.printSaveAsPdf')}</button>
       </div>
 
-      <div className="pd-sheet">
+      {languages.map((lang, i) => (
+        <ReportSheet
+          key={lang}
+          language={lang}
+          forcePageBreak={i > 0}
+          project={project}
+          stats={stats}
+          restrictedCodes={restrictedCodes}
+          shownRestricted={shownRestricted}
+          extraRestricted={extraRestricted}
+          overallPercent={overallPercent}
+          designPercent={designPercent}
+          constructionPercent={constructionPercent}
+          supplyPercent={supplyPercent}
+          items={items}
+          supplyItems={supplyItems}
+          designItems={designItems}
+          perItemAssetCounts={perItemAssetCounts}
+          headlineCounts={headlineCounts}
+          weatherDays={weatherDays}
+          todayEntries={todayEntries}
+          tomorrowEntries={tomorrowEntries}
+          assets={assets}
+          activeTowers={activeTowers}
+          highlightedAssetIds={highlightedAssetIds}
+        />
+      ))}
+    </div>
+  );
+}
+
+interface ReportSheetProps {
+  language: LanguageCode;
+  forcePageBreak: boolean;
+  project: ProjectRow;
+  stats: { inProgress: number; total: number };
+  restrictedCodes: string[];
+  shownRestricted: string[];
+  extraRestricted: number;
+  overallPercent: number;
+  designPercent: number;
+  constructionPercent: number;
+  supplyPercent: number;
+  items: ItemBreakdownRow[];
+  supplyItems: ItemBreakdownRow[];
+  designItems: ItemBreakdownRow[];
+  perItemAssetCounts: Record<string, number>;
+  headlineCounts: { name: string; labelKey: TranslationKey; done: number }[];
+  weatherDays: DayForecast[] | null;
+  todayEntries: DailyLogEntry[];
+  tomorrowEntries: DailyLogEntry[];
+  assets: AssetListItem[];
+  activeTowers: ActiveTower[];
+  highlightedAssetIds: Set<string>;
+}
+
+/** One full report -- page 1 (+ page 2 if any tower is active) -- rendered in one
+ * specific language, independent of whatever the app's own "current language" is. A
+ * multi-language report is just several of these back to back (see `languages.map`
+ * above), each starting on a fresh page except the very first. */
+function ReportSheet({
+  language,
+  forcePageBreak,
+  project,
+  stats,
+  restrictedCodes,
+  shownRestricted,
+  extraRestricted,
+  overallPercent,
+  designPercent,
+  constructionPercent,
+  supplyPercent,
+  items,
+  supplyItems,
+  designItems,
+  perItemAssetCounts,
+  headlineCounts,
+  weatherDays,
+  todayEntries,
+  tomorrowEntries,
+  assets,
+  activeTowers,
+  highlightedAssetIds,
+}: ReportSheetProps) {
+  const t = (key: TranslationKey, params?: Record<string, string | number>) => translate(language, key, params);
+  const tLabel = (label: string | null | undefined) => translateConfigLabel(label, language);
+
+  return (
+    <>
+      <div className={`pd-sheet${forcePageBreak ? ' pd-sheet-lang-start' : ''}`}>
         <header className="pd-header">
           <div className="pd-header-left">
             <div className="pd-logo">
@@ -294,9 +413,7 @@ export default function PrintReportPage() {
                 <div className="pd-weather-row">
                   {weatherDays.slice(0, 5).map((d) => (
                     <div key={d.date} className="pd-weather-day">
-                      <div className="day">
-                        {formatShortWeekday(new Date(`${d.date}T12:00:00`), language)}
-                      </div>
+                      <div className="day">{formatShortWeekday(new Date(`${d.date}T12:00:00`), language)}</div>
                       <div className="temp">
                         {d.tempMin}°/{d.tempMax}°
                       </div>
@@ -421,11 +538,7 @@ export default function PrintReportPage() {
             <div className="pd-title">{project.name}</div>
             <div className="pd-sub">{t('print.todaysActiveTowers', { date: formatLongDate(new Date(), language) })}</div>
           </div>
-          <PrintReportMap
-            assets={assets}
-            coordinateSystem={project.coordinate_system}
-            highlightedAssetIds={highlightedAssetIds}
-          />
+          <PrintReportMap assets={assets} coordinateSystem={project.coordinate_system} highlightedAssetIds={highlightedAssetIds} />
           <table className="pd-table pd-map-table">
             <thead>
               <tr>
@@ -437,19 +550,19 @@ export default function PrintReportPage() {
               </tr>
             </thead>
             <tbody>
-              {activeTowers.map((t) => (
-                <tr key={t.assetId}>
-                  <td>T{t.assetCode}</td>
-                  <td>{t.assetType}</td>
-                  <td>{t.completed.join(', ') || '—'}</td>
-                  <td>{t.ongoing.join(', ') || '—'}</td>
-                  <td>{t.tomorrow.join(', ') || '—'}</td>
+              {activeTowers.map((tw) => (
+                <tr key={tw.assetId}>
+                  <td>T{tw.assetCode}</td>
+                  <td>{tw.assetType}</td>
+                  <td>{tw.completed.map((l) => tLabel(l)).join(', ') || '—'}</td>
+                  <td>{tw.ongoing.map((l) => tLabel(l)).join(', ') || '—'}</td>
+                  <td>{tw.tomorrow.map((l) => tLabel(l)).join(', ') || '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-    </div>
+    </>
   );
 }

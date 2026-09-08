@@ -154,9 +154,9 @@ export const tr: Record<TranslationKey, string> = {
   'reportSettings.suspendedUntil': 'Gönderim {date} tarihine kadar askıya alındı.',
   'reportSettings.resumeSending': 'Gönderimi devam ettir',
   'reportSettings.suspendUntil': 'Bu tarihe kadar gönderimi askıya al',
-  'reportSettings.languageHeading': 'Rapor dili',
+  'reportSettings.languageHeading': 'Rapor dili/dilleri',
   'reportSettings.languageHint':
-    "Otomatik 23:59 e-posta PDF'inin oluşturulacağı dil. Canlı uygulamayı açan veya elle yazdıran herkes yine kendi dilini seçebilir.",
+    "Otomatik 23:59 e-posta PDF'inin oluşturulacağı dil(ler) — en fazla {max} tane seçebilirsin; her biri aynı PDF içinde kendi sayfalarını alır. Canlı uygulamayı açan veya elle yazdıran herkes yine kendi dilini seçebilir.",
 
   'panels.lineSummary': 'Hat özeti',
   'panels.heatMap': 'Isı Haritası',

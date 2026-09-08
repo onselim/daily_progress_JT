@@ -158,9 +158,9 @@ export const ku: Record<TranslationKey, string> = {
   'reportSettings.suspendedUntil': 'Şandin heta {date} hatiye rawestandin.',
   'reportSettings.resumeSending': 'Şandinê dewam bike',
   'reportSettings.suspendUntil': 'Şandinê heta vê dîrokê rawestîne',
-  'reportSettings.languageHeading': 'Zimanê raporê',
+  'reportSettings.languageHeading': 'Ziman(ên) raporê',
   'reportSettings.languageHint':
-    'Zimanê ku PDFya e-peyama bixweber a saet 23:59an tê de tê çêkirin. Kesê ku sepana zindî vedike an bi destan çap dike hîn jî dikare zimanê xwe hilbijêre.',
+    'Ziman(ên) ku PDFya e-peyama bixweber a saet 23:59an tê de tê çêkirin — heta {max} hilbijêre; her yek rûpelên xwe yên taybet di heman PDFê de digire. Kesê ku sepana zindî vedike an bi destan çap dike hîn jî dikare zimanê xwe hilbijêre.',
 
   'panels.lineSummary': 'Kurteya xetê',
   'panels.heatMap': 'Nexşeya Germê',

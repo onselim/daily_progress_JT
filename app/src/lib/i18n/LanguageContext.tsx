@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { DEFAULT_LANGUAGE, RTL_LANGUAGES, isLanguageCode, type LanguageCode } from './languages';
+import { DEFAULT_LANGUAGE, RTL_LANGUAGES, isLanguageCode, parseLanguageList, type LanguageCode } from './languages';
 import { en, type TranslationKey } from './translations/en';
 import { tr } from './translations/tr';
 import { ar } from './translations/ar';
@@ -35,6 +35,16 @@ function interpolate(template: string, params?: TranslateParams): string {
   return template.replace(/\{(\w+)\}/g, (match, name) => (name in params ? String(params[name]) : match));
 }
 
+/** Same lookup as the `t()` the context hands out, but as a plain function taking an
+ * explicit language -- for the print report, which can render several languages'
+ * worth of content in one page load and so can't rely on a single "current app
+ * language" from context for all of it. */
+export function translate(language: LanguageCode, key: TranslationKey, params?: TranslateParams): string {
+  const dict = DICTIONARIES[language];
+  const template = dict[key] ?? en[key] ?? key;
+  return interpolate(template, params);
+}
+
 function readStoredLanguage(): LanguageCode {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -45,13 +55,20 @@ function readStoredLanguage(): LanguageCode {
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  // A print URL's `?lang=` (set by the "Print PDF" button or the nightly email's
-  // Browserless request) always wins on first load -- Browserless renders a fresh,
-  // un-cached page per PDF, so localStorage never applies there.
+  // A print URL's `?lang=` or multi-language `?langs=` (set by the "Print PDF" button,
+  // the nightly email's Browserless request, or a manually-built link) always wins on
+  // first load -- Browserless renders a fresh, un-cached page per PDF, so localStorage
+  // never applies there. For `?langs=`, the first listed language stands in as "the"
+  // language for chrome outside the per-language report sheets (the toolbar button,
+  // the page title) -- the sheets themselves render every requested language
+  // regardless of this single value.
   const [searchParams] = useSearchParams();
   const [language, setLanguageState] = useState<LanguageCode>(() => {
     const urlLang = searchParams.get('lang');
-    return isLanguageCode(urlLang) ? urlLang : readStoredLanguage();
+    if (isLanguageCode(urlLang)) return urlLang;
+    const multi = parseLanguageList(searchParams.get('langs'));
+    if (multi.length > 0) return multi[0];
+    return readStoredLanguage();
   });
 
   useEffect(() => {
@@ -68,14 +85,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const t = useCallback(
-    (key: TranslationKey, params?: TranslateParams) => {
-      const dict = DICTIONARIES[language];
-      const template = dict[key] ?? en[key] ?? key;
-      return interpolate(template, params);
-    },
-    [language],
-  );
+  const t = useCallback((key: TranslationKey, params?: TranslateParams) => translate(language, key, params), [language]);
 
   const tLabel = useCallback((label: string | null | undefined) => translateConfigLabel(label, language), [language]);
 

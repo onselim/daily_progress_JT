@@ -164,8 +164,8 @@ export const en = {
   'reportSettings.suspendedUntil': 'Sending is suspended until {date}.',
   'reportSettings.resumeSending': 'Resume sending',
   'reportSettings.suspendUntil': 'Suspend sending until this date',
-  'reportSettings.languageHeading': 'Report language',
-  'reportSettings.languageHint': 'The language the automatic 23:59 email PDF is generated in. Anyone opening the live app or printing manually can still pick their own language.',
+  'reportSettings.languageHeading': 'Report language(s)',
+  'reportSettings.languageHint': 'The language(s) the automatic 23:59 email PDF is generated in — pick up to {max}; each one gets its own pages in the same PDF. Anyone opening the live app or printing manually can still pick their own language.',
 
   // ---- right panel accordion titles ----
   'panels.lineSummary': 'Line summary',

@@ -155,9 +155,9 @@ export const es: Record<TranslationKey, string> = {
   'reportSettings.suspendedUntil': 'El envío está suspendido hasta el {date}.',
   'reportSettings.resumeSending': 'Reanudar envío',
   'reportSettings.suspendUntil': 'Suspender el envío hasta esta fecha',
-  'reportSettings.languageHeading': 'Idioma del informe',
+  'reportSettings.languageHeading': 'Idioma(s) del informe',
   'reportSettings.languageHint':
-    'El idioma en el que se genera el PDF automático de las 23:59. Cualquiera que abra la aplicación en vivo o imprima manualmente puede elegir su propio idioma.',
+    'El idioma o idiomas en los que se genera el PDF automático de las 23:59 — elige hasta {max}; cada uno obtiene sus propias páginas dentro del mismo PDF. Cualquiera que abra la aplicación en vivo o imprima manualmente puede elegir su propio idioma.',
 
   'panels.lineSummary': 'Resumen de la línea',
   'panels.heatMap': 'Mapa de calor',

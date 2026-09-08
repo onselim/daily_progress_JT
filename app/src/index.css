@@ -2997,6 +2997,11 @@ button:disabled {
     break-before: page;
     margin-top: 0;
   }
+  /* A multi-language report (Report Settings -> up to 3 languages) starts each
+     language after the first on a fresh page, same as the active-towers map page. */
+  .pd-sheet-lang-start {
+    break-before: page;
+  }
   .pd-report-map {
     height: 130mm;
   }
@@ -3136,6 +3141,17 @@ button:disabled {
   flex-direction: row !important;
   align-items: center;
   gap: 8px !important;
+}
+
+.language-checkbox-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+
+.language-checkbox-label {
+  width: auto !important;
+  flex: 0 0 auto;
 }
 
 .wizard-hint {

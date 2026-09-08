@@ -20,12 +20,16 @@ function todayInGeorgia(): Date {
 interface ReportConfig {
   recipients: string[];
   pausedUntil: string | null;
-  language: string;
+  languages: string[];
 }
 
-/** Reads the recipient list, pause date, and report language straight from
+/** Reads the recipient list, pause date, and report language(s) straight from
  * project_config via the service-role key Supabase auto-injects into every Edge
- * Function -- no secret to set up for this, unlike RESEND_API_KEY/BROWSERLESS_API_KEY. */
+ * Function -- no secret to set up for this, unlike RESEND_API_KEY/BROWSERLESS_API_KEY.
+ * `report_languages` (an array, up to 3 -- set from the Report Settings page's
+ * language checkboxes) is the current shape; `report_language` (a single old-style
+ * value) is read as a fallback for a project that hasn't been resaved since
+ * multi-language reports shipped. */
 async function fetchReportConfig(): Promise<ReportConfig> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -34,7 +38,7 @@ async function fetchReportConfig(): Promise<ReportConfig> {
   }
 
   const res = await fetch(
-    `${supabaseUrl}/rest/v1/project_config?select=key,value&project_id=eq.${PROJECT_ID}&key=in.(report_recipients,report_paused_until,report_language)`,
+    `${supabaseUrl}/rest/v1/project_config?select=key,value&project_id=eq.${PROJECT_ID}&key=in.(report_recipients,report_paused_until,report_languages,report_language)`,
     { headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` } },
   );
   if (!res.ok) throw new Error(`project_config fetch failed: ${res.status} ${await res.text()}`);
@@ -42,8 +46,14 @@ async function fetchReportConfig(): Promise<ReportConfig> {
   const rows: { key: string; value: unknown }[] = await res.json();
   const recipients = (rows.find((r) => r.key === 'report_recipients')?.value as string[] | undefined) ?? [];
   const pausedUntil = (rows.find((r) => r.key === 'report_paused_until')?.value as string | null | undefined) ?? null;
-  const language = (rows.find((r) => r.key === 'report_language')?.value as string | undefined) ?? 'en';
-  return { recipients, pausedUntil, language };
+
+  const languagesValue = rows.find((r) => r.key === 'report_languages')?.value;
+  let languages = Array.isArray(languagesValue) ? (languagesValue as string[]).filter((v) => typeof v === 'string') : [];
+  if (languages.length === 0) {
+    const legacy = rows.find((r) => r.key === 'report_language')?.value as string | undefined;
+    languages = legacy ? [legacy] : ['en'];
+  }
+  return { recipients, pausedUntil, languages: languages.slice(0, 3) };
 }
 
 /** Converts a large ArrayBuffer to base64 without spreading it into
@@ -147,12 +157,14 @@ Deno.serve(async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        url: `${REPORT_URL}?lang=${config.language}`,
+        url: `${REPORT_URL}?langs=${config.languages.join(',')}`,
         gotoOptions: { waitUntil: 'networkidle2' },
         // The report is a React app that fetches its data from Supabase and loads a
         // Leaflet/satellite map after the initial page load -- without this, Browserless
-        // captures the page mid-"Loading..." with nothing rendered yet.
-        waitForTimeout: 4000,
+        // captures the page mid-"Loading..." with nothing rendered yet. A multi-language
+        // report mounts one active-towers map per selected language, so it gets a bit
+        // more time to let every map's tiles load.
+        waitForTimeout: config.languages.length > 1 ? 6000 : 4000,
         options: { printBackground: true, format: 'A4', landscape: true, preferCSSPageSize: true },
       }),
     });

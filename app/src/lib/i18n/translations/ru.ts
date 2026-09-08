@@ -155,9 +155,9 @@ export const ru: Record<TranslationKey, string> = {
   'reportSettings.suspendedUntil': 'Отправка приостановлена до {date}.',
   'reportSettings.resumeSending': 'Возобновить отправку',
   'reportSettings.suspendUntil': 'Приостановить отправку до этой даты',
-  'reportSettings.languageHeading': 'Язык отчёта',
+  'reportSettings.languageHeading': 'Язык(и) отчёта',
   'reportSettings.languageHint':
-    'Язык, на котором автоматически формируется PDF в 23:59. Любой, кто открывает приложение или печатает отчёт вручную, всё равно может выбрать свой язык.',
+    'Язык(и), на которых автоматически формируется PDF в 23:59 — выберите до {max}; каждый получает свои страницы в одном и том же PDF. Любой, кто открывает приложение или печатает отчёт вручную, всё равно может выбрать свой язык.',
 
   'panels.lineSummary': 'Сводка по трассе',
   'panels.heatMap': 'Тепловая карта',

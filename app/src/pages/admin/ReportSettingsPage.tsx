@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useProjectBySlug } from '../../lib/useProject';
 import { supabase } from '../../lib/supabase';
 import { useLanguage } from '../../lib/i18n/LanguageContext';
-import { LANGUAGES, DEFAULT_LANGUAGE, isLanguageCode, type LanguageCode } from '../../lib/i18n/languages';
+import { LANGUAGES, DEFAULT_LANGUAGE, MAX_REPORT_LANGUAGES, isLanguageCode, type LanguageCode } from '../../lib/i18n/languages';
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -17,7 +17,7 @@ export default function ReportSettingsPage() {
   const [newEmail, setNewEmail] = useState('');
   const [pausedUntil, setPausedUntil] = useState<string | null>(null);
   const [suspendDate, setSuspendDate] = useState('');
-  const [reportLanguage, setReportLanguage] = useState<LanguageCode>(DEFAULT_LANGUAGE);
+  const [reportLanguages, setReportLanguages] = useState<LanguageCode[]>([DEFAULT_LANGUAGE]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -29,16 +29,26 @@ export default function ReportSettingsPage() {
       .from('project_config')
       .select('key, value')
       .eq('project_id', project.id)
-      .in('key', ['report_recipients', 'report_paused_until', 'report_language'])
+      .in('key', ['report_recipients', 'report_paused_until', 'report_languages', 'report_language'])
       .then(({ data }) => {
         if (cancelled) return;
         const recipientsRow = data?.find((r) => r.key === 'report_recipients');
         const pausedRow = data?.find((r) => r.key === 'report_paused_until');
-        const languageRow = data?.find((r) => r.key === 'report_language');
         setRecipients((recipientsRow?.value as string[] | undefined) ?? []);
         setPausedUntil((pausedRow?.value as string | null | undefined) ?? null);
-        const languageValue = languageRow?.value as string | undefined;
-        setReportLanguage(isLanguageCode(languageValue) ? languageValue : DEFAULT_LANGUAGE);
+
+        // `report_languages` (array, up to MAX_REPORT_LANGUAGES) is the current shape;
+        // fall back to the older single `report_language` value for projects set up
+        // before multi-language reports existed.
+        const languagesRow = data?.find((r) => r.key === 'report_languages');
+        const legacyLanguageRow = data?.find((r) => r.key === 'report_language');
+        const languagesValue = languagesRow?.value;
+        let nextLanguages = Array.isArray(languagesValue) ? languagesValue.filter(isLanguageCode) : [];
+        if (nextLanguages.length === 0) {
+          const legacy = legacyLanguageRow?.value as string | undefined;
+          nextLanguages = isLanguageCode(legacy) ? [legacy] : [DEFAULT_LANGUAGE];
+        }
+        setReportLanguages(nextLanguages.slice(0, MAX_REPORT_LANGUAGES));
         setLoading(false);
       });
     return () => {
@@ -46,19 +56,29 @@ export default function ReportSettingsPage() {
     };
   }, [project?.id]);
 
-  async function handleLanguageChange(code: LanguageCode) {
-    if (!project?.id) return;
+  async function saveLanguages(next: LanguageCode[]) {
+    if (!project?.id || next.length === 0) return;
     setSaving(true);
     setMessage(null);
     const { error: upsertError } = await supabase
       .from('project_config')
-      .upsert({ project_id: project.id, key: 'report_language', value: code }, { onConflict: 'project_id,key' });
+      .upsert({ project_id: project.id, key: 'report_languages', value: next }, { onConflict: 'project_id,key' });
     setSaving(false);
     if (upsertError) {
       setMessage(t('common.saveFailed', { message: upsertError.message }));
       return;
     }
-    setReportLanguage(code);
+    setReportLanguages(next);
+  }
+
+  function handleToggleLanguage(code: LanguageCode) {
+    if (reportLanguages.includes(code)) {
+      if (reportLanguages.length <= 1) return; // always keep at least one selected
+      saveLanguages(reportLanguages.filter((c) => c !== code));
+    } else {
+      if (reportLanguages.length >= MAX_REPORT_LANGUAGES) return;
+      saveLanguages([...reportLanguages, code]);
+    }
   }
 
   async function saveRecipients(next: string[]) {
@@ -174,21 +194,24 @@ export default function ReportSettingsPage() {
           </div>
 
           <h2 style={{ marginTop: 32 }}>{t('reportSettings.languageHeading')}</h2>
-          <p className="wizard-hint">{t('reportSettings.languageHint')}</p>
-          <div className="wizard-form-row" style={{ alignItems: 'center' }}>
-            <select
-              value={reportLanguage}
-              onChange={(e) => {
-                if (isLanguageCode(e.target.value)) handleLanguageChange(e.target.value);
-              }}
-              disabled={saving}
-            >
-              {LANGUAGES.map((l) => (
-                <option key={l.code} value={l.code}>
+          <p className="wizard-hint">{t('reportSettings.languageHint', { max: MAX_REPORT_LANGUAGES })}</p>
+          <div className="language-checkbox-grid">
+            {LANGUAGES.map((l) => {
+              const checked = reportLanguages.includes(l.code);
+              const disableAdd = !checked && reportLanguages.length >= MAX_REPORT_LANGUAGES;
+              const disableRemove = checked && reportLanguages.length <= 1;
+              return (
+                <label key={l.code} className="wizard-checkbox-label language-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={saving || disableAdd || disableRemove}
+                    onChange={() => handleToggleLanguage(l.code)}
+                  />
                   {l.label}
-                </option>
-              ))}
-            </select>
+                </label>
+              );
+            })}
           </div>
 
           <h2 style={{ marginTop: 32 }}>{t('reportSettings.pauseHeading')}</h2>

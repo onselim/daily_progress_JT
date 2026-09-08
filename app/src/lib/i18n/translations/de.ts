@@ -155,9 +155,9 @@ export const de: Record<TranslationKey, string> = {
   'reportSettings.suspendedUntil': 'Der Versand ist bis {date} ausgesetzt.',
   'reportSettings.resumeSending': 'Versand fortsetzen',
   'reportSettings.suspendUntil': 'Versand bis zu diesem Datum aussetzen',
-  'reportSettings.languageHeading': 'Berichtssprache',
+  'reportSettings.languageHeading': 'Berichtssprache(n)',
   'reportSettings.languageHint':
-    'Die Sprache, in der das automatische PDF um 23:59 Uhr erstellt wird. Wer die Live-Anwendung öffnet oder manuell druckt, kann weiterhin seine eigene Sprache wählen.',
+    'Die Sprache(n), in der/denen das automatische PDF um 23:59 Uhr erstellt wird — wählen Sie bis zu {max}; jede erhält ihre eigenen Seiten im selben PDF. Wer die Live-Anwendung öffnet oder manuell druckt, kann weiterhin seine eigene Sprache wählen.',
 
   'panels.lineSummary': 'Trassenübersicht',
   'panels.heatMap': 'Heatmap',

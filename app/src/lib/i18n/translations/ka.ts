@@ -155,9 +155,9 @@ export const ka: Record<TranslationKey, string> = {
   'reportSettings.suspendedUntil': 'გაგზავნა შეჩერებულია {date}-მდე.',
   'reportSettings.resumeSending': 'გაგზავნის განახლება',
   'reportSettings.suspendUntil': 'გაგზავნის შეჩერება ამ თარიღამდე',
-  'reportSettings.languageHeading': 'ანგარიშის ენა',
+  'reportSettings.languageHeading': 'ანგარიშის ენა(ები)',
   'reportSettings.languageHint':
-    'ენა, რომელზეც შეიქმნება ავტომატური 23:59-ის PDF. ვინც ცოცხალ აპლიკაციას გახსნის ან ხელით დაბეჭდავს, მაინც შეძლებს საკუთარი ენის არჩევას.',
+    'ენა(ები), რომელზეც შეიქმნება ავტომატური 23:59-ის PDF — აირჩიეთ მაქსიმუმ {max}; თითოეული იღებს საკუთარ გვერდებს იმავე PDF-ში. ვინც ცოცხალ აპლიკაციას გახსნის ან ხელით დაბეჭდავს, მაინც შეძლებს საკუთარი ენის არჩევას.',
 
   'panels.lineSummary': 'ხაზის შეჯამება',
   'panels.heatMap': 'თბოქარტა',

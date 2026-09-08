@@ -154,9 +154,9 @@ export const ar: Record<TranslationKey, string> = {
   'reportSettings.suspendedUntil': 'الإرسال متوقف حتى {date}.',
   'reportSettings.resumeSending': 'استئناف الإرسال',
   'reportSettings.suspendUntil': 'إيقاف الإرسال حتى هذا التاريخ',
-  'reportSettings.languageHeading': 'لغة التقرير',
+  'reportSettings.languageHeading': 'لغة (لغات) التقرير',
   'reportSettings.languageHint':
-    'اللغة التي يتم بها إنشاء ملف PDF الآلي في الساعة 23:59. لا يزال بإمكان أي شخص يفتح التطبيق المباشر أو يطبع يدويًا اختيار لغته الخاصة.',
+    'اللغة (اللغات) التي يتم بها إنشاء ملف PDF الآلي في الساعة 23:59 — اختر حتى {max}؛ تحصل كل لغة على صفحاتها الخاصة ضمن نفس ملف PDF. لا يزال بإمكان أي شخص يفتح التطبيق المباشر أو يطبع يدويًا اختيار لغته الخاصة.',
 
   'panels.lineSummary': 'ملخص الخط',
   'panels.heatMap': 'الخريطة الحرارية',
