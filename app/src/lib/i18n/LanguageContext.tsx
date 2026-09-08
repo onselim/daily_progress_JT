@@ -9,8 +9,10 @@ import { ka } from './translations/ka';
 import { fr } from './translations/fr';
 import { de } from './translations/de';
 import { es } from './translations/es';
+import { ku } from './translations/ku';
+import { translateConfigLabel } from './configLabelTranslations';
 
-const DICTIONARIES: Record<LanguageCode, Record<TranslationKey, string>> = { en, tr, ar, ru, ka, fr, de, es };
+const DICTIONARIES: Record<LanguageCode, Record<TranslationKey, string>> = { en, tr, ar, ru, ka, fr, de, es, ku };
 
 const STORAGE_KEY = 'app_language';
 
@@ -20,6 +22,10 @@ interface LanguageContextValue {
   language: LanguageCode;
   setLanguage: (code: LanguageCode) => void;
   t: (key: TranslationKey, params?: TranslateParams) => string;
+  /** Translates a work/design/supply item label or group name coming from
+   * project_config (not app chrome) -- falls back to the original text unchanged
+   * when there's no known translation. See configLabelTranslations.ts. */
+  tLabel: (label: string | null | undefined) => string;
 }
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
@@ -71,7 +77,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     [language],
   );
 
-  const value = useMemo(() => ({ language, setLanguage, t }), [language, setLanguage, t]);
+  const tLabel = useCallback((label: string | null | undefined) => translateConfigLabel(label, language), [language]);
+
+  const value = useMemo(() => ({ language, setLanguage, t, tLabel }), [language, setLanguage, t, tLabel]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

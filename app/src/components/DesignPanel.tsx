@@ -27,7 +27,7 @@ export function DesignPanel({
   onSaved,
 }: DesignPanelProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, tLabel } = useLanguage();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savedKey, setSavedKey] = useState<string | null>(null);
@@ -83,7 +83,7 @@ export function DesignPanel({
       {editItemsLink}
       {items.map((item) => (
         <div key={item.key} className="pw-item-row">
-          <span className="pw-item-label">{item.label}</span>
+          <span className="pw-item-label">{tLabel(item.label)}</span>
           {editable ? (
             <div className="pw-percent-input-wrap">
               <div className="pw-percent-input">

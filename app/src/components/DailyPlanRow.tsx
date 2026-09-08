@@ -18,7 +18,7 @@ type Tab = 'today' | 'tomorrow' | null;
 
 export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSignal }: DailyPlanRowProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, tLabel } = useLanguage();
   const [activeTab, setActiveTab] = useState<Tab>(null);
   const { entries: todayEntries, loading: todayLoading, refresh: refreshToday } = usePlanForToday(projectId, workItems);
   const { entries: tomorrowEntries, loading: tomorrowLoading, refresh: refreshTomorrow } = usePlannedTomorrow(projectId);
@@ -36,7 +36,7 @@ export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSi
 
   function labelFor(key: string | null) {
     if (key === null) return t('status.active');
-    return workItems.find((w) => w.key === key)?.label ?? key;
+    return tLabel(workItems.find((w) => w.key === key)?.label ?? key);
   }
 
   function toggle(tab: Tab) {
@@ -151,7 +151,7 @@ export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSi
                 <option value="">{t('dailyPlan.activityPlaceholder')}</option>
                 {workItems.map((w) => (
                   <option key={w.key} value={w.key}>
-                    {w.label}
+                    {tLabel(w.label)}
                   </option>
                 ))}
               </select>

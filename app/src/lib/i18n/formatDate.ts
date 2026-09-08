@@ -23,6 +23,26 @@ const KA_MONTHS = [
   'დეკემბერი',
 ];
 
+// Same Intl-support gap as Georgian above -- Kurmanji (`ku`) isn't a locale Chromium's
+// bundled ICU reliably carries either, so it's hand-formatted too rather than risking
+// the same silent English fallback.
+const KU_WEEKDAYS_LONG = ['Yekşem', 'Duşem', 'Sêşem', 'Çarşem', 'Pêncşem', 'În', 'Şemî'];
+const KU_WEEKDAYS_SHORT = ['Yek', 'Du', 'Sê', 'Çar', 'Pên', 'În', 'Şem'];
+const KU_MONTHS = [
+  'Kanûna Paşîn',
+  'Sibat',
+  'Adar',
+  'Nîsan',
+  'Gulan',
+  'Hezîran',
+  'Tîrmeh',
+  'Tebax',
+  'Îlon',
+  'Cotmeh',
+  'Mijdar',
+  'Kanûna Pêşîn',
+];
+
 const LOCALE_BY_LANG: Record<LanguageCode, string> = {
   en: 'en-GB',
   tr: 'tr-TR',
@@ -32,6 +52,7 @@ const LOCALE_BY_LANG: Record<LanguageCode, string> = {
   fr: 'fr-FR',
   de: 'de-DE',
   es: 'es-ES',
+  ku: 'ku',
 };
 
 export function localeForLanguage(language: LanguageCode): string {
@@ -42,6 +63,9 @@ export function localeForLanguage(language: LanguageCode): string {
 export function formatLongDate(date: Date, language: LanguageCode): string {
   if (language === 'ka') {
     return `${KA_WEEKDAYS_LONG[date.getDay()]}, ${date.getDate()} ${KA_MONTHS[date.getMonth()]}, ${date.getFullYear()}`;
+  }
+  if (language === 'ku') {
+    return `${KU_WEEKDAYS_LONG[date.getDay()]}, ${date.getDate()} ${KU_MONTHS[date.getMonth()]} ${date.getFullYear()}`;
   }
   return date.toLocaleDateString(localeForLanguage(language), {
     weekday: 'long',
@@ -54,5 +78,6 @@ export function formatLongDate(date: Date, language: LanguageCode): string {
 /** Short weekday only, e.g. for the 5-day weather forecast row. */
 export function formatShortWeekday(date: Date, language: LanguageCode): string {
   if (language === 'ka') return KA_WEEKDAYS_SHORT[date.getDay()];
+  if (language === 'ku') return KU_WEEKDAYS_SHORT[date.getDay()];
   return date.toLocaleDateString(localeForLanguage(language), { weekday: 'short' });
 }

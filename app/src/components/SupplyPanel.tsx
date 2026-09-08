@@ -29,7 +29,7 @@ export function SupplyPanel({
   onSaved,
 }: SupplyPanelProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, tLabel } = useLanguage();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savedKey, setSavedKey] = useState<string | null>(null);
@@ -95,7 +95,7 @@ export function SupplyPanel({
         return (
           <div key={item.key} className="pw-item-row pw-item-row-col">
             <div className="pw-item-row">
-              <span className="pw-item-label">{item.label}</span>
+              <span className="pw-item-label">{tLabel(item.label)}</span>
               <span className="pw-item-percent">{item.percentComplete.toFixed(1)}%</span>
             </div>
             {editable ? (

@@ -183,7 +183,7 @@ export function AssetEditor({
   onDeleted,
 }: AssetEditorProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, tLabel } = useLanguage();
   const { workItems, loading: workItemsLoading } = useWorkItemsConfig(projectId);
   const { foundationTypes } = useFoundationTypesConfig(projectId);
   const { photos, loading: photosLoading, refresh: refreshPhotos } = useAssetPhotos(assetId);
@@ -655,7 +655,7 @@ export function AssetEditor({
           return (
             <fieldset key={group.name}>
               <legend style={{ color }}>
-                {group.name} <span className="group-count">{done}/{group.items.length}</span>
+                {tLabel(group.name)} <span className="group-count">{done}/{group.items.length}</span>
               </legend>
               {group.name.toUpperCase() === 'FOUNDATION' && foundation && (
                 <div className="foundation-stats" title={`${foundation.type} — ${foundation.soilType}`}>
@@ -728,7 +728,7 @@ export function AssetEditor({
                             🔒
                           </span>
                         )}
-                        {item.label}
+                        {tLabel(item.label)}
                       </span>
                       <div className="task-bar">
                         <div className="task-fill" style={{ width: `${fill}%`, background: itemColor }} />
@@ -755,7 +755,7 @@ export function AssetEditor({
                         type="button"
                         className={`photo-toggle-btn${itemPhotos.length > 0 ? ' has-photos' : ''}`}
                         onClick={() => setExpandedPhotoKey(isExpanded ? null : item.key)}
-                        title={`Photos for ${item.label}`}
+                        title={`Photos for ${tLabel(item.label)}`}
                       >
                         📷 {itemPhotos.length > 0 ? itemPhotos.length : ''}
                       </button>
@@ -772,7 +772,7 @@ export function AssetEditor({
                     </div>
 
                     {editable && (
-                      <div className="status-toggle" role="group" aria-label={item.label}>
+                      <div className="status-toggle" role="group" aria-label={tLabel(item.label)}>
                         {STATUS_OPTIONS.map((opt) => {
                           const blockedByLock = locked && opt.value !== 'not_started' && current !== opt.value;
                           return (
@@ -834,7 +834,7 @@ export function AssetEditor({
                     {isExpanded && (
                       <div className="item-photo-panel">
                         {itemPhotos.length === 0 && (
-                          <p className="accordion-empty">{t('assetEditor.noPhotosFor', { label: item.label })}</p>
+                          <p className="accordion-empty">{t('assetEditor.noPhotosFor', { label: tLabel(item.label) })}</p>
                         )}
                         <PhotoThumbs
                           photos={itemPhotos}
@@ -853,7 +853,7 @@ export function AssetEditor({
                               onChange={(e) => setNoteDraftByKey((prev) => ({ ...prev, [item.key]: e.target.value }))}
                             />
                             <label className="photo-upload-label photo-upload-label-sm">
-                              {uploadingKey === item.key ? t('assetEditor.uploading') : t('assetEditor.addPhoto', { label: item.label })}
+                              {uploadingKey === item.key ? t('assetEditor.uploading') : t('assetEditor.addPhoto', { label: tLabel(item.label) })}
                               <input
                                 type="file"
                                 accept="image/*"

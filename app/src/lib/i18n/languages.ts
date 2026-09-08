@@ -7,6 +7,7 @@ export const LANGUAGES = [
   { code: 'fr', label: 'Français' },
   { code: 'de', label: 'Deutsch' },
   { code: 'es', label: 'Español' },
+  { code: 'ku', label: 'Kurmancî' },
 ] as const;
 
 export type LanguageCode = (typeof LANGUAGES)[number]['code'];

@@ -38,9 +38,10 @@ interface ItemRow {
 }
 
 function ItemBar({ item, color }: { item: ItemRow; color: string }) {
+  const { tLabel } = useLanguage();
   return (
     <div className="pgb-item-row">
-      <span className={`pgb-item-lbl${item.percentComplete <= 0 ? ' pgb-item-lbl-muted' : ''}`}>{item.label}</span>
+      <span className={`pgb-item-lbl${item.percentComplete <= 0 ? ' pgb-item-lbl-muted' : ''}`}>{tLabel(item.label)}</span>
       <div className="pgb-item-track">
         <div className="pgb-item-fill" style={{ width: `${Math.min(item.percentComplete, 100)}%`, background: color }} />
       </div>
@@ -50,13 +51,13 @@ function ItemBar({ item, color }: { item: ItemRow; color: string }) {
 }
 
 function ConstructionGroups({ groups, color }: { groups: { name: string; items: ItemRow[] }[]; color: string }) {
-  const { t } = useLanguage();
+  const { t, tLabel } = useLanguage();
   if (groups.length === 0) return <p className="accordion-empty">{t('progress.noConstructionItems')}</p>;
   return (
     <>
       {groups.map((group) => (
         <div key={group.name} className="pgb-group">
-          <div className="pgb-group-name">{group.name}</div>
+          <div className="pgb-group-name">{tLabel(group.name)}</div>
           {group.items.map((item) => (
             <ItemBar key={item.key} item={item} color={color} />
           ))}

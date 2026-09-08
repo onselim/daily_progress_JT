@@ -29,7 +29,7 @@ const HEADLINE_GROUPS: { name: string; labelKey: TranslationKey }[] = [
 
 export default function PrintReportPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { t, language } = useLanguage();
+  const { t, tLabel, language } = useLanguage();
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
   const restrictedCodes = useRestrictedAssetCodes(project?.id);
@@ -99,7 +99,7 @@ export default function PrintReportPage() {
   // per-tower field).
   function workItemLabel(key: string | null): string | null {
     if (!key) return null;
-    return workItems.find((w) => w.key === key)?.label ?? key;
+    return tLabel(workItems.find((w) => w.key === key)?.label ?? key);
   }
 
   const assetTypeById = new Map(assets.map((a) => [a.id, a.asset_type]));
@@ -209,7 +209,7 @@ export default function PrintReportPage() {
             {items.map((item) => (
               <div key={item.key} className="pd-bar-row">
                 <span className={`pd-bar-lbl${item.percentComplete <= 0 ? ' pd-bar-lbl-muted' : ''}`}>
-                  {item.label}
+                  {tLabel(item.label)}
                 </span>
                 <div className="pd-bar-track">
                   <div
@@ -242,7 +242,7 @@ export default function PrintReportPage() {
             {supplyItems.map((item) => (
               <div key={item.key} className="pd-bar-row">
                 <span className={`pd-bar-lbl${item.percentComplete <= 0 ? ' pd-bar-lbl-muted' : ''}`}>
-                  {item.label}
+                  {tLabel(item.label)}
                 </span>
                 <div className="pd-bar-track">
                   <div
@@ -268,7 +268,7 @@ export default function PrintReportPage() {
               {designItems.map((item) => (
                 <div key={item.key} className="pd-bar-row">
                   <span className={`pd-bar-lbl${item.percentComplete <= 0 ? ' pd-bar-lbl-muted' : ''}`}>
-                    {item.label}
+                    {tLabel(item.label)}
                   </span>
                   <div className="pd-bar-track">
                     <div

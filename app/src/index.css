@@ -522,7 +522,7 @@ button:disabled {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 1px;
 }
 
 .asset-list-item {
@@ -534,7 +534,7 @@ button:disabled {
   color: var(--text-h);
   border: 1px solid transparent;
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 2px 8px;
   font-size: 13px;
   text-align: start;
   cursor: pointer;
@@ -725,7 +725,7 @@ button:disabled {
 
 .asset-num {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   min-width: 20px;
 }
@@ -768,7 +768,7 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 5px;
-  margin-top: 5px;
+  margin-top: 1px;
 }
 
 .asset-mini-bar-label {
@@ -804,7 +804,7 @@ button:disabled {
 .asset-list-item {
   flex-direction: column;
   align-items: stretch;
-  gap: 2px;
+  gap: 0;
 }
 
 .viewer-shell-wide {
@@ -1456,12 +1456,12 @@ button:disabled {
   }
 
   .asset-list {
-    gap: 2px;
+    gap: 1px;
   }
 
   .asset-list-item {
     font-size: 11px;
-    padding: 4px 8px;
+    padding: 2px 8px;
   }
 
   .asset-type {
@@ -1469,7 +1469,7 @@ button:disabled {
   }
 
   .asset-mini-bar-row {
-    margin-top: 2px;
+    margin-top: 1px;
   }
 }
 
