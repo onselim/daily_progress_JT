@@ -6,6 +6,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { utmToLatLng } from '../lib/utmToLatLng';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { LicenseBadge } from './LicenseBadge';
 import { resolveLinePath, bearingDeg } from '../lib/lineGeometry';
 import type { AssetListItem } from '../lib/useAssets';
 import type { GroundWireConfig } from '../lib/useGroundWireConfig';
@@ -698,27 +699,30 @@ export function MapView({
           🎯 {t('map.zoomToLocation')}
         </button>
       )}
-      <div className="basemap-control">
-        {basemapMenuOpen && (
-          <div className="basemap-menu">
-            {Object.entries(BASEMAPS).map(([key, bm]) => (
-              <button
-                key={key}
-                type="button"
-                className={`basemap-menu-btn${key === basemap ? ' active' : ''}`}
-                onClick={() => {
-                  setBasemap(key as keyof typeof BASEMAPS);
-                  setBasemapMenuOpen(false);
-                }}
-              >
-                {bm.label}
-              </button>
-            ))}
-          </div>
-        )}
-        <button type="button" className="basemap-btn" onClick={() => setBasemapMenuOpen((v) => !v)}>
-          🗺 {t('map.baseMap')} ▾
-        </button>
+      <div className="map-bottom-left-controls">
+        <div className="basemap-control">
+          {basemapMenuOpen && (
+            <div className="basemap-menu">
+              {Object.entries(BASEMAPS).map(([key, bm]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`basemap-menu-btn${key === basemap ? ' active' : ''}`}
+                  onClick={() => {
+                    setBasemap(key as keyof typeof BASEMAPS);
+                    setBasemapMenuOpen(false);
+                  }}
+                >
+                  {bm.label}
+                </button>
+              ))}
+            </div>
+          )}
+          <button type="button" className="basemap-btn" onClick={() => setBasemapMenuOpen((v) => !v)}>
+            🗺 {t('map.baseMap')} ▾
+          </button>
+        </div>
+        <LicenseBadge variant="screen" />
       </div>
     </>
   );

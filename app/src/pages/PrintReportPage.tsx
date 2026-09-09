@@ -22,6 +22,7 @@ import { usePlannedTomorrow } from '../lib/usePlannedTomorrow';
 import { useWeatherForecast, type DayForecast } from '../lib/useWeatherForecast';
 import { utmToLatLng } from '../lib/utmToLatLng';
 import { PrintReportMap } from '../components/PrintReportMap';
+import { LicenseBadge } from '../components/LicenseBadge';
 
 const HEADLINE_GROUPS: { name: string; labelKey: TranslationKey }[] = [
   { name: 'FOUNDATION', labelKey: 'status.foundation' },
@@ -529,6 +530,7 @@ function ReportSheet({
           <span>
             {project.name} &nbsp;·&nbsp; Lot 1 &nbsp;·&nbsp; © {new Date().getFullYear()}
           </span>
+          <LicenseBadge variant="print" />
         </footer>
       </div>
 
