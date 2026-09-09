@@ -22,7 +22,9 @@ export function LicenseBadge({ variant = 'screen' }: LicenseBadgeProps) {
         <rect x="0" y="0" width="35" height="35" fill="#ffffff" />
         <path d={QR_PATH} fill="#000000" />
       </svg>
-      <span className="license-badge-text">All rights reserved</span>
+      <span className="license-badge-text">
+        All rights reserved <span className="license-badge-mark">©</span>
+      </span>
     </div>
   );
 }
