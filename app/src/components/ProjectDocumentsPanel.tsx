@@ -156,7 +156,7 @@ function FolderNode({
   onToggleLayer,
   layerErrors,
 }: FolderNodeProps) {
-  const { t } = useLanguage();
+  const { t, n } = useLanguage();
   const [open, setOpen] = useState(false);
   const [addingSubfolder, setAddingSubfolder] = useState(false);
   const [newName, setNewName] = useState('');
@@ -197,7 +197,7 @@ function FolderNode({
           <RenamableText value={folder.name} editable={editable} onRename={(name) => onRenameFolder(folder.id, name)}>
             <span className="doc-folder-name">{folder.name}</span>
           </RenamableText>
-          <span className="doc-folder-count">{docs.length}</span>
+          <span className="doc-folder-count">{n(docs.length)}</span>
         </div>
         {editable && (
           <button

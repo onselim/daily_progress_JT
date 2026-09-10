@@ -17,7 +17,7 @@ export default function AdminProjectPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { t, language } = useLanguage();
+  const { t, n, language } = useLanguage();
   const { project, loading, error } = useProjectBySlug(slug);
   const { stats } = useAssetStats(project?.id);
   const { restrictedAssetIds } = useRestrictedToday(project?.id);
@@ -56,27 +56,27 @@ export default function AdminProjectPage() {
           <span className="stat-pill">
             <span className="stat-pill-dot" style={{ background: '#00d4aa' }} />
             <span className="stat-pill-val">
-              {stats.inProgress}/{stats.total}
+              {n(stats.inProgress)}/{n(stats.total)}
             </span>
             <span className="stat-pill-lbl">{t('status.active')}</span>
           </span>
           <span className="stat-pill">
             <span className="stat-pill-dot" style={{ background: '#ef4444' }} />
             <span className="stat-pill-val">
-              {restrictedAssetIds.size}/{stats.total}
+              {n(restrictedAssetIds.size)}/{n(stats.total)}
             </span>
             <span className="stat-pill-lbl">{t('status.noAccess')}</span>
           </span>
           <span className="stat-pill">
             <span className="stat-pill-dot" style={{ background: '#3b82f6' }} />
             <span className="stat-pill-val">
-              {stats.completed}/{stats.total}
+              {n(stats.completed)}/{n(stats.total)}
             </span>
             <span className="stat-pill-lbl">{t('status.completed')}</span>
           </span>
           <span className="stat-pill">
             <span className="stat-pill-dot" style={{ background: '#3d4259' }} />
-            <span className="stat-pill-val">{stats.total}</span>
+            <span className="stat-pill-val">{n(stats.total)}</span>
             <span className="stat-pill-lbl">{t('status.towers')}</span>
           </span>
         </div>

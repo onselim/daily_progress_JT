@@ -26,7 +26,7 @@ function formatPercent(p: number | null): string {
 }
 
 export function LineSummaryPanel({ summary }: LineSummaryPanelProps) {
-  const { t } = useLanguage();
+  const { t, n } = useLanguage();
   const items: { label: string; value: string; note?: string | null }[] = [
     { label: t('panels.totalLength'), value: formatKm(summary.totalLengthM) },
     { label: t('status.towers'), value: summary.towerCount.toLocaleString() },
@@ -43,7 +43,7 @@ export function LineSummaryPanel({ summary }: LineSummaryPanelProps) {
       {items.map((item) => (
         <div key={item.label} className="line-summary-item">
           <span className="line-summary-value">
-            {item.value}
+            {n(item.value)}
             {item.note && <span className="line-summary-note-inline"> ({item.note})</span>}
           </span>
           <span className="line-summary-label">{item.label}</span>

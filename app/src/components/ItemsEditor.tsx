@@ -17,7 +17,7 @@ interface ItemsEditorProps {
 }
 
 export function ItemsEditor({ projectId, configKey, title, hint, onComplete, onBack }: ItemsEditorProps) {
-  const { t } = useLanguage();
+  const { t, n } = useLanguage();
   const [items, setItems] = useState<WorkItemConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -141,7 +141,7 @@ export function ItemsEditor({ projectId, configKey, title, hint, onComplete, onB
 
       <div className={`wizard-weight-total${totalRounded === 100 ? ' ok' : ' warn'}`}>
         <span>
-          {t('items.totalWeight')}: <strong>{totalRounded}</strong> / 100
+          {t('items.totalWeight')}: <strong>{n(totalRounded)}</strong> / {n(100)}
           {totalRounded === 100 ? ' ✓' : ''}
         </span>
         <button type="button" className="wizard-secondary-btn" onClick={handleAutoDistribute}>

@@ -81,7 +81,7 @@ export function AssetList({
   knownAssetTypes = [],
   onAssetAdded,
 }: AssetListProps) {
-  const { t } = useLanguage();
+  const { t, n } = useLanguage();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [showAddAsset, setShowAddAsset] = useState(false);
@@ -185,7 +185,7 @@ export function AssetList({
                   </span>
                   <span className="asset-type">
                     {a.asset_type}
-                    {a.station != null && <span className="asset-station"> Sta.{a.station}m</span>}
+                    {a.station != null && <span className="asset-station"> Sta.{n(a.station)}m</span>}
                   </span>
                   {isHeatCentroid && (
                     <span className="asset-badge asset-badge-heat" title="Concrete-weighted center of gravity">
@@ -209,7 +209,7 @@ export function AssetList({
                       />
                     ))}
                   </div>
-                  <span className="asset-progress-pct">{pct}%</span>
+                  <span className="asset-progress-pct">{n(pct)}%</span>
                 </div>
               </button>
             </li>

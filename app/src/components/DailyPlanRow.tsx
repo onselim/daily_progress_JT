@@ -18,7 +18,7 @@ type Tab = 'today' | 'tomorrow' | null;
 
 export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSignal }: DailyPlanRowProps) {
   const { user } = useAuth();
-  const { t, tLabel } = useLanguage();
+  const { t, tLabel, n } = useLanguage();
   const [activeTab, setActiveTab] = useState<Tab>(null);
   const { entries: todayEntries, loading: todayLoading, refresh: refreshToday } = usePlanForToday(projectId, workItems);
   const { entries: tomorrowEntries, loading: tomorrowLoading, refresh: refreshTomorrow } = usePlannedTomorrow(projectId);
@@ -72,14 +72,14 @@ export function DailyPlanRow({ projectId, assets, workItems, editable, refreshSi
           className={`daily-plan-tab daily-plan-tab-today${activeTab === 'today' ? ' active' : ''}`}
           onClick={() => toggle('today')}
         >
-          {t('dailyPlan.planForToday')} <span className="daily-plan-tab-count">{todayEntries.length}</span>
+          {t('dailyPlan.planForToday')} <span className="daily-plan-tab-count">{n(todayEntries.length)}</span>
         </button>
         <button
           type="button"
           className={`daily-plan-tab daily-plan-tab-tomorrow${activeTab === 'tomorrow' ? ' active' : ''}`}
           onClick={() => toggle('tomorrow')}
         >
-          {t('dailyPlan.planForTomorrow')} <span className="daily-plan-tab-count">{tomorrowEntries.length}</span>
+          {t('dailyPlan.planForTomorrow')} <span className="daily-plan-tab-count">{n(tomorrowEntries.length)}</span>
         </button>
       </div>
 

@@ -29,7 +29,7 @@ export function SupplyPanel({
   onSaved,
 }: SupplyPanelProps) {
   const { user } = useAuth();
-  const { t, tLabel } = useLanguage();
+  const { t, tLabel, n } = useLanguage();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savedKey, setSavedKey] = useState<string | null>(null);
@@ -96,7 +96,7 @@ export function SupplyPanel({
           <div key={item.key} className="pw-item-row pw-item-row-col">
             <div className="pw-item-row">
               <span className="pw-item-label">{tLabel(item.label)}</span>
-              <span className="pw-item-percent">{item.percentComplete.toFixed(1)}%</span>
+              <span className="pw-item-percent">{n(item.percentComplete.toFixed(1))}%</span>
             </div>
             {editable ? (
               <div className="pw-supply-stages">
@@ -146,8 +146,8 @@ export function SupplyPanel({
               </div>
             ) : (
               <span className="pw-item-status">
-                {t('progress.manufactured')} {item.manufacturedPercent.toFixed(0)}% · {t('progress.delivered')}{' '}
-                {item.deliveredPercent.toFixed(0)}%
+                {t('progress.manufactured')} {n(item.manufacturedPercent.toFixed(0))}% · {t('progress.delivered')}{' '}
+                {n(item.deliveredPercent.toFixed(0))}%
               </span>
             )}
           </div>
@@ -155,7 +155,7 @@ export function SupplyPanel({
       })}
       <div className="pw-subtotal">
         <span>{t('common.overall')}</span>
-        <span>{overallPercent.toFixed(1)}%</span>
+        <span>{n(overallPercent.toFixed(1))}%</span>
       </div>
     </div>
   );

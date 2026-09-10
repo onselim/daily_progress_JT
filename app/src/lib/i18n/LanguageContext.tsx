@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DEFAULT_LANGUAGE, RTL_LANGUAGES, isLanguageCode, parseLanguageList, type LanguageCode } from './languages';
+import { localizeDigits } from './localizeDigits';
 import { en, type TranslationKey } from './translations/en';
 import { tr } from './translations/tr';
 import { ar } from './translations/ar';
@@ -26,6 +27,10 @@ interface LanguageContextValue {
    * project_config (not app chrome) -- falls back to the original text unchanged
    * when there's no known translation. See configLabelTranslations.ts. */
   tLabel: (label: string | null | undefined) => string;
+  /** Renders a number/count/percentage for display, switching to Arabic-Indic digits
+   * when the current language is Arabic. Takes an already-formatted value (e.g.
+   * `x.toFixed(1)` or `"12/34"`), not a raw number. */
+  n: (value: string | number) => string;
 }
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
@@ -89,7 +94,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const tLabel = useCallback((label: string | null | undefined) => translateConfigLabel(label, language), [language]);
 
-  const value = useMemo(() => ({ language, setLanguage, t, tLabel }), [language, setLanguage, t, tLabel]);
+  const n = useCallback((value: string | number) => localizeDigits(language, value), [language]);
+
+  const value = useMemo(() => ({ language, setLanguage, t, tLabel, n }), [language, setLanguage, t, tLabel, n]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

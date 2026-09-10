@@ -27,7 +27,7 @@ export function DesignPanel({
   onSaved,
 }: DesignPanelProps) {
   const { user } = useAuth();
-  const { t, tLabel } = useLanguage();
+  const { t, tLabel, n } = useLanguage();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savedKey, setSavedKey] = useState<string | null>(null);
@@ -108,13 +108,13 @@ export function DesignPanel({
               )}
             </div>
           ) : (
-            <span className="pw-item-percent">{item.percentComplete.toFixed(1)}%</span>
+            <span className="pw-item-percent">{n(item.percentComplete.toFixed(1))}%</span>
           )}
         </div>
       ))}
       <div className="pw-subtotal">
         <span>{t('common.overall')}</span>
-        <span>{overallPercent.toFixed(1)}%</span>
+        <span>{n(overallPercent.toFixed(1))}%</span>
       </div>
     </div>
   );

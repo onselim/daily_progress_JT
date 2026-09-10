@@ -11,7 +11,7 @@ function todayIso() {
 
 export default function ReportSettingsPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { t } = useLanguage();
+  const { t, n } = useLanguage();
   const { project, loading: projectLoading, error } = useProjectBySlug(slug);
   const [recipients, setRecipients] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
@@ -194,7 +194,7 @@ export default function ReportSettingsPage() {
           </div>
 
           <h2 style={{ marginTop: 32 }}>{t('reportSettings.languageHeading')}</h2>
-          <p className="wizard-hint">{t('reportSettings.languageHint', { max: MAX_REPORT_LANGUAGES })}</p>
+          <p className="wizard-hint">{t('reportSettings.languageHint', { max: n(MAX_REPORT_LANGUAGES) })}</p>
           <div className="language-checkbox-grid">
             {LANGUAGES.map((l) => {
               const checked = reportLanguages.includes(l.code);

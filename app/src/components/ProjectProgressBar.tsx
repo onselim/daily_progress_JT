@@ -38,14 +38,14 @@ interface ItemRow {
 }
 
 function ItemBar({ item, color }: { item: ItemRow; color: string }) {
-  const { tLabel } = useLanguage();
+  const { tLabel, n } = useLanguage();
   return (
     <div className="pgb-item-row">
       <span className={`pgb-item-lbl${item.percentComplete <= 0 ? ' pgb-item-lbl-muted' : ''}`}>{tLabel(item.label)}</span>
       <div className="pgb-item-track">
         <div className="pgb-item-fill" style={{ width: `${Math.min(item.percentComplete, 100)}%`, background: color }} />
       </div>
-      <span className="pgb-item-val">{item.percentComplete.toFixed(1)}%</span>
+      <span className="pgb-item-val">{n(item.percentComplete.toFixed(1))}%</span>
     </div>
   );
 }
@@ -75,7 +75,7 @@ interface ProjectProgressBarProps {
 }
 
 export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }: ProjectProgressBarProps) {
-  const { t } = useLanguage();
+  const { t, n } = useLanguage();
   const { workItems } = useWorkItemsConfig(projectId);
   const construction = useConstructionBreakdown(projectId, workItems);
   const design = useDesignBreakdown(projectId);
@@ -118,19 +118,19 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
             onClick={() => toggle('overall')}
           >
             <span className="pgb-tab-val" style={{ color: TAB_COLOR.overall }}>
-              {overallPercent.toFixed(1)}%
+              {n(overallPercent.toFixed(1))}%
             </span>
             <span className="pgb-tab-lbl">{t('common.overall')}</span>
           </button>
           <button type="button" className={`pgb-tab${activeTab === 'design' ? ' active' : ''}`} onClick={() => toggle('design')}>
             <span className="pgb-tab-val" style={{ color: TAB_COLOR.design }}>
-              {design.overallPercent.toFixed(1)}%
+              {n(design.overallPercent.toFixed(1))}%
             </span>
             <span className="pgb-tab-lbl">{t('status.design')}</span>
           </button>
           <button type="button" className={`pgb-tab${activeTab === 'supply' ? ' active' : ''}`} onClick={() => toggle('supply')}>
             <span className="pgb-tab-val" style={{ color: TAB_COLOR.supply }}>
-              {supply.overallPercent.toFixed(1)}%
+              {n(supply.overallPercent.toFixed(1))}%
             </span>
             <span className="pgb-tab-lbl">{t('status.supply')}</span>
           </button>
@@ -140,7 +140,7 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
             onClick={() => toggle('construction')}
           >
             <span className="pgb-tab-val" style={{ color: TAB_COLOR.construction }}>
-              {construction.overallPercent.toFixed(1)}%
+              {n(construction.overallPercent.toFixed(1))}%
             </span>
             <span className="pgb-tab-lbl">{t('status.construction')}</span>
           </button>
@@ -152,7 +152,7 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
               <div className="pgb-overall-summary">
                 <div className="pgb-overall-section">
                   <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.design }}>
-                    {t('progress.designLabel', { percent: design.overallPercent.toFixed(1) })}
+                    {t('progress.designLabel', { percent: n(design.overallPercent.toFixed(1)) })}
                   </div>
                   {design.items.length === 0 ? (
                     <p className="accordion-empty">{t('progress.noDesignItems')}</p>
@@ -163,14 +163,14 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
 
                 <div className="pgb-overall-section">
                   <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.construction }}>
-                    {t('progress.constructionLabel', { percent: construction.overallPercent.toFixed(1) })}
+                    {t('progress.constructionLabel', { percent: n(construction.overallPercent.toFixed(1)) })}
                   </div>
                   <ConstructionGroups groups={constructionGroups} color={TAB_COLOR.construction} />
                 </div>
 
                 <div className="pgb-overall-section">
                   <div className="pgb-overall-section-title" style={{ color: TAB_COLOR.supply }}>
-                    {t('progress.supplyLabel', { percent: supply.overallPercent.toFixed(1) })}
+                    {t('progress.supplyLabel', { percent: n(supply.overallPercent.toFixed(1)) })}
                   </div>
                   {supply.items.length === 0 ? (
                     <p className="accordion-empty">{t('progress.noSupplyItems')}</p>
@@ -217,7 +217,7 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
           <span key={hg.name} className="stat-pill">
             <span className="stat-pill-dot" style={{ background: hg.color }} />
             <span className="stat-pill-val">
-              {hg.done}/{stats.total}
+              {n(hg.done)}/{n(stats.total)}
             </span>
             <span className="stat-pill-lbl">{t(hg.labelKey)}</span>
           </span>

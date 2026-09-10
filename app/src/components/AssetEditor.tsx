@@ -183,7 +183,7 @@ export function AssetEditor({
   onDeleted,
 }: AssetEditorProps) {
   const { user } = useAuth();
-  const { t, tLabel } = useLanguage();
+  const { t, tLabel, n } = useLanguage();
   const { workItems, loading: workItemsLoading } = useWorkItemsConfig(projectId);
   const { foundationTypes } = useFoundationTypesConfig(projectId);
   const { photos, loading: photosLoading, refresh: refreshPhotos } = useAssetPhotos(assetId);
@@ -655,25 +655,25 @@ export function AssetEditor({
           return (
             <fieldset key={group.name}>
               <legend style={{ color }}>
-                {tLabel(group.name)} <span className="group-count">{done}/{group.items.length}</span>
+                {tLabel(group.name)} <span className="group-count">{n(done)}/{n(group.items.length)}</span>
               </legend>
               {group.name.toUpperCase() === 'FOUNDATION' && foundation && (
                 <div className="foundation-stats" title={`${foundation.type} — ${foundation.soilType}`}>
                   <div className="foundation-stat">
                     <span className="foundation-stat-label">{t('assetEditor.concrete')}</span>
-                    <span className="foundation-stat-value">{foundation.concreteM3.toFixed(2)} m³</span>
+                    <span className="foundation-stat-value">{n(foundation.concreteM3.toFixed(2))} m³</span>
                   </div>
                   <div className="foundation-stat">
                     <span className="foundation-stat-label">{t('assetEditor.excavation')}</span>
-                    <span className="foundation-stat-value">{foundation.excavationM3.toFixed(1)} m³</span>
+                    <span className="foundation-stat-value">{n(foundation.excavationM3.toFixed(1))} m³</span>
                   </div>
                   <div className="foundation-stat">
                     <span className="foundation-stat-label">{t('assetEditor.reinforcement')}</span>
-                    <span className="foundation-stat-value">{foundation.reinforcementKg.toLocaleString()} kg</span>
+                    <span className="foundation-stat-value">{n(foundation.reinforcementKg.toLocaleString())} kg</span>
                   </div>
                   <div className="foundation-stat">
                     <span className="foundation-stat-label">{t('assetEditor.leanConcrete')}</span>
-                    <span className="foundation-stat-value">{foundation.leanConcreteM3.toFixed(2)} m³</span>
+                    <span className="foundation-stat-value">{n(foundation.leanConcreteM3.toFixed(2))} m³</span>
                   </div>
                 </div>
               )}
@@ -693,15 +693,17 @@ export function AssetEditor({
                   )}
                   {soilType != null && (!editable || foundationOptions.length === 0) && (
                     <span>
-                      {t('assetEditor.soilType')} {soilType}
+                      {t('assetEditor.soilType')} {n(soilType)}
                     </span>
                   )}
                   {legExtM && (
                     <span>
                       {t('assetEditor.legExt')}:{' '}
-                      {legExtM
-                        .map((v, i) => `L${i + 1} ${v == null ? '—' : v > 0 ? `+${v}` : v}`)
-                        .join(' · ')}
+                      {n(
+                        legExtM
+                          .map((v, i) => `L${i + 1} ${v == null ? '—' : v > 0 ? `+${v}` : v}`)
+                          .join(' · '),
+                      )}
                     </span>
                   )}
                 </div>
@@ -741,12 +743,12 @@ export function AssetEditor({
                           })()}
                           {current === 'completed' && completedDateByKey[item.key] && (
                             <span className="completed-date-stamp completed-date-stamp-inline">
-                              {completedDateByKey[item.key]}
+                              {n(completedDateByKey[item.key])}
                             </span>
                           )}
                           {isFoundationItem && current !== 'not_started' && qtyPercent !== 100 && (
                             <span className="qty-percent-badge" title="Share of designed quantity actually placed">
-                              {qtyPercent}% qty
+                              {n(qtyPercent)}% qty
                             </span>
                           )}
                         </span>
@@ -757,7 +759,7 @@ export function AssetEditor({
                         onClick={() => setExpandedPhotoKey(isExpanded ? null : item.key)}
                         title={`Photos for ${tLabel(item.label)}`}
                       >
-                        📷 {itemPhotos.length > 0 ? itemPhotos.length : ''}
+                        📷 {itemPhotos.length > 0 ? n(itemPhotos.length) : ''}
                       </button>
                       {docLabel && (
                         <button
@@ -766,7 +768,7 @@ export function AssetEditor({
                           onClick={() => setExpandedDocKey(isDocExpanded ? null : item.key)}
                           title={docLabel}
                         >
-                          📄 {itemDocs.length > 0 ? itemDocs.length : ''}
+                          📄 {itemDocs.length > 0 ? n(itemDocs.length) : ''}
                         </button>
                       )}
                     </div>

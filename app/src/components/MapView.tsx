@@ -6,6 +6,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { utmToLatLng } from '../lib/utmToLatLng';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { localizeDigits } from '../lib/i18n/localizeDigits';
 import { LicenseBadge } from './LicenseBadge';
 import { resolveLinePath, bearingDeg } from '../lib/lineGeometry';
 import type { AssetListItem } from '../lib/useAssets';
@@ -234,7 +235,7 @@ export function MapView({
   geoLayers = [],
   onLayerError,
 }: MapViewProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
@@ -658,7 +659,7 @@ export function MapView({
         L.marker([cur.lat, cur.lng], {
           icon: L.divIcon({
             className: '',
-            html: `<div style="background:rgba(15,17,23,0.88);border:1px solid rgba(251,191,36,0.5);color:#fbbf24;font-family:monospace;font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;pointer-events:none">${deflection.toFixed(1)}°</div>`,
+            html: `<div style="background:rgba(15,17,23,0.88);border:1px solid rgba(251,191,36,0.5);color:#fbbf24;font-family:monospace;font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;pointer-events:none">${localizeDigits(language, deflection.toFixed(1))}°</div>`,
             iconSize: [44, 18],
             iconAnchor: [-6, 24],
           }),
@@ -674,7 +675,7 @@ export function MapView({
       );
       hasFitBounds.current = true;
     }
-  }, [assets, coordinateSystem, selectedAssetId, onSelect, restrictedAssetIds, activeAssetIds, percentByAssetAndKey, groundWireConfig]);
+  }, [assets, coordinateSystem, selectedAssetId, onSelect, restrictedAssetIds, activeAssetIds, percentByAssetAndKey, groundWireConfig, language]);
 
   function zoomToSelected() {
     const map = mapRef.current;

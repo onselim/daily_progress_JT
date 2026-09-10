@@ -48,7 +48,7 @@ export function WorkItemsStep({
   onComplete,
   onBack,
 }: WorkItemsStepProps) {
-  const { t } = useLanguage();
+  const { t, n } = useLanguage();
   const resolvedTitle = title ?? t('wizard.stepWorkItems');
   const resolvedSubmitLabel = submitLabel ?? t('wizard.nextImport');
   const allItems = mergeTemplate(initialItems);
@@ -160,7 +160,7 @@ export function WorkItemsStep({
 
       <div className={`wizard-weight-total${totalRounded === 100 ? ' ok' : ' warn'}`}>
         <span>
-          {t('items.totalWeight')}: <strong>{totalRounded}</strong> / 100
+          {t('items.totalWeight')}: <strong>{n(totalRounded)}</strong> / {n(100)}
           {totalRounded === 100 ? ' ✓' : ''}
         </span>
         <button type="button" className="wizard-secondary-btn" onClick={handleAutoDistribute}>

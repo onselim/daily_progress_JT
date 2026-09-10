@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useLanguage, translate } from '../lib/i18n/LanguageContext';
 import type { TranslationKey } from '../lib/i18n/translations/en';
 import { translateConfigLabel } from '../lib/i18n/configLabelTranslations';
+import { localizeDigits } from '../lib/i18n/localizeDigits';
 import { formatLongDate, formatShortWeekday } from '../lib/i18n/formatDate';
 import { isLanguageCode, parseLanguageList, type LanguageCode } from '../lib/i18n/languages';
 import { useProjectBySlug, type ProjectRow } from '../lib/useProject';
@@ -255,6 +256,7 @@ function ReportSheet({
 }: ReportSheetProps) {
   const t = (key: TranslationKey, params?: Record<string, string | number>) => translate(language, key, params);
   const tLabel = (label: string | null | undefined) => translateConfigLabel(label, language);
+  const n = (value: string | number) => localizeDigits(language, value);
 
   return (
     <>
@@ -279,43 +281,43 @@ function ReportSheet({
             </div>
           </div>
           <div className="pd-header-right">
-            <div className="pd-date">{formatLongDate(new Date(), language)}</div>
+            <div className="pd-date">{n(formatLongDate(new Date(), language))}</div>
             {project.contract_no && (
-              <div className="pd-contract">{t('print.contractNo', { no: project.contract_no })}</div>
+              <div className="pd-contract">{t('print.contractNo', { no: n(project.contract_no) })}</div>
             )}
           </div>
         </header>
 
         <div className="pd-stat-row">
           <div className="pd-stat-main">
-            <div className="pd-stat-main-val">{overallPercent.toFixed(2)}%</div>
+            <div className="pd-stat-main-val">{n(overallPercent.toFixed(2))}%</div>
             <div className="pd-stat-lbl">{t('print.overallCompletion')}</div>
             <div className="pd-stat-bar">
               <div className="pd-stat-bar-fill" style={{ width: `${Math.min(overallPercent, 100)}%` }} />
             </div>
           </div>
           <div className="pd-stat pd-stat-green">
-            <div className="pd-stat-val">{stats.inProgress}</div>
+            <div className="pd-stat-val">{n(stats.inProgress)}</div>
             <div className="pd-stat-lbl">{t('print.activeToday')}</div>
           </div>
           <div className="pd-stat pd-stat-red">
-            <div className="pd-stat-val">{restrictedCodes.length}</div>
+            <div className="pd-stat-val">{n(restrictedCodes.length)}</div>
             <div className="pd-stat-lbl">{t('print.noAccess')}</div>
           </div>
           <div className="pd-stat">
-            <div className="pd-stat-val">{stats.total}</div>
+            <div className="pd-stat-val">{n(stats.total)}</div>
             <div className="pd-stat-lbl">{t('print.totalTowers')}</div>
           </div>
           <div className="pd-stat pd-stat-purple">
-            <div className="pd-stat-val">{designPercent.toFixed(1)}%</div>
+            <div className="pd-stat-val">{n(designPercent.toFixed(1))}%</div>
             <div className="pd-stat-lbl">{t('print.design')}</div>
           </div>
           <div className="pd-stat pd-stat-green">
-            <div className="pd-stat-val">{constructionPercent.toFixed(1)}%</div>
+            <div className="pd-stat-val">{n(constructionPercent.toFixed(1))}%</div>
             <div className="pd-stat-lbl">{t('print.construction')}</div>
           </div>
           <div className="pd-stat pd-stat-blue">
-            <div className="pd-stat-val">{supplyPercent.toFixed(1)}%</div>
+            <div className="pd-stat-val">{n(supplyPercent.toFixed(1))}%</div>
             <div className="pd-stat-lbl">{t('print.supply')}</div>
           </div>
         </div>
@@ -337,18 +339,18 @@ function ReportSheet({
                     style={{ width: `${Math.min(item.percentComplete, 100)}%`, background: '#10b981' }}
                   />
                 </div>
-                <span className="pd-bar-val">{item.percentComplete.toFixed(1)}%</span>
-                <span className="pd-bar-count">{perItemAssetCounts[item.key] ?? 0}/{stats.total}</span>
+                <span className="pd-bar-val">{n(item.percentComplete.toFixed(1))}%</span>
+                <span className="pd-bar-count">{n(perItemAssetCounts[item.key] ?? 0)}/{n(stats.total)}</span>
               </div>
             ))}
             <div className="pd-subtotal">
               <span>{t('common.overall')}</span>
-              <span style={{ color: '#10b981' }}>{constructionPercent.toFixed(2)}%</span>
+              <span style={{ color: '#10b981' }}>{n(constructionPercent.toFixed(2))}%</span>
             </div>
             <div className="pd-headline-counts">
               {headlineCounts.map((hg) => (
                 <span key={hg.name}>
-                  {t(hg.labelKey)} <strong>{hg.done}/{stats.total}</strong>
+                  {t(hg.labelKey)} <strong>{n(hg.done)}/{n(stats.total)}</strong>
                 </span>
               ))}
             </div>
@@ -370,12 +372,12 @@ function ReportSheet({
                     style={{ width: `${Math.min(item.percentComplete, 100)}%`, background: '#2563eb' }}
                   />
                 </div>
-                <span className="pd-bar-val">{item.percentComplete.toFixed(1)}%</span>
+                <span className="pd-bar-val">{n(item.percentComplete.toFixed(1))}%</span>
               </div>
             ))}
             <div className="pd-subtotal">
               <span>{t('common.overall')}</span>
-              <span style={{ color: '#2563eb' }}>{supplyPercent.toFixed(2)}%</span>
+              <span style={{ color: '#2563eb' }}>{n(supplyPercent.toFixed(2))}%</span>
             </div>
           </div>
 
@@ -396,12 +398,12 @@ function ReportSheet({
                       style={{ width: `${Math.min(item.percentComplete, 100)}%`, background: '#9333ea' }}
                     />
                   </div>
-                  <span className="pd-bar-val">{item.percentComplete.toFixed(1)}%</span>
+                  <span className="pd-bar-val">{n(item.percentComplete.toFixed(1))}%</span>
                 </div>
               ))}
               <div className="pd-subtotal">
                 <span>{t('common.overall')}</span>
-                <span style={{ color: '#9333ea' }}>{designPercent.toFixed(2)}%</span>
+                <span style={{ color: '#9333ea' }}>{n(designPercent.toFixed(2))}%</span>
               </div>
             </div>
 
@@ -416,10 +418,10 @@ function ReportSheet({
                     <div key={d.date} className="pd-weather-day">
                       <div className="day">{formatShortWeekday(new Date(`${d.date}T12:00:00`), language)}</div>
                       <div className="temp">
-                        {d.tempMin}°/{d.tempMax}°
+                        {n(d.tempMin)}°/{n(d.tempMax)}°
                       </div>
                       <div className="rain" style={{ color: d.precipProbability > 50 ? '#dc2626' : '#059669' }}>
-                        {d.precipProbability}%
+                        {n(d.precipProbability)}%
                       </div>
                     </div>
                   ))}
@@ -440,7 +442,7 @@ function ReportSheet({
             {restrictedCodes.length > 0 && (
               <div className="pd-box pd-box-red">
                 <div className="pd-box-title" style={{ color: '#dc2626' }}>
-                  {t('print.noAccessCount', { count: restrictedCodes.length })}
+                  {t('print.noAccessCount', { count: n(restrictedCodes.length) })}
                 </div>
                 <div className="pd-badges">
                   {shownRestricted.map((code) => (
@@ -448,7 +450,7 @@ function ReportSheet({
                       T{code}
                     </span>
                   ))}
-                  {extraRestricted > 0 && <span className="pd-badge-more">+{extraRestricted}</span>}
+                  {extraRestricted > 0 && <span className="pd-badge-more">+{n(extraRestricted)}</span>}
                 </div>
               </div>
             )}
@@ -528,7 +530,7 @@ function ReportSheet({
             {t('print.preparedBy')} &nbsp;·&nbsp; {t('print.approvedBy')}
           </span>
           <span>
-            {project.name} &nbsp;·&nbsp; Lot 1 &nbsp;·&nbsp; © {new Date().getFullYear()}
+            {project.name} &nbsp;·&nbsp; Lot 1 &nbsp;·&nbsp; © {n(new Date().getFullYear())}
           </span>
           <LicenseBadge variant="print" />
         </footer>
@@ -538,7 +540,7 @@ function ReportSheet({
         <div className="pd-sheet pd-sheet-map">
           <div className="pd-map-header">
             <div className="pd-title">{project.name}</div>
-            <div className="pd-sub">{t('print.todaysActiveTowers', { date: formatLongDate(new Date(), language) })}</div>
+            <div className="pd-sub">{t('print.todaysActiveTowers', { date: n(formatLongDate(new Date(), language)) })}</div>
           </div>
           <PrintReportMap assets={assets} coordinateSystem={project.coordinate_system} highlightedAssetIds={highlightedAssetIds} />
           <table className="pd-table pd-map-table">

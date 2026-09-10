@@ -33,12 +33,12 @@ export function HeatMapPanel({
   heatPointCount,
   metricTotals,
 }: HeatMapPanelProps) {
-  const { t } = useLanguage();
+  const { t, n } = useLanguage();
 
   function formatTotal(total: number, count: number, unit: 'm3' | 'kg'): string {
     if (count === 0) return t('panels.noDataForRange');
-    const value = unit === 'm3' ? `${total.toFixed(2)} m³` : `${Math.round(total).toLocaleString()} kg`;
-    return `${value} · ${t('panels.towersInRange', { count })}`;
+    const value = unit === 'm3' ? `${n(total.toFixed(2))} m³` : `${n(Math.round(total).toLocaleString())} kg`;
+    return `${value} · ${t('panels.towersInRange', { count: n(count) })}`;
   }
 
   return (
@@ -83,7 +83,7 @@ export function HeatMapPanel({
 
       {activeMetric && (
         <p className="accordion-empty">
-          {t('panels.towersInRange', { count: heatPointCount })}{' '}
+          {t('panels.towersInRange', { count: n(heatPointCount) })}{' '}
           {rangeFrom.trim() && rangeTo.trim()
             ? t('panels.betweenRange', { from: rangeFrom, to: rangeTo })
             : t('panels.allTowers')}

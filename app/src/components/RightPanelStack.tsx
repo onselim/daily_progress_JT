@@ -59,7 +59,7 @@ export function RightPanelStack({
   photosLayerEnabled,
   onTogglePhotosLayer,
 }: RightPanelStackProps) {
-  const { t } = useLanguage();
+  const { t, n } = useLanguage();
   return (
     <div className="right-panel-stack">
       <AccordionPanel title={t('panels.lineSummary')}>
@@ -90,7 +90,7 @@ export function RightPanelStack({
             className={`doc-folder-add-btn${photosLayerEnabled ? ' active' : ''}`}
             onClick={onTogglePhotosLayer}
           >
-            📷 {photosLayerEnabled ? t('panels.hideGeotaggedPhotos') : t('panels.showGeotaggedPhotos')} ({photoCount})
+            📷 {photosLayerEnabled ? t('panels.hideGeotaggedPhotos') : t('panels.showGeotaggedPhotos')} ({n(photoCount)})
           </button>
         </div>
         <ProjectDocumentsPanel
