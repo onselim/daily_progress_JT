@@ -722,6 +722,8 @@ export function MapView({
             🗺 {t('map.baseMap')} ▾
           </button>
         </div>
+      </div>
+      <div className="map-bottom-right-controls">
         <LicenseBadge variant="screen" />
       </div>
     </>
