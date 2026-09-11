@@ -20,6 +20,13 @@ declare global {
 const CESIUM_VERSION = '1.120';
 const CESIUM_BASE_URL = `https://cesium.com/downloads/cesiumjs/releases/${CESIUM_VERSION}/Build/Cesium/`;
 
+// Free Cesium ion "Default Token" (ion.cesium.com -> Access Tokens) -- this is meant to
+// ship client-side, the same way a Google Maps API key does; it's not a secret. Needed
+// for real elevation (Cesium World Terrain) since the CDN build's own shared demo token
+// is rejected (401), independent of anything this app does.
+const CESIUM_ION_TOKEN =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IkxpMmFZMjVBQjd6M1pfanMiLCJqdGkiOiJiODVjNzgxYS0zZGNlLTRiNGQtYjdiNi03MTA3YmYxMmJmZWIiLCJpZCI6NDg5ODE0LCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3ODkxNzAxODJ9.y4-AHogcdPlkoOsxLLkGHVZB5Jfg7uTD53UQ-uSZaHY';
+
 let cesiumLoadPromise: Promise<void> | null = null;
 
 /** Loads Cesium.js + its widget CSS from the CDN exactly once per page session
@@ -84,6 +91,7 @@ export function MapView3D({
       .then(async () => {
         if (cancelled || !containerRef.current) return;
         const Cesium = window.Cesium;
+        Cesium.Ion.defaultAccessToken = CESIUM_ION_TOKEN;
 
         // Real elevation (Cesium World Terrain) needs a valid Cesium ion access token --
         // the CDN build's baked-in demo token is shared across every site that hasn't
