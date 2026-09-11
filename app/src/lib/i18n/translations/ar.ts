@@ -210,6 +210,11 @@ export const ar: Record<TranslationKey, string> = {
 
   'map.zoomToLocation': 'التكبير إلى الموقع',
   'map.baseMap': 'الخريطة الأساسية',
+  'map.view2D': '2D',
+  'map.view3D': '3D',
+  'map.loading3D': 'جارٍ تحميل التضاريس ثلاثية الأبعاد…',
+  'map.load3DFailed': 'تعذّر تحميل العرض ثلاثي الأبعاد. تحقق من اتصالك وحاول مرة أخرى.',
+  'map.terrainNeedsToken': 'يتم عرض تضاريس مسطحة — الارتفاع الحقيقي للتضاريس يتطلب حساب Cesium ion مجاني.',
 
   'documents.noDocuments': 'لم يتم رفع أي مستندات بعد.',
   'documents.fetchOsm': 'جلب البنية التحتية الحالية (OSM)',

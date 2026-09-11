@@ -222,6 +222,11 @@ export const en = {
   // ---- map ----
   'map.zoomToLocation': 'Zoom to location',
   'map.baseMap': 'Base Map',
+  'map.view2D': '2D',
+  'map.view3D': '3D',
+  'map.loading3D': 'Loading 3D terrain…',
+  'map.load3DFailed': 'Could not load the 3D view. Check your connection and try again.',
+  'map.terrainNeedsToken': 'Showing a flat 3D view — real terrain elevation needs a free Cesium ion account.',
 
   // ---- project documents panel ----
   'documents.noDocuments': 'No documents uploaded yet.',

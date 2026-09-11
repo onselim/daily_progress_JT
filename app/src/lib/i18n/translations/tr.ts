@@ -210,6 +210,11 @@ export const tr: Record<TranslationKey, string> = {
 
   'map.zoomToLocation': 'Konuma yakınlaş',
   'map.baseMap': 'Temel Harita',
+  'map.view2D': '2B',
+  'map.view3D': '3B',
+  'map.loading3D': '3B arazi yükleniyor…',
+  'map.load3DFailed': '3B görünüm yüklenemedi. Bağlantını kontrol edip tekrar dene.',
+  'map.terrainNeedsToken': 'Düz 3B görünüm gösteriliyor — gerçek arazi yüksekliği için ücretsiz bir Cesium ion hesabı gerekiyor.',
 
   'documents.noDocuments': 'Henüz belge yüklenmedi.',
   'documents.fetchOsm': 'Mevcut altyapıyı getir (OSM)',

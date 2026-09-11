@@ -215,6 +215,11 @@ export const ku: Record<TranslationKey, string> = {
 
   'map.zoomToLocation': 'Nêzîkî cîhê bibe',
   'map.baseMap': 'Nexşeya Bingehîn',
+  'map.view2D': '2B',
+  'map.view3D': '3B',
+  'map.loading3D': 'Erdnîgariya 3B tê barkirin…',
+  'map.load3DFailed': 'Dîmena 3B nehat barkirin. Girêdana xwe kontrol bike û dîsa biceribîne.',
+  'map.terrainNeedsToken': 'Dîmenek 3B ya sade tê nîşandan — ji bo bilindahiya erdê ya rastîn hesabek Cesium ion ya belaş pêwîst e.',
 
   'documents.noDocuments': 'Hîn belge nehatine barkirin.',
   'documents.fetchOsm': 'Binesaziya heyî bîne (OSM)',

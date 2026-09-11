@@ -211,6 +211,11 @@ export const ru: Record<TranslationKey, string> = {
 
   'map.zoomToLocation': 'Приблизить к местоположению',
   'map.baseMap': 'Базовая карта',
+  'map.view2D': '2D',
+  'map.view3D': '3D',
+  'map.loading3D': 'Загрузка 3D-рельефа…',
+  'map.load3DFailed': 'Не удалось загрузить 3D-вид. Проверьте соединение и попробуйте снова.',
+  'map.terrainNeedsToken': 'Показан плоский 3D-вид — для реального рельефа нужен бесплатный аккаунт Cesium ion.',
 
   'documents.noDocuments': 'Документы пока не загружены.',
   'documents.fetchOsm': 'Получить существующую инфраструктуру (OSM)',

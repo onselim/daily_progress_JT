@@ -2,7 +2,10 @@ import { useMemo, useState } from 'react';
 import { AssetList } from './AssetList';
 import { AssetEditor } from './AssetEditor';
 import { MapView } from './MapView';
+import { MapView3D } from './MapView3D';
 import { RightPanelStack } from './RightPanelStack';
+import { LicenseBadge } from './LicenseBadge';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 import type { HeatMetric, MetricTotals } from './HeatMapPanel';
 import { useAssets } from '../lib/useAssets';
 import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress';
@@ -32,8 +35,10 @@ export function AssetWorkspace({
   isAdmin = false,
   onAssetSaved,
 }: AssetWorkspaceProps) {
+  const { t } = useLanguage();
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [zoomRequest, setZoomRequest] = useState<{ assetId: string; nonce: number } | null>(null);
+  const [is3D, setIs3D] = useState(false);
 
   function zoomToAsset(assetId: string) {
     setSelectedAssetId(assetId);
@@ -248,24 +253,46 @@ export function AssetWorkspace({
         onAssetAdded={refreshAssets}
       />
       <div className="map-stage">
-        <MapView
-          assets={assets}
-          coordinateSystem={coordinateSystem}
-          selectedAssetId={selectedAssetId}
-          onSelect={setSelectedAssetId}
-          restrictedAssetIds={restrictedAssetIds}
-          activeAssetIds={activeAssetIds}
-          zoomRequest={zoomRequest}
-          percentByAssetAndKey={percentByAssetAndKey}
-          groundWireConfig={groundWireConfig}
-          heatmapEnabled={heatMetric != null}
-          heatPoints={heatPoints}
-          heatCentroid={heatCentroid}
-          geoLayers={activeMapLayers}
-          onLayerError={(layerId, message) => setLayerErrors((prev) => ({ ...prev, [layerId]: message }))}
-          photoLocations={photoLocations}
-          photosLayerEnabled={photosLayerEnabled}
-        />
+        {is3D ? (
+          <MapView3D
+            assets={assets}
+            coordinateSystem={coordinateSystem}
+            selectedAssetId={selectedAssetId}
+            onSelect={setSelectedAssetId}
+            restrictedAssetIds={restrictedAssetIds}
+            activeAssetIds={activeAssetIds}
+          />
+        ) : (
+          <MapView
+            assets={assets}
+            coordinateSystem={coordinateSystem}
+            selectedAssetId={selectedAssetId}
+            onSelect={setSelectedAssetId}
+            restrictedAssetIds={restrictedAssetIds}
+            activeAssetIds={activeAssetIds}
+            zoomRequest={zoomRequest}
+            percentByAssetAndKey={percentByAssetAndKey}
+            groundWireConfig={groundWireConfig}
+            heatmapEnabled={heatMetric != null}
+            heatPoints={heatPoints}
+            heatCentroid={heatCentroid}
+            geoLayers={activeMapLayers}
+            onLayerError={(layerId, message) => setLayerErrors((prev) => ({ ...prev, [layerId]: message }))}
+            photoLocations={photoLocations}
+            photosLayerEnabled={photosLayerEnabled}
+          />
+        )}
+        <div className="map-dimension-toggle">
+          <button type="button" className={is3D ? '' : 'active'} onClick={() => setIs3D(false)}>
+            {t('map.view2D')}
+          </button>
+          <button type="button" className={is3D ? 'active' : ''} onClick={() => setIs3D(true)}>
+            {t('map.view3D')}
+          </button>
+        </div>
+        <div className="map-bottom-right-controls">
+          <LicenseBadge variant="screen" />
+        </div>
         <RightPanelStack
           projectId={projectId}
           editable={editable}

@@ -211,6 +211,11 @@ export const de: Record<TranslationKey, string> = {
 
   'map.zoomToLocation': 'Zum Standort zoomen',
   'map.baseMap': 'Basiskarte',
+  'map.view2D': '2D',
+  'map.view3D': '3D',
+  'map.loading3D': '3D-Gelände wird geladen…',
+  'map.load3DFailed': '3D-Ansicht konnte nicht geladen werden. Verbindung prüfen und erneut versuchen.',
+  'map.terrainNeedsToken': 'Flache 3D-Ansicht wird angezeigt — echtes Geländerelief braucht ein kostenloses Cesium-ion-Konto.',
 
   'documents.noDocuments': 'Noch keine Dokumente hochgeladen.',
   'documents.fetchOsm': 'Vorhandene Infrastruktur abrufen (OSM)',

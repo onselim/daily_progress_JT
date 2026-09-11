@@ -211,6 +211,11 @@ export const ka: Record<TranslationKey, string> = {
 
   'map.zoomToLocation': 'მდებარეობასთან მიახლოება',
   'map.baseMap': 'საბაზისო რუქა',
+  'map.view2D': '2D',
+  'map.view3D': '3D',
+  'map.loading3D': '3D რელიეფი იტვირთება…',
+  'map.load3DFailed': '3D რეჟიმის ჩატვირთვა ვერ მოხერხდა. შეამოწმეთ კავშირი და სცადეთ ისევ.',
+  'map.terrainNeedsToken': 'ნაჩვენებია ბრტყელი 3D ხედი — რეალური რელიეფისთვის საჭიროა უფასო Cesium ion ანგარიში.',
 
   'documents.noDocuments': 'დოკუმენტები ჯერ არ ატვირთულა.',
   'documents.fetchOsm': 'არსებული ინფრასტრუქტურის მოძიება (OSM)',

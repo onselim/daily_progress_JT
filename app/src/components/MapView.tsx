@@ -7,18 +7,11 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { utmToLatLng } from '../lib/utmToLatLng';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 import { localizeDigits } from '../lib/i18n/localizeDigits';
-import { LicenseBadge } from './LicenseBadge';
 import { resolveLinePath, bearingDeg } from '../lib/lineGeometry';
+import { STATUS_COLOR, GOOGLE_SATELLITE_URL_TEMPLATE } from '../lib/mapConstants';
 import type { AssetListItem } from '../lib/useAssets';
 import type { GroundWireConfig } from '../lib/useGroundWireConfig';
 import type { PhotoLocation } from '../lib/useProjectPhotoLocations';
-
-const STATUS_COLOR: Record<string, string> = {
-  not_started: '#3d4259',
-  in_progress: '#00d4aa',
-  completed: '#3b82f6',
-  on_hold: '#ef4444',
-};
 
 // Stringing work-item keys from the default Construction template — used to color/dim
 // the conductor/OPGW/EW span lines by whether that phase has actually been strung.
@@ -75,7 +68,7 @@ interface SpanChannel {
 const BASEMAPS: Record<string, { label: string; url: string; options: L.TileLayerOptions }> = {
   satellite: {
     label: 'Google Satellite',
-    url: 'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+    url: GOOGLE_SATELLITE_URL_TEMPLATE,
     options: { subdomains: '0123', maxZoom: 21, attribution: 'Google Satellite' },
   },
   hybrid: {
@@ -723,9 +716,6 @@ export function MapView({
             🗺 {t('map.baseMap')} ▾
           </button>
         </div>
-      </div>
-      <div className="map-bottom-right-controls">
-        <LicenseBadge variant="screen" />
       </div>
     </>
   );

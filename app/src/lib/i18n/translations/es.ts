@@ -212,6 +212,11 @@ export const es: Record<TranslationKey, string> = {
 
   'map.zoomToLocation': 'Acercar a la ubicación',
   'map.baseMap': 'Mapa base',
+  'map.view2D': '2D',
+  'map.view3D': '3D',
+  'map.loading3D': 'Cargando terreno 3D…',
+  'map.load3DFailed': 'No se pudo cargar la vista 3D. Comprueba tu conexión e inténtalo de nuevo.',
+  'map.terrainNeedsToken': 'Mostrando una vista 3D plana — el relieve real necesita una cuenta gratuita de Cesium ion.',
 
   'documents.noDocuments': 'Aún no se han subido documentos.',
   'documents.fetchOsm': 'Obtener infraestructura existente (OSM)',
