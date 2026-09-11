@@ -91,6 +91,9 @@ export default function AdminProjectPage() {
           <button type="button" onClick={() => navigate(`/admin/${project.slug}/report-settings`)}>
             {t('topbar.reportSettings')}
           </button>
+          <button type="button" onClick={() => navigate(`/admin/${project.slug}/team`)}>
+            {t('topbar.manageTeam')}
+          </button>
           <button type="button" className="modal-danger-btn" onClick={() => setShowDelete(true)}>
             {t('common.delete')}
           </button>
