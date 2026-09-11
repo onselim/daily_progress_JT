@@ -23,13 +23,24 @@ export default function AcceptInvitePage() {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setSubmitting(false);
-    if (error) {
-      setError(error.message);
+    const { data: updateData, error: updateError } = await supabase.auth.updateUser({ password });
+    if (updateError) {
+      setSubmitting(false);
+      setError(updateError.message);
       return;
     }
-    navigate('/field');
+
+    // This page serves both a brand-new invite (no roles yet -> /field is the safer
+    // landing spot) and an existing admin resetting a forgotten password (-> /admin) --
+    // check which roles the now-authenticated user actually has rather than assuming.
+    const userId = updateData.user?.id;
+    const { data: roleRows } = userId
+      ? await supabase.from('user_project_roles').select('role').eq('user_id', userId)
+      : { data: null };
+    setSubmitting(false);
+
+    const isAdmin = roleRows?.some((r) => r.role === 'admin');
+    navigate(isAdmin ? '/admin' : '/field');
   }
 
   return (

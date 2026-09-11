@@ -49,7 +49,7 @@ export const ru: Record<TranslationKey, string> = {
   'login.signingIn': 'Выполняется вход…',
   'login.signIn': 'Войти',
   'acceptInvite.title': 'Задайте пароль',
-  'acceptInvite.subtitle': 'Вас пригласили в этот проект. Задайте пароль, чтобы завершить настройку аккаунта.',
+  'acceptInvite.subtitle': 'Задайте пароль, чтобы продолжить.',
   'acceptInvite.newPassword': 'Новый пароль',
   'acceptInvite.confirmPassword': 'Подтвердите пароль',
   'acceptInvite.submit': 'Задать пароль и войти',

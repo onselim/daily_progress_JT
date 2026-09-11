@@ -49,7 +49,7 @@ export const ar: Record<TranslationKey, string> = {
   'login.signingIn': 'جارٍ تسجيل الدخول…',
   'login.signIn': 'تسجيل الدخول',
   'acceptInvite.title': 'اضبط كلمة المرور',
-  'acceptInvite.subtitle': 'تمت دعوتك إلى هذا المشروع. اختر كلمة مرور لإكمال إعداد حسابك.',
+  'acceptInvite.subtitle': 'اختر كلمة مرور للمتابعة.',
   'acceptInvite.newPassword': 'كلمة المرور الجديدة',
   'acceptInvite.confirmPassword': 'تأكيد كلمة المرور',
   'acceptInvite.submit': 'ضبط كلمة المرور وتسجيل الدخول',

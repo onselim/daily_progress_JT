@@ -54,7 +54,7 @@ export const en = {
   'login.signingIn': 'Signing in…',
   'login.signIn': 'Sign in',
   'acceptInvite.title': 'Set your password',
-  'acceptInvite.subtitle': 'You were invited to this project. Choose a password to finish setting up your account.',
+  'acceptInvite.subtitle': 'Choose a password to continue.',
   'acceptInvite.newPassword': 'New password',
   'acceptInvite.confirmPassword': 'Confirm password',
   'acceptInvite.submit': 'Set password and sign in',

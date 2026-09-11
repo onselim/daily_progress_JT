@@ -49,7 +49,7 @@ export const fr: Record<TranslationKey, string> = {
   'login.signingIn': 'Connexion en cours…',
   'login.signIn': 'Se connecter',
   'acceptInvite.title': 'Définissez votre mot de passe',
-  'acceptInvite.subtitle': 'Vous avez été invité à ce projet. Choisissez un mot de passe pour finaliser votre compte.',
+  'acceptInvite.subtitle': 'Choisissez un mot de passe pour continuer.',
   'acceptInvite.newPassword': 'Nouveau mot de passe',
   'acceptInvite.confirmPassword': 'Confirmer le mot de passe',
   'acceptInvite.submit': 'Définir le mot de passe et se connecter',

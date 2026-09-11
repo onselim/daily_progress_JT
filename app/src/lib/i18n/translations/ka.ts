@@ -49,7 +49,7 @@ export const ka: Record<TranslationKey, string> = {
   'login.signingIn': 'შესვლა მიმდინარეობს…',
   'login.signIn': 'შესვლა',
   'acceptInvite.title': 'დააყენეთ პაროლი',
-  'acceptInvite.subtitle': 'თქვენ მოწვეული ხართ ამ პროექტში. აირჩიეთ პაროლი ანგარიშის გასაფორმებლად.',
+  'acceptInvite.subtitle': 'გასაგრძელებლად აირჩიეთ პაროლი.',
   'acceptInvite.newPassword': 'ახალი პაროლი',
   'acceptInvite.confirmPassword': 'გაიმეორეთ პაროლი',
   'acceptInvite.submit': 'პაროლის დაყენება და შესვლა',

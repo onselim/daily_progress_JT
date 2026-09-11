@@ -52,7 +52,7 @@ export const ku: Record<TranslationKey, string> = {
   'login.signingIn': 'Tê têketin…',
   'login.signIn': 'Têkeve',
   'acceptInvite.title': 'Şîfreya xwe saz bike',
-  'acceptInvite.subtitle': 'Tu ji bo vê projeyê hatî vexwendin. Şîfreyekê hilbijêre da ku hesabê xwe temam bikî.',
+  'acceptInvite.subtitle': 'Ji bo domandinê şîfreyekê hilbijêre.',
   'acceptInvite.newPassword': 'Şîfreya nû',
   'acceptInvite.confirmPassword': 'Şîfreyê piştrast bike',
   'acceptInvite.submit': 'Şîfreyê saz bike û têkeve',

@@ -22,8 +22,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
+      // Fires when a recovery-email link (or an invite link, which Supabase treats the
+      // same way) is opened -- regardless of which page it lands on, since Site URL is
+      // the fallback redirect for password-recovery emails specifically (unlike invites,
+      // which we already redirect explicitly to /accept-invite). Send them there too, so
+      // "set a new password" always works instead of silently landing on the homepage.
+      if (event === 'PASSWORD_RECOVERY' && window.location.pathname !== '/accept-invite') {
+        window.location.assign('/accept-invite');
+      }
     });
 
     return () => listener.subscription.unsubscribe();

@@ -49,7 +49,7 @@ export const tr: Record<TranslationKey, string> = {
   'login.signingIn': 'Giriş yapılıyor…',
   'login.signIn': 'Giriş yap',
   'acceptInvite.title': 'Şifrenizi belirleyin',
-  'acceptInvite.subtitle': 'Bu projeye davet edildiniz. Hesabınızı tamamlamak için bir şifre belirleyin.',
+  'acceptInvite.subtitle': 'Devam etmek için bir şifre belirleyin.',
   'acceptInvite.newPassword': 'Yeni şifre',
   'acceptInvite.confirmPassword': 'Şifreyi onaylayın',
   'acceptInvite.submit': 'Şifreyi belirle ve giriş yap',

@@ -49,7 +49,7 @@ export const de: Record<TranslationKey, string> = {
   'login.signingIn': 'Anmeldung läuft…',
   'login.signIn': 'Anmelden',
   'acceptInvite.title': 'Passwort festlegen',
-  'acceptInvite.subtitle': 'Sie wurden zu diesem Projekt eingeladen. Legen Sie ein Passwort fest, um Ihr Konto einzurichten.',
+  'acceptInvite.subtitle': 'Legen Sie ein Passwort fest, um fortzufahren.',
   'acceptInvite.newPassword': 'Neues Passwort',
   'acceptInvite.confirmPassword': 'Passwort bestätigen',
   'acceptInvite.submit': 'Passwort festlegen und anmelden',
