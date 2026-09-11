@@ -253,43 +253,51 @@ export function AssetWorkspace({
         onAssetAdded={refreshAssets}
       />
       <div className="map-stage">
-        {is3D ? (
-          <MapView3D
-            assets={assets}
-            coordinateSystem={coordinateSystem}
-            selectedAssetId={selectedAssetId}
-            onSelect={setSelectedAssetId}
-            restrictedAssetIds={restrictedAssetIds}
-            activeAssetIds={activeAssetIds}
-          />
-        ) : (
-          <MapView
-            assets={assets}
-            coordinateSystem={coordinateSystem}
-            selectedAssetId={selectedAssetId}
-            onSelect={setSelectedAssetId}
-            restrictedAssetIds={restrictedAssetIds}
-            activeAssetIds={activeAssetIds}
-            zoomRequest={zoomRequest}
-            percentByAssetAndKey={percentByAssetAndKey}
-            groundWireConfig={groundWireConfig}
-            heatmapEnabled={heatMetric != null}
-            heatPoints={heatPoints}
-            heatCentroid={heatCentroid}
-            geoLayers={activeMapLayers}
-            onLayerError={(layerId, message) => setLayerErrors((prev) => ({ ...prev, [layerId]: message }))}
-            photoLocations={photoLocations}
-            photosLayerEnabled={photosLayerEnabled}
-          />
-        )}
-        <div className="map-dimension-toggle">
-          <button type="button" className={is3D ? '' : 'active'} onClick={() => setIs3D(false)}>
-            {t('map.view2D')}
-          </button>
-          <button type="button" className={is3D ? 'active' : ''} onClick={() => setIs3D(true)}>
-            {t('map.view3D')}
-          </button>
-        </div>
+        {(() => {
+          const dimensionToggle = (
+            <div className="map-dimension-toggle">
+              <button type="button" className={is3D ? '' : 'active'} onClick={() => setIs3D(false)}>
+                {t('map.view2D')}
+              </button>
+              <button type="button" className={is3D ? 'active' : ''} onClick={() => setIs3D(true)}>
+                {t('map.view3D')}
+              </button>
+            </div>
+          );
+          return is3D ? (
+            <>
+              <MapView3D
+                assets={assets}
+                coordinateSystem={coordinateSystem}
+                selectedAssetId={selectedAssetId}
+                onSelect={setSelectedAssetId}
+                restrictedAssetIds={restrictedAssetIds}
+                activeAssetIds={activeAssetIds}
+              />
+              <div className="map-bottom-left-controls">{dimensionToggle}</div>
+            </>
+          ) : (
+            <MapView
+              assets={assets}
+              coordinateSystem={coordinateSystem}
+              selectedAssetId={selectedAssetId}
+              onSelect={setSelectedAssetId}
+              restrictedAssetIds={restrictedAssetIds}
+              activeAssetIds={activeAssetIds}
+              zoomRequest={zoomRequest}
+              percentByAssetAndKey={percentByAssetAndKey}
+              groundWireConfig={groundWireConfig}
+              heatmapEnabled={heatMetric != null}
+              heatPoints={heatPoints}
+              heatCentroid={heatCentroid}
+              geoLayers={activeMapLayers}
+              onLayerError={(layerId, message) => setLayerErrors((prev) => ({ ...prev, [layerId]: message }))}
+              photoLocations={photoLocations}
+              photosLayerEnabled={photosLayerEnabled}
+              extraBottomLeftControls={dimensionToggle}
+            />
+          );
+        })()}
         <div className="map-bottom-right-controls">
           <LicenseBadge variant="screen" />
         </div>

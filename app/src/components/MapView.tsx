@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster';
@@ -208,6 +208,10 @@ interface MapViewProps {
   onLayerError?: (layerId: string, message: string) => void;
   photoLocations?: PhotoLocation[];
   photosLayerEnabled?: boolean;
+  /** Rendered in the same bottom-left row as the Base Map button (e.g. the 2D/3D
+   * toggle) -- lets the parent share that row instead of floating its own separate
+   * control group next to it. */
+  extraBottomLeftControls?: ReactNode;
 }
 
 export function MapView({
@@ -227,6 +231,7 @@ export function MapView({
   photosLayerEnabled = false,
   geoLayers = [],
   onLayerError,
+  extraBottomLeftControls,
 }: MapViewProps) {
   const { t, language } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -716,6 +721,7 @@ export function MapView({
             🗺 {t('map.baseMap')} ▾
           </button>
         </div>
+        {extraBottomLeftControls}
       </div>
     </>
   );
