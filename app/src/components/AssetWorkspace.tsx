@@ -5,6 +5,7 @@ import { MapView } from './MapView';
 import { MapView3D } from './MapView3D';
 import { RightPanelStack } from './RightPanelStack';
 import { LicenseBadge } from './LicenseBadge';
+import { ConductorTypeDialog } from './ConductorTypeDialog';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 import type { HeatMetric, MetricTotals } from './HeatMapPanel';
 import { useAssets } from '../lib/useAssets';
@@ -14,6 +15,7 @@ import { useActiveAssetIds } from '../lib/useActiveAssetIds';
 import { useProjectPhotoLocations } from '../lib/useProjectPhotoLocations';
 import { useWorkItemsConfig } from '../lib/useProjectConfig';
 import { useGroundWireConfig } from '../lib/useGroundWireConfig';
+import { useLineConductorTypes, type LineConductorTypes } from '../lib/useLineConductorTypes';
 import { useLineSummary } from '../lib/useLineSummary';
 import { useFoundationTypesConfig, getFoundationTypeForAsset } from '../lib/useFoundationTypesConfig';
 import { useTowerWeightsConfig, getTowerWeightForAsset } from '../lib/useTowerWeightsConfig';
@@ -60,6 +62,8 @@ export function AssetWorkspace({
   const { photoLocations } = useProjectPhotoLocations(projectId);
   const [photosLayerEnabled, setPhotosLayerEnabled] = useState(false);
   const groundWireConfig = useGroundWireConfig(projectId);
+  const { types: conductorTypes, save: saveConductorType } = useLineConductorTypes(projectId);
+  const [editingChannel, setEditingChannel] = useState<keyof LineConductorTypes | null>(null);
   const lineSummary = useLineSummary(projectId, assets, coordinateSystem);
   const { foundationTypes } = useFoundationTypesConfig(projectId);
   const { towerWeights } = useTowerWeightsConfig(projectId);
@@ -289,6 +293,9 @@ export function AssetWorkspace({
               zoomRequest={zoomRequest}
               percentByAssetAndKey={percentByAssetAndKey}
               groundWireConfig={groundWireConfig}
+              conductorTypes={conductorTypes}
+              isAdmin={isAdmin}
+              onEditConductorType={setEditingChannel}
               heatmapEnabled={heatMetric != null}
               heatPoints={heatPoints}
               heatCentroid={heatCentroid}
@@ -352,6 +359,14 @@ export function AssetWorkspace({
               onDeleted={handleAssetDeleted}
             />
           </div>
+        )}
+        {editingChannel && (
+          <ConductorTypeDialog
+            channel={editingChannel}
+            currentValue={conductorTypes[editingChannel]}
+            onSave={saveConductorType}
+            onClose={() => setEditingChannel(null)}
+          />
         )}
       </div>
       </div>

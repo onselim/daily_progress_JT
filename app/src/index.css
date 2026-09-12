@@ -417,6 +417,14 @@ button:disabled {
   background: #0f1117;
 }
 
+/* Admin-only affordance: conductor/OPGW/earthwire span lines are clickable to edit
+   their type (see ConductorTypeDialog) -- a pointer cursor is the only visual hint
+   they're interactive, since making 2-3px-wide lines otherwise look "clickable"
+   would be visual noise on every viewer's map. */
+.span-line-editable {
+  cursor: pointer;
+}
+
 .group-count {
   float: right;
   font-weight: 400;

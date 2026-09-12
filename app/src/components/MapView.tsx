@@ -11,7 +11,15 @@ import { resolveLinePath, bearingDeg } from '../lib/lineGeometry';
 import { STATUS_COLOR, GOOGLE_SATELLITE_URL_TEMPLATE } from '../lib/mapConstants';
 import type { AssetListItem } from '../lib/useAssets';
 import type { GroundWireConfig } from '../lib/useGroundWireConfig';
+import type { LineConductorTypes } from '../lib/useLineConductorTypes';
 import type { PhotoLocation } from '../lib/useProjectPhotoLocations';
+import type { TranslationKey } from '../lib/i18n/translations/en';
+
+const CONDUCTOR_LABEL_KEY: Record<keyof LineConductorTypes, TranslationKey> = {
+  conductor: 'wizard.conductorType',
+  opgw: 'wizard.opgwType',
+  earthwire: 'wizard.earthwireType',
+};
 
 // Stringing work-item keys from the default Construction template — used to color/dim
 // the conductor/OPGW/EW span lines by whether that phase has actually been strung.
@@ -63,6 +71,7 @@ interface SpanChannel {
   weight: number;
   statusKey: string;
   enabled: boolean;
+  channelKey: keyof LineConductorTypes;
 }
 
 const BASEMAPS: Record<string, { label: string; url: string; options: L.TileLayerOptions }> = {
@@ -201,6 +210,9 @@ interface MapViewProps {
   zoomRequest?: { assetId: string; nonce: number } | null;
   percentByAssetAndKey: Record<string, Record<string, number>>;
   groundWireConfig: GroundWireConfig;
+  conductorTypes: LineConductorTypes;
+  isAdmin?: boolean;
+  onEditConductorType?: (channel: keyof LineConductorTypes) => void;
   heatmapEnabled?: boolean;
   heatPoints?: [number, number, number][];
   heatCentroid?: [number, number] | null;
@@ -224,6 +236,9 @@ export function MapView({
   zoomRequest,
   percentByAssetAndKey,
   groundWireConfig,
+  conductorTypes,
+  isAdmin = false,
+  onEditConductorType,
   heatmapEnabled = false,
   heatPoints = [],
   heatCentroid = null,
@@ -523,8 +538,8 @@ export function MapView({
     const pctFor = (assetId: string, key: string) => percentByAssetAndKey[assetId]?.[key] ?? 0;
 
     const channels: SpanChannel[] = [
-      { sign: 1, baseDeg: 0.00009, color: SPAN_COLOR.conductor, weight: 3, statusKey: STRINGING_KEYS.conductor, enabled: true },
-      { sign: -1, baseDeg: 0.00009, color: SPAN_COLOR.conductor, weight: 3, statusKey: STRINGING_KEYS.conductor, enabled: true },
+      { sign: 1, baseDeg: 0.00009, color: SPAN_COLOR.conductor, weight: 3, statusKey: STRINGING_KEYS.conductor, enabled: true, channelKey: 'conductor' },
+      { sign: -1, baseDeg: 0.00009, color: SPAN_COLOR.conductor, weight: 3, statusKey: STRINGING_KEYS.conductor, enabled: true, channelKey: 'conductor' },
       {
         sign: 1,
         baseDeg: 0.000045,
@@ -532,6 +547,7 @@ export function MapView({
         weight: 2.5,
         statusKey: STRINGING_KEYS.earthwire,
         enabled: groundWireConfig.earthwire > 0,
+        channelKey: 'earthwire',
       },
       {
         sign: groundWireConfig.earthwire > 0 ? -1 : 0,
@@ -540,6 +556,7 @@ export function MapView({
         weight: 2.5,
         statusKey: STRINGING_KEYS.opgw,
         enabled: groundWireConfig.opgw > 0,
+        channelKey: 'opgw',
       },
     ];
 
@@ -610,9 +627,16 @@ export function MapView({
         const [sn, sl] = channelOffset(ch, sg);
         const start = junctions[i][chIdx] ?? offsetLatLng(a.lat, a.lng, sg.geo, sn, sl);
         const end = junctions[i + 1][chIdx] ?? offsetLatLng(b.lat, b.lng, sg.geo, sn, sl);
-        L.polyline([start, end], { color: ch.color, weight: ch.weight, opacity: doneByStatusKey[ch.statusKey] ? 1 : 0.45 }).addTo(
-          spansGroup,
-        );
+        const line = L.polyline([start, end], {
+          color: ch.color,
+          weight: ch.weight,
+          opacity: doneByStatusKey[ch.statusKey] ? 1 : 0.45,
+          className: isAdmin ? 'span-line-editable' : undefined,
+        }).addTo(spansGroup);
+        line.bindTooltip(`${t(CONDUCTOR_LABEL_KEY[ch.channelKey])}: ${conductorTypes[ch.channelKey]}`, { sticky: true });
+        if (isAdmin) {
+          line.on('click', () => onEditConductorType?.(ch.channelKey));
+        }
       });
     }
 
@@ -673,7 +697,20 @@ export function MapView({
       );
       hasFitBounds.current = true;
     }
-  }, [assets, coordinateSystem, selectedAssetId, onSelect, restrictedAssetIds, activeAssetIds, percentByAssetAndKey, groundWireConfig, language]);
+  }, [
+    assets,
+    coordinateSystem,
+    selectedAssetId,
+    onSelect,
+    restrictedAssetIds,
+    activeAssetIds,
+    percentByAssetAndKey,
+    groundWireConfig,
+    conductorTypes,
+    isAdmin,
+    onEditConductorType,
+    language,
+  ]);
 
   function zoomToSelected() {
     const map = mapRef.current;
