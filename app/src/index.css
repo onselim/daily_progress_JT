@@ -1543,15 +1543,9 @@ button:disabled {
     gap: 8px;
   }
 
-  .project-topbar-actions button {
-    font-size: 9px;
-    padding: 3px 6px;
-  }
-
-  .project-topbar-lang-row .language-switcher {
-    font-size: 9px;
-    padding: 2px 4px;
-  }
+  /* Actual final sizing for these two lives in the "Mobile pass #3" block further
+     down (see its own comment for why) -- this block's own values for the same
+     selectors would otherwise get silently overridden there. */
 
   .asset-search {
     padding: 6px 8px;
@@ -3817,8 +3811,13 @@ a.pw-edit-items-link {
   }
 
   .project-topbar-actions button {
-    padding: 2px 5px;
-    font-size: 8px;
+    padding: 1px 5px;
+    font-size: 7px;
+  }
+
+  .project-topbar-lang-row .language-switcher {
+    padding: 1px 5px;
+    font-size: 7px;
   }
 
   /* The tower list's own budget -- rows are already tight (padding/gap trimmed in an
