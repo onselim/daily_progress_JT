@@ -1462,25 +1462,43 @@ button:disabled {
      ever cut off; map-stage is flex:1 so it still absorbs whatever's left. On
      phones this stacks/wraps vertically rather than the desktop's one-line
      horizontal-scroll layout — there's no room to scroll sideways usefully here. */
-  /* The desktop grid (title | progress boxes | 2-row stat block | daily-plan tabs |
-     2-row actions block, side by side in columns) doesn't make sense on a narrow
-     phone screen -- fall back to everything simply stacking top to bottom instead. */
+  /* Print PDF and the language dropdown are secondary on a phone -- pin them as a
+     small, tightly-stacked pair in the top-right corner next to the title (2 columns:
+     title / corner controls) instead of letting them each claim a full-width row of
+     their own the way the rest of the topbar's blocks stack below. Everything else
+     (progress boxes, headline stats, daily-plan tabs, topbar stats) spans the full
+     width, one block per row, underneath. */
   .project-topbar-row1 {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 8px;
+    row-gap: 2px;
   }
 
-  .project-topbar-left,
+  .project-topbar-left {
+    grid-column: 1;
+    grid-row: 1 / 3;
+  }
+
+  .project-topbar-actions {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .project-topbar-lang-row {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+  }
+
   .pgb,
   .pgb-headline-stats,
-  .project-topbar-stats,
   .daily-plan-row,
-  .project-topbar-actions,
-  .project-topbar-lang-row {
-    grid-column: auto;
+  .project-topbar-stats {
+    grid-column: 1 / -1;
     grid-row: auto;
-    justify-self: auto;
+    justify-self: start;
     align-self: auto;
   }
 
@@ -1528,6 +1546,11 @@ button:disabled {
   .project-topbar-actions button {
     font-size: 9px;
     padding: 3px 6px;
+  }
+
+  .project-topbar-lang-row .language-switcher {
+    font-size: 9px;
+    padding: 2px 4px;
   }
 
   .asset-search {
