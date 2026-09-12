@@ -1113,14 +1113,32 @@ button:disabled {
 .project-topbar {
   flex-shrink: 0;
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
+  flex-direction: column;
+  gap: 2px;
   padding: 4px 20px;
   min-height: 44px;
   background: var(--panel-bg);
   border-bottom: 1px solid var(--border);
+}
+
+/* Everything except the daily-plan tabs: title, progress boxes, headline/topbar stat
+   pills, and the action buttons. Top-aligned (not centered) so the short pills/buttons
+   sit flush with the top of the tall progress-box row instead of floating in the
+   middle of it with empty space above and below. */
+.project-topbar-row1 {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 10px;
   flex-wrap: wrap;
+}
+
+/* The daily-plan tabs get their own row directly below row1 instead of competing for
+   horizontal space inline with everything else -- this is what used to force the action
+   buttons to wrap onto their own line with a lot of empty space around them. */
+.project-topbar-row2 {
+  display: flex;
+  align-items: center;
 }
 
 .project-topbar-left {
@@ -1384,7 +1402,7 @@ button:disabled {
      ever cut off; map-stage is flex:1 so it still absorbs whatever's left. On
      phones this stacks/wraps vertically rather than the desktop's one-line
      horizontal-scroll layout — there's no room to scroll sideways usefully here. */
-  .project-topbar {
+  .project-topbar-row1 {
     align-items: flex-start;
     flex-wrap: wrap;
   }

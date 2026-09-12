@@ -29,60 +29,64 @@ export default function FieldProjectPage() {
   return (
     <div className="project-shell">
       <header className="project-topbar">
-        <div className="project-topbar-left">
-          <Link to="/field">{t('topbar.backToProjects')}</Link>
-          <h1>{project.name}</h1>
-          <p>
-            <a href={`/reports/${project.slug}`} target="_blank" rel="noreferrer">
-              {t('topbar.viewReport')}
-            </a>
-          </p>
+        <div className="project-topbar-row1">
+          <div className="project-topbar-left">
+            <Link to="/field">{t('topbar.backToProjects')}</Link>
+            <h1>{project.name}</h1>
+            <p>
+              <a href={`/reports/${project.slug}`} target="_blank" rel="noreferrer">
+                {t('topbar.viewReport')}
+              </a>
+            </p>
+          </div>
+
+          <ProjectProgressBar projectId={project.id} projectSlug={project.slug} editable isAdmin={false} />
+
+          <div className="project-topbar-stats">
+            <span className="stat-pill">
+              <span className="stat-pill-dot" style={{ background: '#00d4aa' }} />
+              <span className="stat-pill-val">
+                {n(stats.inProgress)}/{n(stats.total)}
+              </span>
+              <span className="stat-pill-lbl">{t('status.active')}</span>
+            </span>
+            <span className="stat-pill">
+              <span className="stat-pill-dot" style={{ background: '#ef4444' }} />
+              <span className="stat-pill-val">
+                {n(restrictedAssetIds.size)}/{n(stats.total)}
+              </span>
+              <span className="stat-pill-lbl">{t('status.noAccess')}</span>
+            </span>
+            <span className="stat-pill">
+              <span className="stat-pill-dot" style={{ background: '#3b82f6' }} />
+              <span className="stat-pill-val">
+                {n(stats.completed)}/{n(stats.total)}
+              </span>
+              <span className="stat-pill-lbl">{t('status.completed')}</span>
+            </span>
+            <span className="stat-pill">
+              <span className="stat-pill-dot" style={{ background: '#3d4259' }} />
+              <span className="stat-pill-val">{n(stats.total)}</span>
+              <span className="stat-pill-lbl">{t('status.towers')}</span>
+            </span>
+          </div>
+          <div className="project-topbar-actions">
+            <LanguageSwitcher />
+            <button type="button" onClick={() => window.open(`/print/${project.slug}?lang=${language}`, '_blank')}>
+              {t('common.printPdf')}
+            </button>
+            <button onClick={signOut}>{t('common.signOut')}</button>
+          </div>
         </div>
 
-        <ProjectProgressBar projectId={project.id} projectSlug={project.slug} editable isAdmin={false} />
-
-        <DailyPlanRow
-          projectId={project.id}
-          assets={assets}
-          workItems={workItems}
-          editable
-          refreshSignal={dailyRefreshSignal}
-        />
-
-        <div className="project-topbar-stats">
-          <span className="stat-pill">
-            <span className="stat-pill-dot" style={{ background: '#00d4aa' }} />
-            <span className="stat-pill-val">
-              {n(stats.inProgress)}/{n(stats.total)}
-            </span>
-            <span className="stat-pill-lbl">{t('status.active')}</span>
-          </span>
-          <span className="stat-pill">
-            <span className="stat-pill-dot" style={{ background: '#ef4444' }} />
-            <span className="stat-pill-val">
-              {n(restrictedAssetIds.size)}/{n(stats.total)}
-            </span>
-            <span className="stat-pill-lbl">{t('status.noAccess')}</span>
-          </span>
-          <span className="stat-pill">
-            <span className="stat-pill-dot" style={{ background: '#3b82f6' }} />
-            <span className="stat-pill-val">
-              {n(stats.completed)}/{n(stats.total)}
-            </span>
-            <span className="stat-pill-lbl">{t('status.completed')}</span>
-          </span>
-          <span className="stat-pill">
-            <span className="stat-pill-dot" style={{ background: '#3d4259' }} />
-            <span className="stat-pill-val">{n(stats.total)}</span>
-            <span className="stat-pill-lbl">{t('status.towers')}</span>
-          </span>
-        </div>
-        <div className="project-topbar-actions">
-          <LanguageSwitcher />
-          <button type="button" onClick={() => window.open(`/print/${project.slug}?lang=${language}`, '_blank')}>
-            {t('common.printPdf')}
-          </button>
-          <button onClick={signOut}>{t('common.signOut')}</button>
+        <div className="project-topbar-row2">
+          <DailyPlanRow
+            projectId={project.id}
+            assets={assets}
+            workItems={workItems}
+            editable
+            refreshSignal={dailyRefreshSignal}
+          />
         </div>
       </header>
 
