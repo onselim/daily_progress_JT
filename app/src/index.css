@@ -1124,12 +1124,13 @@ button:disabled {
    rendered by this page) need to stack into their own compact 2-row column without
    being DOM-nested inside a shared wrapper -- a grid lets two unrelated siblings share
    a column (one per row) instead. Same trick for the action buttons (row 1) sitting
-   above the language switcher (row 2). Column 5 is a flexible spacer that absorbs all
-   left-over width, so the actions/language column stays pinned to the far right
-   exactly like `margin-left: auto` used to. */
+   above the language switcher (row 2). Every column is content-sized (no flexible
+   spacer) so the whole cluster stays compact and left-aligned -- the goal is
+   eliminating wasted space in the topbar, not redistributing it as a gap before the
+   action buttons. */
 .project-topbar-row1 {
   display: grid;
-  grid-template-columns: auto auto auto auto 1fr;
+  grid-template-columns: auto auto auto auto auto;
   column-gap: 16px;
   row-gap: 2px;
 }
@@ -1418,6 +1419,35 @@ button:disabled {
   display: flex;
   overflow: hidden;
   min-height: 0;
+}
+
+/* CSS Grid doesn't wrap the way flex does -- below the width the full 5-column layout
+   needs (worst case: the admin page's 6 action buttons), items don't reflow onto a new
+   line, they just overflow past the visible edge, silently hiding buttons off-screen
+   instead of degrading gracefully. Below this breakpoint, fall back to a wrapping flex
+   row (items flow left to right and wrap onto additional lines only as needed) rather
+   than risk that -- much more compact than the full vertical stack the phone
+   breakpoint uses, appropriate for "narrower desktop/laptop", not "phone". */
+@media (max-width: 1600px) {
+  .project-topbar-row1 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .project-topbar-left,
+  .pgb,
+  .pgb-headline-stats,
+  .project-topbar-stats,
+  .daily-plan-row,
+  .project-topbar-actions,
+  .project-topbar-lang-row {
+    grid-column: auto;
+    grid-row: auto;
+    justify-self: auto;
+    align-self: auto;
+  }
 }
 
 @media (max-width: 720px) {
