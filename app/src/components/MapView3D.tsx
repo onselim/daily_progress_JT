@@ -54,6 +54,17 @@ function loadCesium(): Promise<void> {
   return cesiumLoadPromise;
 }
 
+/** Same category -> color mapping as `geoLayerStyle` in MapView.tsx (2D), so an
+ * existing-infrastructure layer looks like "the same line, tilted" between views. */
+function geoLayerColors(category?: string): { stroke: string; fill: string | null } {
+  if (category === 'pipeline') return { stroke: '#a16207', fill: null };
+  if (category === 'substation') return { stroke: '#ef4444', fill: '#ef4444' };
+  if (category === 'power_plant') return { stroke: '#a855f7', fill: '#a855f7' };
+  if (category === 'railway') return { stroke: '#1f2937', fill: null };
+  if (category === 'excavation_pit') return { stroke: '#78350f', fill: '#facc15' };
+  return { stroke: '#f59e0b', fill: null };
+}
+
 interface MapView3DProps {
   assets: AssetListItem[];
   coordinateSystem: string | null;
@@ -61,14 +72,19 @@ interface MapView3DProps {
   onSelect: (assetId: string) => void;
   restrictedAssetIds: Set<string>;
   activeAssetIds: Set<string>;
+  geoLayers?: { id: string; name: string; url: string }[];
+  onLayerError?: (layerId: string, message: string) => void;
 }
 
 /** A realistic 3D alternative to the flat 2D `MapView` -- real terrain elevation
  * (Cesium World Terrain) draped with the same Google Satellite imagery the 2D map uses,
- * so mountains actually look like mountains. Deliberately a subset of the 2D map's
- * features (towers colored by status + click-to-select, single-line conductor spans) --
- * the heat map, deflection badges, existing-infrastructure layers, photo clusters, and
- * basemap switching stay 2D-only. See the project plan for the full scope rationale. */
+ * so mountains actually look like mountains. Towers (colored by status, clickable),
+ * conductor spans, and existing-infrastructure GeoJSON layers (Layers panel, e.g.
+ * excavation pits) all render here too, using the same category colors as the 2D map.
+ * Deliberately still a subset of the 2D map's features -- the heat map, deflection
+ * badges, photo clusters, and basemap switching stay 2D-only for now (no per-feature
+ * hover tooltips on the GeoJSON layers either, unlike 2D's `bindTooltip`). See the
+ * project plan for the full scope rationale. */
 export function MapView3D({
   assets,
   coordinateSystem,
@@ -76,12 +92,18 @@ export function MapView3D({
   onSelect,
   restrictedAssetIds,
   activeAssetIds,
+  geoLayers = [],
+  onLayerError,
 }: MapView3DProps) {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
+  const geoDataSourceRef = useRef<any>(null);
+  const loadedGeoLayersRef = useRef<Map<string, any[]>>(new Map());
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const onLayerErrorRef = useRef(onLayerError);
+  onLayerErrorRef.current = onLayerError;
   const [status, setStatus] = useState<'loading' | 'ready' | 'ready-flat' | 'error'>('loading');
 
   useEffect(() => {
@@ -138,6 +160,14 @@ export function MapView3D({
           }
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
+        // Existing-infrastructure GeoJSON layers (Layers panel, e.g. excavation pits)
+        // live in their own data source rather than `viewer.entities` -- that collection
+        // gets wiped and rebuilt wholesale on every asset/status change (see the effect
+        // below), which would otherwise also erase these on every unrelated re-render.
+        const geoDataSource = new Cesium.CustomDataSource('geoLayers');
+        viewer.dataSources.add(geoDataSource);
+        geoDataSourceRef.current = geoDataSource;
+
         viewerRef.current = viewer;
         setStatus(flatTerrain ? 'ready-flat' : 'ready');
       })
@@ -149,6 +179,8 @@ export function MapView3D({
       cancelled = true;
       viewerRef.current?.destroy();
       viewerRef.current = null;
+      geoDataSourceRef.current = null;
+      loadedGeoLayersRef.current.clear();
     };
   }, []);
 
@@ -208,6 +240,83 @@ export function MapView3D({
       viewer.flyTo(viewer.entities, { duration: 0 });
     }
   }, [assets, coordinateSystem, selectedAssetId, restrictedAssetIds, activeAssetIds, status]);
+
+  useEffect(() => {
+    const dataSource = geoDataSourceRef.current;
+    if (!dataSource || (status !== 'ready' && status !== 'ready-flat')) return;
+    const Cesium = window.Cesium;
+    let cancelled = false;
+
+    const activeIds = new Set(geoLayers.map((l) => l.id));
+    for (const [id, entities] of loadedGeoLayersRef.current) {
+      if (!activeIds.has(id)) {
+        for (const entity of entities) dataSource.entities.remove(entity);
+        loadedGeoLayersRef.current.delete(id);
+      }
+    }
+
+    for (const geoLayer of geoLayers) {
+      if (loadedGeoLayersRef.current.has(geoLayer.id)) continue;
+      fetch(geoLayer.url)
+        .then((res) => res.json())
+        .then((data) => {
+          if (cancelled || loadedGeoLayersRef.current.has(geoLayer.id)) return;
+          const validTypes = ['FeatureCollection', 'Feature', 'GeometryCollection'];
+          if (!validTypes.includes(data?.type)) {
+            onLayerErrorRef.current?.(geoLayer.id, `Not a GeoJSON file (found "${data?.type ?? typeof data}" instead)`);
+            return;
+          }
+
+          const features = data.type === 'FeatureCollection' ? data.features : data.type === 'Feature' ? [data] : [];
+          const addedEntities: any[] = [];
+
+          const addPolygon = (ring: [number, number][], stroke: string, fill: string | null) => {
+            addedEntities.push(
+              dataSource.entities.add({
+                polygon: {
+                  hierarchy: new Cesium.PolygonHierarchy(Cesium.Cartesian3.fromDegreesArray(ring.flat())),
+                  material: Cesium.Color.fromCssColorString(fill ?? stroke).withAlpha(0.5),
+                  outline: true,
+                  outlineColor: Cesium.Color.fromCssColorString(stroke),
+                },
+              }),
+            );
+          };
+          const addLine = (coords: [number, number][], stroke: string) => {
+            addedEntities.push(
+              dataSource.entities.add({
+                polyline: {
+                  positions: Cesium.Cartesian3.fromDegreesArray(coords.flat()),
+                  width: 3,
+                  material: Cesium.Color.fromCssColorString(stroke),
+                  clampToGround: true,
+                },
+              }),
+            );
+          };
+
+          for (const feature of features) {
+            const geom = feature?.geometry;
+            if (!geom) continue;
+            const { stroke, fill } = geoLayerColors(feature?.properties?.category);
+
+            if (geom.type === 'Polygon') addPolygon(geom.coordinates[0], stroke, fill);
+            else if (geom.type === 'MultiPolygon') for (const poly of geom.coordinates) addPolygon(poly[0], stroke, fill);
+            else if (geom.type === 'LineString') addLine(geom.coordinates, stroke);
+            else if (geom.type === 'MultiLineString') for (const line of geom.coordinates) addLine(line, stroke);
+          }
+
+          loadedGeoLayersRef.current.set(geoLayer.id, addedEntities);
+        })
+        .catch((err) => {
+          onLayerErrorRef.current?.(geoLayer.id, err instanceof Error ? err.message : 'Failed to load layer');
+        });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [geoLayers, status]);
 
   return (
     <div className="map-view-3d-wrap">

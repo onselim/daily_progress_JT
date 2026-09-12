@@ -273,6 +273,8 @@ export function AssetWorkspace({
                 onSelect={setSelectedAssetId}
                 restrictedAssetIds={restrictedAssetIds}
                 activeAssetIds={activeAssetIds}
+                geoLayers={activeMapLayers}
+                onLayerError={(layerId, message) => setLayerErrors((prev) => ({ ...prev, [layerId]: message }))}
               />
               <div className="map-bottom-left-controls">{dimensionToggle}</div>
             </>
