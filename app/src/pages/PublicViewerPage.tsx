@@ -47,6 +47,8 @@ export default function PublicViewerPage() {
 
           <ProjectProgressBar projectId={project.id} projectSlug={project.slug} editable={false} isAdmin={false} />
 
+          <DailyPlanRow projectId={project.id} assets={assets} workItems={workItems} editable={false} />
+
           <div className="project-topbar-stats">
             <span className="stat-pill">
               <span className="stat-pill-dot" style={{ background: '#00d4aa' }} />
@@ -101,10 +103,6 @@ export default function PublicViewerPage() {
               {t('common.printPdf')}
             </button>
           </div>
-        </div>
-
-        <div className="project-topbar-row2">
-          <DailyPlanRow projectId={project.id} assets={assets} workItems={workItems} editable={false} />
         </div>
       </header>
 
