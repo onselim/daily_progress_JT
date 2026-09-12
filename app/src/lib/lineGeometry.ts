@@ -38,6 +38,30 @@ export function bearingDeg(aLat: number, aLng: number, bLat: number, bLng: numbe
   return (Math.atan2(dLon, dLat) * 180) / Math.PI;
 }
 
+export interface SpanGeometry {
+  nx: number;
+  ny: number;
+}
+
+/** Perpendicular unit vector to the direction from `a` to `b`, in a small-scale
+ * equirectangular approximation (fine at the tower-to-tower distances involved here).
+ * Shared between the 2D (Leaflet) and 3D (Cesium) map views so the conductor/OPGW/
+ * earthwire parallel-line offsets look consistent between them. */
+export function spanGeometry(aLat: number, aLng: number, bLat: number, bLng: number): SpanGeometry | null {
+  const cosLat = Math.cos(((aLat + bLat) / 2) * (Math.PI / 180));
+  const dLon = (bLng - aLng) * cosLat;
+  const dLat = bLat - aLat;
+  const len = Math.sqrt(dLon * dLon + dLat * dLat);
+  if (len < 0.000001) return null;
+  return { nx: -dLat / len, ny: dLon / len };
+}
+
+/** Offsets a lat/lng point sideways by `sn` (longitude-direction, already /cosLat-corrected)
+ * and `sl` (latitude-direction) along the given perpendicular unit vector. */
+export function offsetLatLng(lat: number, lng: number, geo: SpanGeometry, sn: number, sl: number): [number, number] {
+  return [lat + geo.ny * sl, lng + geo.nx * sn];
+}
+
 /** Straight-line distance in projected (UTM) meters — more precise than the geodesic
  * approximation when both points have real x/y, since it's exactly what the structure
  * list's own coordinates were surveyed in. Falls back to haversine on lat/lng for points

@@ -7,8 +7,8 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { utmToLatLng } from '../lib/utmToLatLng';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 import { localizeDigits } from '../lib/i18n/localizeDigits';
-import { resolveLinePath, bearingDeg } from '../lib/lineGeometry';
-import { STATUS_COLOR, GOOGLE_SATELLITE_URL_TEMPLATE } from '../lib/mapConstants';
+import { resolveLinePath, bearingDeg, spanGeometry, offsetLatLng, type SpanGeometry } from '../lib/lineGeometry';
+import { STATUS_COLOR, SPAN_COLOR, GOOGLE_SATELLITE_URL_TEMPLATE } from '../lib/mapConstants';
 import type { AssetListItem } from '../lib/useAssets';
 import type { GroundWireConfig } from '../lib/useGroundWireConfig';
 import type { LineConductorTypes } from '../lib/useLineConductorTypes';
@@ -24,29 +24,6 @@ const CONDUCTOR_LABEL_KEY: Record<keyof LineConductorTypes, TranslationKey> = {
 // Stringing work-item keys from the default Construction template — used to color/dim
 // the conductor/OPGW/EW span lines by whether that phase has actually been strung.
 const STRINGING_KEYS = { conductor: 'st_cd', opgw: 'st_op', earthwire: 'st_ew' };
-const SPAN_COLOR = { conductor: '#ef4444', earthwire: '#3b82f6', opgw: '#f59e0b' };
-
-interface SpanGeometry {
-  nx: number;
-  ny: number;
-}
-
-/** Perpendicular unit vector to the direction from `a` to `b`, in a small-scale
- * equirectangular approximation (fine at the tower-to-tower distances involved here). */
-function spanGeometry(aLat: number, aLng: number, bLat: number, bLng: number): SpanGeometry | null {
-  const cosLat = Math.cos(((aLat + bLat) / 2) * (Math.PI / 180));
-  const dLon = (bLng - aLng) * cosLat;
-  const dLat = bLat - aLat;
-  const len = Math.sqrt(dLon * dLon + dLat * dLat);
-  if (len < 0.000001) return null;
-  return { nx: -dLat / len, ny: dLon / len };
-}
-
-/** Offsets a lat/lng point sideways by `sn` (longitude-direction, already /cosLat-corrected)
- * and `sl` (latitude-direction) along the given perpendicular unit vector. */
-function offsetLatLng(lat: number, lng: number, geo: SpanGeometry, sn: number, sl: number): [number, number] {
-  return [lat + geo.ny * sl, lng + geo.nx * sn];
-}
 
 /** Where offset lines on the inside of a bend converge (cross each other in the raw
  * per-span rendering) and lines on the outside of a bend diverge (leave a gap), the

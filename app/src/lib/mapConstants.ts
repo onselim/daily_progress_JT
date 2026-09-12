@@ -9,3 +9,5 @@ export const STATUS_COLOR: Record<string, string> = {
 };
 
 export const GOOGLE_SATELLITE_URL_TEMPLATE = 'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}';
+
+export const SPAN_COLOR = { conductor: '#ef4444', earthwire: '#3b82f6', opgw: '#f59e0b' };

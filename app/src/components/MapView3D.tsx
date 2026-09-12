@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { utmToLatLng } from '../lib/utmToLatLng';
-import { resolveLinePath } from '../lib/lineGeometry';
-import { STATUS_COLOR, GOOGLE_SATELLITE_URL_TEMPLATE } from '../lib/mapConstants';
+import { resolveLinePath, spanGeometry, offsetLatLng } from '../lib/lineGeometry';
+import { STATUS_COLOR, SPAN_COLOR, GOOGLE_SATELLITE_URL_TEMPLATE } from '../lib/mapConstants';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 import type { AssetListItem } from '../lib/useAssets';
+import type { GroundWireConfig } from '../lib/useGroundWireConfig';
+import type { LineConductorTypes } from '../lib/useLineConductorTypes';
 
 // CesiumJS is loaded from its own CDN, not bundled via npm -- it's a large library and
 // most visitors (especially the no-login public viewer) never touch the 3D toggle, so
@@ -72,14 +74,19 @@ interface MapView3DProps {
   onSelect: (assetId: string) => void;
   restrictedAssetIds: Set<string>;
   activeAssetIds: Set<string>;
+  groundWireConfig: GroundWireConfig;
+  isAdmin?: boolean;
+  onEditConductorType?: (channel: keyof LineConductorTypes) => void;
   geoLayers?: { id: string; name: string; url: string }[];
   onLayerError?: (layerId: string, message: string) => void;
 }
 
 /** A realistic 3D alternative to the flat 2D `MapView` -- real terrain elevation
  * (Cesium World Terrain) draped with the same Google Satellite imagery the 2D map uses,
- * so mountains actually look like mountains. Towers (colored by status, clickable),
- * conductor spans, and existing-infrastructure GeoJSON layers (Layers panel, e.g.
+ * so mountains actually look like mountains. Towers (colored by status, clickable,
+ * labeled with their asset code), separate conductor/earthwire/OPGW spans (same
+ * colors/offsets as 2D, admin-clickable to edit that channel's type -- see
+ * ConductorTypeDialog), and existing-infrastructure GeoJSON layers (Layers panel, e.g.
  * excavation pits) all render here too, using the same category colors as the 2D map.
  * Deliberately still a subset of the 2D map's features -- the heat map, deflection
  * badges, photo clusters, and basemap switching stay 2D-only for now (no per-feature
@@ -92,6 +99,9 @@ export function MapView3D({
   onSelect,
   restrictedAssetIds,
   activeAssetIds,
+  groundWireConfig,
+  isAdmin = false,
+  onEditConductorType,
   geoLayers = [],
   onLayerError,
 }: MapView3DProps) {
@@ -102,6 +112,10 @@ export function MapView3D({
   const loadedGeoLayersRef = useRef<Map<string, any[]>>(new Map());
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const isAdminRef = useRef(isAdmin);
+  isAdminRef.current = isAdmin;
+  const onEditConductorTypeRef = useRef(onEditConductorType);
+  onEditConductorTypeRef.current = onEditConductorType;
   const onLayerErrorRef = useRef(onLayerError);
   onLayerErrorRef.current = onLayerError;
   const [status, setStatus] = useState<'loading' | 'ready' | 'ready-flat' | 'error'>('loading');
@@ -155,7 +169,12 @@ export function MapView3D({
         const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
         handler.setInputAction((click: { position: unknown }) => {
           const picked = viewer.scene.pick(click.position);
-          if (Cesium.defined(picked) && picked.id && typeof picked.id.id === 'string') {
+          if (!Cesium.defined(picked) || !picked.id) return;
+          if (picked.id.channelKey) {
+            if (isAdminRef.current) onEditConductorTypeRef.current?.(picked.id.channelKey);
+            return;
+          }
+          if (typeof picked.id.id === 'string') {
             onSelectRef.current(picked.id.id);
           }
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
@@ -234,24 +253,60 @@ export function MapView3D({
       });
     }
 
+    // Conductor (x2, either side of the line), earthwire, and OPGW as separate
+    // parallel offset lines -- the same sign/baseDeg offset math as the 2D map's
+    // `channels` array, minus its miter-join refinement at bends (a 2D-only nicety;
+    // simple per-span offsets are the accepted 3D v1 simplification). Each entity gets
+    // a `channelKey` so an admin click can look up which project_config field to edit.
     const points = resolveLinePath(assets, coordinateSystem);
+    const channels: { sign: number; baseDeg: number; color: string; channelKey: keyof LineConductorTypes; enabled: boolean }[] = [
+      { sign: 1, baseDeg: 0.00009, color: SPAN_COLOR.conductor, channelKey: 'conductor', enabled: true },
+      { sign: -1, baseDeg: 0.00009, color: SPAN_COLOR.conductor, channelKey: 'conductor', enabled: true },
+      {
+        sign: 1,
+        baseDeg: 0.000045,
+        color: SPAN_COLOR.earthwire,
+        channelKey: 'earthwire',
+        enabled: groundWireConfig.earthwire > 0,
+      },
+      {
+        sign: groundWireConfig.earthwire > 0 ? -1 : 0,
+        baseDeg: 0.000045,
+        color: SPAN_COLOR.opgw,
+        channelKey: 'opgw',
+        enabled: groundWireConfig.opgw > 0,
+      },
+    ];
+
     for (let i = 0; i < points.length - 1; i++) {
       const a = points[i];
       const b = points[i + 1];
-      viewer.entities.add({
-        polyline: {
-          positions: Cesium.Cartesian3.fromDegreesArray([a.lng, a.lat, b.lng, b.lat]),
-          width: 2,
-          material: Cesium.Color.fromCssColorString('#ef4444'),
-          clampToGround: true,
-        },
-      });
+      const geo = spanGeometry(a.lat, a.lng, b.lat, b.lng);
+      if (!geo) continue;
+      const cosLat = Math.cos(((a.lat + b.lat) / 2) * (Math.PI / 180));
+
+      for (const ch of channels) {
+        if (!ch.enabled) continue;
+        const sn = (ch.sign * ch.baseDeg) / cosLat;
+        const sl = ch.sign * ch.baseDeg;
+        const [startLat, startLng] = offsetLatLng(a.lat, a.lng, geo, sn, sl);
+        const [endLat, endLng] = offsetLatLng(b.lat, b.lng, geo, sn, sl);
+        const entity = viewer.entities.add({
+          polyline: {
+            positions: Cesium.Cartesian3.fromDegreesArray([startLng, startLat, endLng, endLat]),
+            width: 2,
+            material: Cesium.Color.fromCssColorString(ch.color),
+            clampToGround: true,
+          },
+        });
+        entity.channelKey = ch.channelKey;
+      }
     }
 
     if (viewer.entities.values.length > 0) {
       viewer.flyTo(viewer.entities, { duration: 0 });
     }
-  }, [assets, coordinateSystem, selectedAssetId, restrictedAssetIds, activeAssetIds, status]);
+  }, [assets, coordinateSystem, selectedAssetId, restrictedAssetIds, activeAssetIds, groundWireConfig, status]);
 
   useEffect(() => {
     const dataSource = geoDataSourceRef.current;

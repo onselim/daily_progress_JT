@@ -277,6 +277,9 @@ export function AssetWorkspace({
                 onSelect={setSelectedAssetId}
                 restrictedAssetIds={restrictedAssetIds}
                 activeAssetIds={activeAssetIds}
+                groundWireConfig={groundWireConfig}
+                isAdmin={isAdmin}
+                onEditConductorType={setEditingChannel}
                 geoLayers={activeMapLayers}
                 onLayerError={(layerId, message) => setLayerErrors((prev) => ({ ...prev, [layerId]: message }))}
               />
