@@ -1119,16 +1119,59 @@ button:disabled {
   border-bottom: 1px solid var(--border);
 }
 
-/* Title, progress boxes, daily-plan tabs, stat pills, and action buttons, all
-   top-aligned (not centered) so the short pills/tabs/buttons sit flush with the top of
-   the tall progress-box row instead of floating in the middle of it with empty space
-   above and below. */
+/* Grid, not flex: the headline stat pills (Foundation/Erection/Stringing, rendered by
+   ProjectProgressBar) and the topbar stat pills (Active/No Access/Completed/Towers,
+   rendered by this page) need to stack into their own compact 2-row column without
+   being DOM-nested inside a shared wrapper -- a grid lets two unrelated siblings share
+   a column (one per row) instead. Same trick for the action buttons (row 1) sitting
+   above the language switcher (row 2). Column 5 is a flexible spacer that absorbs all
+   left-over width, so the actions/language column stays pinned to the far right
+   exactly like `margin-left: auto` used to. */
 .project-topbar-row1 {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 10px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto auto auto auto 1fr;
+  column-gap: 16px;
+  row-gap: 2px;
+}
+
+.project-topbar-left {
+  grid-column: 1;
+  grid-row: 1 / 3;
+}
+
+.pgb {
+  grid-column: 2;
+  grid-row: 1 / 3;
+}
+
+.pgb-headline-stats {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: end;
+}
+
+.project-topbar-stats {
+  grid-column: 3;
+  grid-row: 2;
+  align-self: start;
+}
+
+.daily-plan-row {
+  grid-column: 4;
+  grid-row: 1 / 3;
+  align-self: center;
+}
+
+.project-topbar-actions {
+  grid-column: 5;
+  grid-row: 1;
+  justify-self: end;
+}
+
+.project-topbar-lang-row {
+  grid-column: 5;
+  grid-row: 2;
+  justify-self: end;
 }
 
 .project-topbar-left {
@@ -1162,13 +1205,10 @@ button:disabled {
 }
 
 /* Action buttons (Edit work items / Print PDF / Delete / Sign out) are secondary to the
-   progress overview, so they're shrunk down and pushed to the far right — everything
-   else packs tightly on the left, keeping the whole topbar a single thin line. */
+   progress overview, so they're shrunk down. */
 .project-topbar-actions {
   display: flex;
   gap: 6px;
-  margin-left: auto;
-  flex-shrink: 0;
 }
 
 .project-topbar-actions button {
@@ -1392,13 +1432,26 @@ button:disabled {
      ever cut off; map-stage is flex:1 so it still absorbs whatever's left. On
      phones this stacks/wraps vertically rather than the desktop's one-line
      horizontal-scroll layout — there's no room to scroll sideways usefully here. */
+  /* The desktop grid (title | progress boxes | 2-row stat block | daily-plan tabs |
+     2-row actions block, side by side in columns) doesn't make sense on a narrow
+     phone screen -- fall back to everything simply stacking top to bottom instead. */
   .project-topbar-row1 {
+    display: flex;
+    flex-direction: column;
     align-items: flex-start;
-    flex-wrap: wrap;
   }
 
-  .project-topbar-actions {
-    margin-left: 0;
+  .project-topbar-left,
+  .pgb,
+  .pgb-headline-stats,
+  .project-topbar-stats,
+  .daily-plan-row,
+  .project-topbar-actions,
+  .project-topbar-lang-row {
+    grid-column: auto;
+    grid-row: auto;
+    justify-self: auto;
+    align-self: auto;
   }
 
   /* Smaller text throughout the topbar on phones — the desktop sizes were eating

@@ -79,11 +79,13 @@ export default function FieldProjectPage() {
             </span>
           </div>
           <div className="project-topbar-actions">
-            <LanguageSwitcher />
             <button type="button" onClick={() => window.open(`/print/${project.slug}?lang=${language}`, '_blank')}>
               {t('common.printPdf')}
             </button>
             <button onClick={signOut}>{t('common.signOut')}</button>
+          </div>
+          <div className="project-topbar-lang-row">
+            <LanguageSwitcher />
           </div>
         </div>
       </header>

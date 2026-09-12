@@ -78,7 +78,6 @@ export default function PublicViewerPage() {
             </span>
           </div>
           <div className="project-topbar-actions">
-            <LanguageSwitcher />
             {snapshots.length > 0 && (
               <select
                 className="report-history-select"
@@ -102,6 +101,9 @@ export default function PublicViewerPage() {
             <button type="button" onClick={() => window.open(`/print/${project.slug}?lang=${language}`, '_blank')}>
               {t('common.printPdf')}
             </button>
+          </div>
+          <div className="project-topbar-lang-row">
+            <LanguageSwitcher />
           </div>
         </div>
       </header>

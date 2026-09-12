@@ -82,7 +82,6 @@ export default function AdminProjectPage() {
             </span>
           </div>
           <div className="project-topbar-actions">
-            <LanguageSwitcher />
             <button type="button" onClick={() => navigate(`/admin/${project.slug}/work-items`)}>
               {t('topbar.editWorkItems')}
             </button>
@@ -99,6 +98,9 @@ export default function AdminProjectPage() {
               {t('common.delete')}
             </button>
             <button onClick={signOut}>{t('common.signOut')}</button>
+          </div>
+          <div className="project-topbar-lang-row">
+            <LanguageSwitcher />
           </div>
         </div>
       </header>
