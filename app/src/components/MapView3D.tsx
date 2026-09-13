@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { utmToLatLng } from '../lib/utmToLatLng';
-import { resolveLinePath, spanGeometry, offsetLatLng } from '../lib/lineGeometry';
+import { resolveLinePath, bearingDeg, spanGeometry, offsetLatLng } from '../lib/lineGeometry';
 import { STATUS_COLOR, SPAN_COLOR, GOOGLE_SATELLITE_URL_TEMPLATE } from '../lib/mapConstants';
+import { loadCesium } from '../lib/loadCesium';
+import { toLyingLocalPoint } from '../lib/towerModelGeometry';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 import type { AssetListItem } from '../lib/useAssets';
 import type { GroundWireConfig } from '../lib/useGroundWireConfig';
 import type { LineConductorTypes } from '../lib/useLineConductorTypes';
+import type { TowerModelSegment } from '../lib/extractTowerModels';
 
 // CesiumJS is loaded from its own CDN, not bundled via npm -- it's a large library and
 // most visitors (especially the no-login public viewer) never touch the 3D toggle, so
@@ -19,42 +22,12 @@ declare global {
   }
 }
 
-const CESIUM_VERSION = '1.120';
-const CESIUM_BASE_URL = `https://cesium.com/downloads/cesiumjs/releases/${CESIUM_VERSION}/Build/Cesium/`;
-
 // Free Cesium ion "Default Token" (ion.cesium.com -> Access Tokens) -- this is meant to
 // ship client-side, the same way a Google Maps API key does; it's not a secret. Needed
 // for real elevation (Cesium World Terrain) since the CDN build's own shared demo token
 // is rejected (401), independent of anything this app does.
 const CESIUM_ION_TOKEN =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IkxpMmFZMjVBQjd6M1pfanMiLCJqdGkiOiJiODVjNzgxYS0zZGNlLTRiNGQtYjdiNi03MTA3YmYxMmJmZWIiLCJpZCI6NDg5ODE0LCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3ODkxNzAxODJ9.y4-AHogcdPlkoOsxLLkGHVZB5Jfg7uTD53UQ-uSZaHY';
-
-let cesiumLoadPromise: Promise<void> | null = null;
-
-/** Loads Cesium.js + its widget CSS from the CDN exactly once per page session
- * (cached at module scope), regardless of how many times the 3D view is toggled on. */
-function loadCesium(): Promise<void> {
-  if (window.Cesium) return Promise.resolve();
-  if (cesiumLoadPromise) return cesiumLoadPromise;
-
-  cesiumLoadPromise = new Promise((resolve, reject) => {
-    window.CESIUM_BASE_URL = CESIUM_BASE_URL;
-
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = `${CESIUM_BASE_URL}Widgets/widgets.css`;
-    document.head.appendChild(link);
-
-    const script = document.createElement('script');
-    script.src = `${CESIUM_BASE_URL}Cesium.js`;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Cesium from CDN'));
-    document.head.appendChild(script);
-  });
-
-  return cesiumLoadPromise;
-}
 
 /** Same category -> color mapping as `geoLayerStyle` in MapView.tsx (2D), so an
  * existing-infrastructure layer looks like "the same line, tilted" between views. */
@@ -66,6 +39,8 @@ function geoLayerColors(category?: string): { stroke: string; fill: string | nul
   if (category === 'excavation_pit') return { stroke: '#78350f', fill: '#facc15' };
   return { stroke: '#f59e0b', fill: null };
 }
+
+const KML_EXTENSIONS = /\.(kml|kmz)$/i;
 
 interface MapView3DProps {
   assets: AssetListItem[];
@@ -79,6 +54,8 @@ interface MapView3DProps {
   onEditConductorType?: (channel: keyof LineConductorTypes) => void;
   geoLayers?: { id: string; name: string; url: string }[];
   onLayerError?: (layerId: string, message: string) => void;
+  towerModels?: Record<string, TowerModelSegment[]>;
+  percentByAssetAndKey?: Record<string, Record<string, number>>;
 }
 
 /** A realistic 3D alternative to the flat 2D `MapView` -- real terrain elevation
@@ -104,12 +81,15 @@ export function MapView3D({
   onEditConductorType,
   geoLayers = [],
   onLayerError,
+  towerModels = {},
+  percentByAssetAndKey = {},
 }: MapView3DProps) {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
   const geoDataSourceRef = useRef<any>(null);
   const loadedGeoLayersRef = useRef<Map<string, any[]>>(new Map());
+  const loadedKmlLayersRef = useRef<Map<string, any>>(new Map());
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
   const isAdminRef = useRef(isAdmin);
@@ -200,6 +180,7 @@ export function MapView3D({
       viewerRef.current = null;
       geoDataSourceRef.current = null;
       loadedGeoLayersRef.current.clear();
+      loadedKmlLayersRef.current.clear();
     };
   }, []);
 
@@ -303,10 +284,111 @@ export function MapView3D({
       }
     }
 
+    // Per-tower 3D model (from an admin-extracted PLS-CADD KMZ), oriented by that
+    // asset's construction status: lying flat once Ground Assembly (`er_ge`) is done but
+    // Erection of Towers (`er_te`) isn't yet, standing upright once erection is done.
+    // Not shown at all before ground assembly starts -- purely a visual cue layered on
+    // top of the always-present point/label, same click behavior as before either way.
+    const bearingByAssetId = new Map<string, number>();
+    for (let i = 0; i < points.length; i++) {
+      const prev = points[i - 1];
+      const cur = points[i];
+      const next = points[i + 1];
+      if (prev) bearingByAssetId.set(cur.id, bearingDeg(prev.lat, prev.lng, cur.lat, cur.lng));
+      else if (next) bearingByAssetId.set(cur.id, bearingDeg(cur.lat, cur.lng, next.lat, next.lng));
+      else bearingByAssetId.set(cur.id, 0);
+    }
+
+    for (const asset of assets) {
+      const segments = towerModels[asset.id];
+      if (!segments || segments.length === 0) continue;
+      const groundAssemblyPct = percentByAssetAndKey[asset.id]?.['er_ge'] ?? 0;
+      const erectionPct = percentByAssetAndKey[asset.id]?.['er_te'] ?? 0;
+      if (groundAssemblyPct < 100) continue;
+      const lying = erectionPct < 100;
+
+      let lat = asset.lat;
+      let lng = asset.lng;
+      if ((lat == null || lng == null) && asset.x != null && asset.y != null && coordinateSystem) {
+        try {
+          [lat, lng] = utmToLatLng(asset.x, asset.y, coordinateSystem);
+        } catch {
+          continue;
+        }
+      }
+      if (lat == null || lng == null) continue;
+
+      const groundHeight = viewer.scene.globe.getHeight(Cesium.Cartographic.fromDegrees(lng, lat)) ?? 0;
+      const basePosition = Cesium.Cartesian3.fromDegrees(lng, lat, groundHeight);
+      const enuMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(basePosition);
+      const bearing = bearingByAssetId.get(asset.id) ?? 0;
+
+      for (const seg of segments) {
+        const [ae, an, au] = lying ? toLyingLocalPoint(seg.a[0], seg.a[1], seg.a[2], bearing) : seg.a;
+        const [be, bn, bu] = lying ? toLyingLocalPoint(seg.b[0], seg.b[1], seg.b[2], bearing) : seg.b;
+        const worldA = Cesium.Matrix4.multiplyByPoint(enuMatrix, new Cesium.Cartesian3(ae, an, au), new Cesium.Cartesian3());
+        const worldB = Cesium.Matrix4.multiplyByPoint(enuMatrix, new Cesium.Cartesian3(be, bn, bu), new Cesium.Cartesian3());
+        viewer.entities.add({
+          polyline: {
+            positions: [worldA, worldB],
+            width: 1.5,
+            material: Cesium.Color.fromCssColorString(lying ? '#94a3b8' : '#e5e7eb'),
+          },
+        });
+      }
+    }
+
     if (viewer.entities.values.length > 0) {
       viewer.flyTo(viewer.entities, { duration: 0 });
     }
-  }, [assets, coordinateSystem, selectedAssetId, restrictedAssetIds, activeAssetIds, groundWireConfig, status]);
+  }, [
+    assets,
+    coordinateSystem,
+    selectedAssetId,
+    restrictedAssetIds,
+    activeAssetIds,
+    groundWireConfig,
+    status,
+    towerModels,
+    percentByAssetAndKey,
+  ]);
+
+  // PLS-CADD KML/KMZ layers (its own tower wireframes/spans/tour paths, absolute
+  // elevation) render via Cesium's own KmlDataSource -- a whole separate data source per
+  // layer, not entities merged into `geoDataSource`, so absolute-altitude 3D geometry
+  // isn't forced through the GeoJSON branch's `clampToGround` styling below.
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || (status !== 'ready' && status !== 'ready-flat')) return;
+    let cancelled = false;
+
+    const kmlLayers = geoLayers.filter((l) => KML_EXTENSIONS.test(l.url));
+    const activeKmlIds = new Set(kmlLayers.map((l) => l.id));
+    for (const [id, ds] of loadedKmlLayersRef.current) {
+      if (!activeKmlIds.has(id)) {
+        viewer.dataSources.remove(ds, true);
+        loadedKmlLayersRef.current.delete(id);
+      }
+    }
+
+    for (const kmlLayer of kmlLayers) {
+      if (loadedKmlLayersRef.current.has(kmlLayer.id)) continue;
+      const Cesium = window.Cesium;
+      Cesium.KmlDataSource.load(kmlLayer.url, { clampToGround: false })
+        .then((ds: any) => {
+          if (cancelled || loadedKmlLayersRef.current.has(kmlLayer.id)) return;
+          viewer.dataSources.add(ds);
+          loadedKmlLayersRef.current.set(kmlLayer.id, ds);
+        })
+        .catch((err: unknown) => {
+          onLayerErrorRef.current?.(kmlLayer.id, err instanceof Error ? err.message : 'Failed to load KML/KMZ layer');
+        });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [geoLayers, status]);
 
   useEffect(() => {
     const dataSource = geoDataSourceRef.current;
@@ -314,7 +396,8 @@ export function MapView3D({
     const Cesium = window.Cesium;
     let cancelled = false;
 
-    const activeIds = new Set(geoLayers.map((l) => l.id));
+    const geoJsonLayers = geoLayers.filter((l) => !KML_EXTENSIONS.test(l.url));
+    const activeIds = new Set(geoJsonLayers.map((l) => l.id));
     for (const [id, entities] of loadedGeoLayersRef.current) {
       if (!activeIds.has(id)) {
         for (const entity of entities) dataSource.entities.remove(entity);
@@ -322,7 +405,7 @@ export function MapView3D({
       }
     }
 
-    for (const geoLayer of geoLayers) {
+    for (const geoLayer of geoJsonLayers) {
       if (loadedGeoLayersRef.current.has(geoLayer.id)) continue;
       fetch(geoLayer.url)
         .then((res) => res.json())

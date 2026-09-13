@@ -7,11 +7,12 @@ export interface MapLayer {
   url: string;
 }
 
-const GEO_EXTENSIONS = /\.(geojson|json)$/i;
+const GEO_EXTENSIONS = /\.(geojson|json|kml|kmz)$/i;
 
-/** Files uploaded to the "Layers" document section that look like GeoJSON -- these get
- * an on/off toggle in the panel and render as an overlay on the map, unlike ordinary
- * layer documents which just stay downloadable links. */
+/** Files uploaded to the "Layers" document section that look like GeoJSON or a
+ * PLS-CADD-style KML/KMZ export -- these get an on/off toggle in the panel and render
+ * as an overlay on the map, unlike ordinary layer documents which just stay downloadable
+ * links. */
 export function useMapLayers(projectId: string | undefined) {
   const { documents, loading, refresh } = useProjectDocuments(projectId, 'layers');
 

@@ -1110,7 +1110,7 @@ button:disabled {
   overflow: hidden;
 }
 
-.project-shell button:not(.status-btn):not(.asset-list-item):not(.basemap-btn):not(.basemap-menu-btn):not(.accordion-header):not(.asset-filter-btn):not(.items-editor-remove-btn):not(.doc-folder-header):not(.doc-folder-add-btn):not(.doc-form-btn):not(.daily-plan-tab):not(.wind-toggle-btn):not(.windy-popup-close):not(.add-tower-btn) {
+.project-shell button:not(.status-btn):not(.asset-list-item):not(.basemap-btn):not(.basemap-menu-btn):not(.accordion-header):not(.asset-filter-btn):not(.items-editor-remove-btn):not(.doc-folder-header):not(.doc-folder-add-btn):not(.doc-form-btn):not(.daily-plan-tab):not(.wind-toggle-btn):not(.windy-popup-close):not(.add-tower-btn):not(.tower-model-extract-btn) {
   color: #0f1117;
 }
 
@@ -2312,6 +2312,44 @@ button:disabled {
   font-size: 11px;
   flex-shrink: 0;
   cursor: default;
+}
+
+.tower-model-extract {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tower-model-extract-btn {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--accent);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tower-model-extract-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(0, 212, 170, 0.1);
+}
+
+.tower-model-extract-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.tower-model-extract-status {
+  font-size: 10px;
+  color: var(--text);
+  opacity: 0.75;
+  white-space: nowrap;
 }
 
 .doc-move-select {

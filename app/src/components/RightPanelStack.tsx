@@ -1,5 +1,6 @@
 import { AccordionPanel } from './AccordionPanel';
 import { ProjectDocumentsPanel } from './ProjectDocumentsPanel';
+import type { ProjectDocument } from '../lib/useProjectDocuments';
 import { WeatherPanel } from './WeatherPanel';
 import { LineSummaryPanel } from './LineSummaryPanel';
 import { HeatMapPanel, type HeatMetric, type MetricTotals } from './HeatMapPanel';
@@ -32,6 +33,9 @@ interface RightPanelStackProps {
   photoCount: number;
   photosLayerEnabled: boolean;
   onTogglePhotosLayer: () => void;
+  onExtractTowerModels?: (doc: ProjectDocument) => void;
+  extractingLayerId?: string | null;
+  towerModelStatus?: Record<string, string>;
 }
 
 export function RightPanelStack({
@@ -58,6 +62,9 @@ export function RightPanelStack({
   photoCount,
   photosLayerEnabled,
   onTogglePhotosLayer,
+  onExtractTowerModels,
+  extractingLayerId,
+  towerModelStatus,
 }: RightPanelStackProps) {
   const { t, n } = useLanguage();
   return (
@@ -104,6 +111,9 @@ export function RightPanelStack({
           osmFetchContext={{ assets, coordinateSystem }}
           excavationContext={{ assets, foundationTypes, coordinateSystem }}
           onLayersChanged={onLayersChanged}
+          onExtractTowerModels={onExtractTowerModels}
+          extractingLayerId={extractingLayerId}
+          towerModelStatus={towerModelStatus}
         />
       </AccordionPanel>
 
