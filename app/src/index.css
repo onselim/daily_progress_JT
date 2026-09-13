@@ -1110,7 +1110,7 @@ button:disabled {
   overflow: hidden;
 }
 
-.project-shell button:not(.status-btn):not(.asset-list-item):not(.basemap-btn):not(.basemap-menu-btn):not(.accordion-header):not(.asset-filter-btn):not(.items-editor-remove-btn):not(.doc-folder-header):not(.doc-folder-add-btn):not(.doc-form-btn):not(.daily-plan-tab):not(.wind-toggle-btn):not(.windy-popup-close) {
+.project-shell button:not(.status-btn):not(.asset-list-item):not(.basemap-btn):not(.basemap-menu-btn):not(.accordion-header):not(.asset-filter-btn):not(.items-editor-remove-btn):not(.doc-folder-header):not(.doc-folder-add-btn):not(.doc-form-btn):not(.daily-plan-tab):not(.wind-toggle-btn):not(.windy-popup-close):not(.add-tower-btn) {
   color: #0f1117;
 }
 
