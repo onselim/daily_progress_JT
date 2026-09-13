@@ -214,6 +214,8 @@ export const en = {
   'panels.noAssetLocation': 'No asset location available.',
   'panels.loadingForecast': 'Loading forecast…',
   'panels.noExtraLayers': 'No extra map layers configured yet.',
+  'panels.layersUploadHint':
+    'Upload a GeoJSON, KML, or KMZ file with "+ Add document" below to add it as a map layer. For a PLS-CADD KMZ, click the 🗼 button next to it afterwards to extract each tower\'s own 3D model.',
   'panels.showGeotaggedPhotos': 'Show geotagged photos',
   'panels.hideGeotaggedPhotos': 'Hide geotagged photos',
   'panels.fromNum': 'From #',

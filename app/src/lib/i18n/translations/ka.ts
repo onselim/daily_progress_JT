@@ -204,6 +204,8 @@ export const ka: Record<TranslationKey, string> = {
   'panels.noAssetLocation': 'აქტივის მდებარეობა მიუწვდომელია.',
   'panels.loadingForecast': 'პროგნოზი იტვირთება…',
   'panels.noExtraLayers': 'დამატებითი რუქის ფენები ჯერ არ არის კონფიგურირებული.',
+  'panels.layersUploadHint':
+    'ატვირთეთ GeoJSON, KML ან KMZ ფაილი ქვემოთ მოცემული „+ დოკუმენტის დამატება“-ს გამოყენებით, რომ დაამატოთ იგი როგორც რუქის ფენა. PLS-CADD KMZ-ისთვის, ატვირთვის შემდეგ დააჭირეთ მის გვერდით 🗼 ღილაკს, რომ თითოეული ანძის 3D მოდელი ამოიღოთ.',
   'panels.showGeotaggedPhotos': 'გეომონაცემიანი ფოტოების ჩვენება',
   'panels.hideGeotaggedPhotos': 'გეომონაცემიანი ფოტოების დამალვა',
   'panels.fromNum': 'დან #',

@@ -203,6 +203,8 @@ export const tr: Record<TranslationKey, string> = {
   'panels.noAssetLocation': 'Direk konumu mevcut değil.',
   'panels.loadingForecast': 'Tahmin yükleniyor…',
   'panels.noExtraLayers': 'Henüz ek harita katmanı yapılandırılmadı.',
+  'panels.layersUploadHint':
+    'Aşağıdaki "+ Belge ekle" ile bir GeoJSON, KML veya KMZ dosyası yükleyerek harita katmanı ekleyebilirsin. Bir PLS-CADD KMZ\'si için, yükledikten sonra yanındaki 🗼 düğmesine basarak her direğin kendi 3D modelini çıkarabilirsin.',
   'panels.showGeotaggedPhotos': 'Konum etiketli fotoğrafları göster',
   'panels.hideGeotaggedPhotos': 'Konum etiketli fotoğrafları gizle',
   'panels.fromNum': 'İlk #',
