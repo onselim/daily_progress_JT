@@ -13,8 +13,7 @@ import { buildExcavationFeatureCollection } from '../lib/stubGeometry';
 import { RenamableText } from './RenamableText';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 
-const GEO_LAYER_EXTENSIONS = /\.(geojson|json|kml|kmz)$/i;
-const KML_LAYER_EXTENSIONS = /\.(kml|kmz)$/i;
+const GEO_LAYER_EXTENSIONS = /\.(geojson|json)$/i;
 
 // Re-fetching replaces any previously-fetched file with this exact name rather than
 // piling up duplicates each time the admin clicks the button again.
@@ -60,9 +59,6 @@ interface ProjectDocumentsPanelProps {
    * this too whenever a layers-section file is added/replaced/removed so the map picks
    * up the change without a full page reload. */
   onLayersChanged?: () => void;
-  onExtractTowerModels?: (doc: ProjectDocument) => void;
-  extractingLayerId?: string | null;
-  towerModelStatus?: Record<string, string>;
 }
 
 interface FolderNodeProps {
@@ -82,9 +78,6 @@ interface FolderNodeProps {
   enabledLayerIds?: Set<string>;
   onToggleLayer?: (layerId: string) => void;
   layerErrors?: Record<string, string>;
-  onExtractTowerModels?: (doc: ProjectDocument) => void;
-  extractingLayerId?: string | null;
-  towerModelStatus?: Record<string, string>;
 }
 
 function LayerToggle({
@@ -114,36 +107,6 @@ function LayerToggle({
       </label>
       {error && enabledLayerIds?.has(doc.id) && <span className="layer-toggle-error">⚠</span>}
     </>
-  );
-}
-
-function TowerModelExtractButton({
-  doc,
-  onExtractTowerModels,
-  extractingLayerId,
-  towerModelStatus,
-}: {
-  doc: ProjectDocument;
-  onExtractTowerModels?: (doc: ProjectDocument) => void;
-  extractingLayerId?: string | null;
-  towerModelStatus?: Record<string, string>;
-}) {
-  if (!onExtractTowerModels || !KML_LAYER_EXTENSIONS.test(doc.slot_name)) return null;
-  const extracting = extractingLayerId === doc.id;
-  const status = towerModelStatus?.[doc.id];
-  return (
-    <span className="tower-model-extract">
-      <button
-        type="button"
-        className="tower-model-extract-btn"
-        onClick={() => onExtractTowerModels(doc)}
-        disabled={extracting}
-        title="Extract per-tower 3D models from this KMZ/KML"
-      >
-        {extracting ? '…' : '🗼'}
-      </button>
-      {status && <span className="tower-model-extract-status">{status}</span>}
-    </span>
   );
 }
 
@@ -192,9 +155,6 @@ function FolderNode({
   enabledLayerIds,
   onToggleLayer,
   layerErrors,
-  onExtractTowerModels,
-  extractingLayerId,
-  towerModelStatus,
 }: FolderNodeProps) {
   const { t, n } = useLanguage();
   const [open, setOpen] = useState(false);
@@ -271,9 +231,6 @@ function FolderNode({
               enabledLayerIds={enabledLayerIds}
               onToggleLayer={onToggleLayer}
               layerErrors={layerErrors}
-              onExtractTowerModels={onExtractTowerModels}
-              extractingLayerId={extractingLayerId}
-              towerModelStatus={towerModelStatus}
             />
           ))}
 
@@ -283,12 +240,6 @@ function FolderNode({
             <div key={doc.id} className="doc-row">
               <span className="doc-row-main">
                 <LayerToggle doc={doc} enabledLayerIds={enabledLayerIds} onToggleLayer={onToggleLayer} layerErrors={layerErrors} />
-                <TowerModelExtractButton
-                  doc={doc}
-                  onExtractTowerModels={onExtractTowerModels}
-                  extractingLayerId={extractingLayerId}
-                  towerModelStatus={towerModelStatus}
-                />
                 <RenamableText
                   value={doc.slot_name}
                   editable={editable}
@@ -372,9 +323,6 @@ export function ProjectDocumentsPanel({
   osmFetchContext,
   excavationContext,
   onLayersChanged,
-  onExtractTowerModels,
-  extractingLayerId,
-  towerModelStatus,
 }: ProjectDocumentsPanelProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -568,9 +516,6 @@ export function ProjectDocumentsPanel({
             enabledLayerIds={enabledLayerIds}
             onToggleLayer={onToggleLayer}
             layerErrors={layerErrors}
-            onExtractTowerModels={onExtractTowerModels}
-            extractingLayerId={extractingLayerId}
-            towerModelStatus={towerModelStatus}
           />
           {folder.divider_after && <div className="doc-folder-divider" />}
         </div>
@@ -582,12 +527,6 @@ export function ProjectDocumentsPanel({
             <div key={doc.id} className="doc-row">
               <span className="doc-row-main">
                 <LayerToggle doc={doc} enabledLayerIds={enabledLayerIds} onToggleLayer={onToggleLayer} layerErrors={layerErrors} />
-                <TowerModelExtractButton
-                  doc={doc}
-                  onExtractTowerModels={onExtractTowerModels}
-                  extractingLayerId={extractingLayerId}
-                  towerModelStatus={towerModelStatus}
-                />
                 <RenamableText
                   value={doc.slot_name}
                   editable={editable}

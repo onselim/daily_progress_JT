@@ -20,10 +20,7 @@ import { useLineSummary } from '../lib/useLineSummary';
 import { useFoundationTypesConfig, getFoundationTypeForAsset } from '../lib/useFoundationTypesConfig';
 import { useTowerWeightsConfig, getTowerWeightForAsset } from '../lib/useTowerWeightsConfig';
 import { useMapLayers } from '../lib/useMapLayers';
-import { useTowerModels } from '../lib/useTowerModels';
-import { extractTowerModelsFromKml } from '../lib/extractTowerModels';
 import { utmToLatLng } from '../lib/utmToLatLng';
-import type { ProjectDocument } from '../lib/useProjectDocuments';
 
 interface AssetWorkspaceProps {
   projectId: string;
@@ -76,49 +73,6 @@ export function AssetWorkspace({
   const { layers: mapLayers, refresh: refreshMapLayers } = useMapLayers(projectId);
   const [enabledLayerIds, setEnabledLayerIds] = useState<Set<string>>(new Set());
   const [layerErrors, setLayerErrors] = useState<Record<string, string>>({});
-  const { models: towerModels, saveAll: saveTowerModels } = useTowerModels(projectId);
-  const [extractingLayerId, setExtractingLayerId] = useState<string | null>(null);
-  const [towerModelStatus, setTowerModelStatus] = useState<Record<string, string>>({});
-
-  async function handleExtractTowerModels(doc: ProjectDocument) {
-    setExtractingLayerId(doc.id);
-    setTowerModelStatus((prev) => ({ ...prev, [doc.id]: 'Extracting…' }));
-    try {
-      const assetPoints: { id: string; lat: number; lng: number }[] = [];
-      for (const a of assets) {
-        let lat = a.lat;
-        let lng = a.lng;
-        if ((lat == null || lng == null) && a.x != null && a.y != null && coordinateSystem) {
-          try {
-            [lat, lng] = utmToLatLng(a.x, a.y, coordinateSystem);
-          } catch {
-            continue;
-          }
-        }
-        if (lat == null || lng == null) continue;
-        assetPoints.push({ id: a.id, lat, lng });
-      }
-
-      const extracted = await extractTowerModelsFromKml(doc.file_url, assetPoints);
-      const matchCount = Object.keys(extracted).length;
-      if (matchCount === 0) {
-        setTowerModelStatus((prev) => ({ ...prev, [doc.id]: 'No towers matched' }));
-        return;
-      }
-      const { error } = await saveTowerModels(extracted, doc.id);
-      setTowerModelStatus((prev) => ({
-        ...prev,
-        [doc.id]: error ? `Failed: ${error}` : `Matched ${matchCount} towers`,
-      }));
-    } catch (err) {
-      setTowerModelStatus((prev) => ({
-        ...prev,
-        [doc.id]: err instanceof Error ? err.message : 'Extraction failed',
-      }));
-    } finally {
-      setExtractingLayerId(null);
-    }
-  }
 
   function toggleLayer(layerId: string) {
     setEnabledLayerIds((prev) => {
@@ -328,8 +282,6 @@ export function AssetWorkspace({
                 onEditConductorType={setEditingChannel}
                 geoLayers={activeMapLayers}
                 onLayerError={(layerId, message) => setLayerErrors((prev) => ({ ...prev, [layerId]: message }))}
-                towerModels={towerModels}
-                percentByAssetAndKey={percentByAssetAndKey}
               />
               <div className="map-bottom-left-controls">{dimensionToggle}</div>
             </>
@@ -385,9 +337,6 @@ export function AssetWorkspace({
           photoCount={photoLocations.length}
           photosLayerEnabled={photosLayerEnabled}
           onTogglePhotosLayer={() => setPhotosLayerEnabled((v) => !v)}
-          onExtractTowerModels={isAdmin ? handleExtractTowerModels : undefined}
-          extractingLayerId={extractingLayerId}
-          towerModelStatus={towerModelStatus}
         />
         {selectedAssetId && (
           <div className="floating-editor">
