@@ -100,7 +100,6 @@ export function RightPanelStack({
             📷 {photosLayerEnabled ? t('panels.hideGeotaggedPhotos') : t('panels.showGeotaggedPhotos')} ({n(photoCount)})
           </button>
         </div>
-        {editable && <p className="accordion-empty">{t('panels.layersUploadHint')}</p>}
         <ProjectDocumentsPanel
           projectId={projectId}
           editable={editable}

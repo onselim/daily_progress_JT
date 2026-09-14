@@ -208,8 +208,6 @@ export const ku: Record<TranslationKey, string> = {
   'panels.noAssetLocation': 'Cîhê kuleyê ne berdest e.',
   'panels.loadingForecast': 'Pêşbînî tê barkirin…',
   'panels.noExtraLayers': 'Hîn çînên din ên nexşeyê nehatine mîhengkirin.',
-  'panels.layersUploadHint':
-    'Bi "+ Belge lê zêde bike" ya jêrîn dosyeyek GeoJSON, KML an KMZ bar bike da ku wek çîna nexşeyê lê zêde bibe. Ji bo KMZ\'ya PLS-CADD, piştî barkirinê pêl bişkoka 🗼 ya li tenişta wê bike da ku modela 3D ya her stûnê derxe.',
   'panels.showGeotaggedPhotos': 'Wêneyên bi cîh nîşankirî nîşan bide',
   'panels.hideGeotaggedPhotos': 'Wêneyên bi cîh nîşankirî veşêre',
   'panels.fromNum': 'Ji #',

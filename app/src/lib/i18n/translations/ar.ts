@@ -203,8 +203,6 @@ export const ar: Record<TranslationKey, string> = {
   'panels.noAssetLocation': 'لا يوجد موقع للأصل متاح.',
   'panels.loadingForecast': 'جارٍ تحميل التوقعات…',
   'panels.noExtraLayers': 'لم يتم تكوين طبقات خريطة إضافية بعد.',
-  'panels.layersUploadHint':
-    'ارفع ملف GeoJSON أو KML أو KMZ باستخدام «+ إضافة مستند» أدناه لإضافته كطبقة خريطة. بالنسبة لملف KMZ من PLS-CADD، انقر بعد ذلك على زر 🗼 المجاور له لاستخراج النموذج ثلاثي الأبعاد لكل برج.',
   'panels.showGeotaggedPhotos': 'إظهار الصور ذات الموقع الجغرافي',
   'panels.hideGeotaggedPhotos': 'إخفاء الصور ذات الموقع الجغرافي',
   'panels.fromNum': 'من #',

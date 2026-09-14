@@ -204,8 +204,6 @@ export const de: Record<TranslationKey, string> = {
   'panels.noAssetLocation': 'Kein Standort für das Objekt verfügbar.',
   'panels.loadingForecast': 'Vorhersage wird geladen…',
   'panels.noExtraLayers': 'Noch keine zusätzlichen Kartenebenen konfiguriert.',
-  'panels.layersUploadHint':
-    'Lade unten über „+ Dokument hinzufügen" eine GeoJSON-, KML- oder KMZ-Datei hoch, um sie als Kartenebene hinzuzufügen. Bei einer PLS-CADD-KMZ-Datei klicke danach auf die 🗼-Schaltfläche daneben, um das 3D-Modell jedes Mastes zu extrahieren.',
   'panels.showGeotaggedPhotos': 'Geotaggte Fotos anzeigen',
   'panels.hideGeotaggedPhotos': 'Geotaggte Fotos ausblenden',
   'panels.fromNum': 'Von #',

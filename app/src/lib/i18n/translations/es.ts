@@ -205,8 +205,6 @@ export const es: Record<TranslationKey, string> = {
   'panels.noAssetLocation': 'No hay ubicación de activo disponible.',
   'panels.loadingForecast': 'Cargando pronóstico…',
   'panels.noExtraLayers': 'Aún no se han configurado capas de mapa adicionales.',
-  'panels.layersUploadHint':
-    'Sube un archivo GeoJSON, KML o KMZ con «+ Añadir documento» abajo para añadirlo como capa del mapa. Para un KMZ de PLS-CADD, haz clic después en el botón 🗼 junto a él para extraer el modelo 3D de cada torre.',
   'panels.showGeotaggedPhotos': 'Mostrar fotos geoetiquetadas',
   'panels.hideGeotaggedPhotos': 'Ocultar fotos geoetiquetadas',
   'panels.fromNum': 'Desde #',

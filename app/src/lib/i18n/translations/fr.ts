@@ -205,8 +205,6 @@ export const fr: Record<TranslationKey, string> = {
   'panels.noAssetLocation': "Aucun emplacement d'actif disponible.",
   'panels.loadingForecast': 'Chargement des prévisions…',
   'panels.noExtraLayers': 'Aucune couche cartographique supplémentaire configurée pour le moment.',
-  'panels.layersUploadHint':
-    "Téléversez un fichier GeoJSON, KML ou KMZ via « + Ajouter un document » ci-dessous pour l'ajouter comme couche de carte. Pour un KMZ PLS-CADD, cliquez ensuite sur le bouton 🗼 à côté pour extraire le modèle 3D de chaque pylône.",
   'panels.showGeotaggedPhotos': 'Afficher les photos géolocalisées',
   'panels.hideGeotaggedPhotos': 'Masquer les photos géolocalisées',
   'panels.fromNum': 'De #',

@@ -204,8 +204,6 @@ export const ru: Record<TranslationKey, string> = {
   'panels.noAssetLocation': 'Местоположение объекта недоступно.',
   'panels.loadingForecast': 'Загрузка прогноза…',
   'panels.noExtraLayers': 'Дополнительные слои карты пока не настроены.',
-  'panels.layersUploadHint':
-    'Загрузите файл GeoJSON, KML или KMZ через «+ Добавить документ» ниже, чтобы добавить его как слой карты. Для KMZ из PLS-CADD нажмите кнопку 🗼 рядом с ним после загрузки, чтобы извлечь 3D-модель каждой опоры.',
   'panels.showGeotaggedPhotos': 'Показать фото с геометками',
   'panels.hideGeotaggedPhotos': 'Скрыть фото с геометками',
   'panels.fromNum': 'От #',
