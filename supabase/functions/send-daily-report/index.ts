@@ -90,6 +90,7 @@ async function archiveReportSnapshot(pdfBytes: Uint8Array, reportDateIso: string
     const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/project-media/${path}`, {
       method: 'POST',
       headers: {
+        apikey: serviceRoleKey,
         Authorization: `Bearer ${serviceRoleKey}`,
         'Content-Type': 'application/pdf',
         'x-upsert': 'true',
