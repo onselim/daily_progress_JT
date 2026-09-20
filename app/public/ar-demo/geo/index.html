@@ -405,10 +405,11 @@ function buildTow(o) {
   for (const [ax, ay, az, bx, by, bz, leg] of tw.segs) steel.push(beamGeo(P(ax, ay, az), P(bx, by, bz), leg ? 0.2 : 0.09));
   for (const s of tw.ins) {
     const p = P(...s.p);
+    const len = (s.len || 2000) / 1000;   // real insulator length from the PLS insulator library (basic.inl)
     if (s.k === 'susp') {
-      const q = [p[0], p[1] - 2.0, p[2]]; ceramic.push(beamGeo(p, q, 0.16)); wire.push(beamGeo([q[0] - 8, q[1], q[2]], [q[0] + 8, q[1], q[2]], 0.07));
+      const q = [p[0], p[1] - len * sz, p[2]]; ceramic.push(beamGeo(p, q, 0.16)); wire.push(beamGeo([q[0] - 8, q[1], q[2]], [q[0] + 8, q[1], q[2]], 0.07));
     } else {   // strain: horizontal along the line, azimuth measured from the +y axis
-      const dx = Math.sin(s.az) * 1.5, dy = Math.cos(s.az) * 1.5, q = [p[0] + dx * sx, p[1], p[2] - dy * sy];
+      const dx = Math.sin(s.az) * len, dy = Math.cos(s.az) * len, q = [p[0] + dx * sx, p[1], p[2] - dy * sy];
       ceramic.push(beamGeo(p, q, 0.16)); wire.push(beamGeo(q, [q[0] + Math.sign(dx || 1) * 5, q[1] - 0.3, q[2]], 0.07));
     }
   }

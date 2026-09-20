@@ -11,6 +11,14 @@ import json, re, sys, os, math
 
 SRC = sys.argv[1]
 OUT = sys.argv[2]
+def load_insulator_lengths(path):
+    """basic.inl: strain rows are  'label' 'stock' tension length ...; suspension rows likewise (length is the 4th column)."""
+    out = {}
+    for ln in open(path, encoding='latin-1'):
+        m = re.match(r"^'([^']*)'\s+'[^']*'\s+([\d.]+)\s+([\d.]+)", ln)
+        if m: out[m.group(1)] = float(m.group(3))
+    return out
+LENS = load_insulator_lengths(os.path.join(SRC, 'basic.inl'))
 FILES = ['dcb-2t+0', 'dcb-2t+3', 'dcc-2t+0', 'dcd-2t+0', 'dcs-2t', 'dca-2t+0', 'dca-2t+3', 'dca-2t+6']
 
 VARIANTS = {0: [('', 1, 1)], 1: [('', 1, 1), ('X', 1, -1)], 2: [('', 1, 1), ('Y', -1, 1)],
@@ -58,10 +66,11 @@ def parse(path):
         except ValueError: return
         n = int(L[k].split(';')[0]); j = k + 1
         for _ in range(n):
-            q = re.findall(r"'([^']*)'", L[j]); att = q[1]
+            q = re.findall(r"'([^']*)'", L[j]); att = q[1]; prop = q[3] if len(q) > 3 else ''
             if kind == 'strain': az = float(L[j + 1].split()[0]); j += 2
             else: az = 0.0; j += 2
-            if att in pts: ins.append({'k': kind, 'p': [round(c * 1000) for c in pts[att]], 'az': round(az, 4)})
+            if prop not in LENS: print('  ! no length for insulator property', repr(prop), 'in', path)
+            if att in pts: ins.append({'k': kind, 'p': [round(c * 1000) for c in pts[att]], 'az': round(az, 4), 'len': round(LENS.get(prop, 2.0) * 1000)})
     read_ins('Suspension Insulator Connectivity', 'susp'); read_ins('Strain Insulator Connectivity', 'strain')
     xs = [p[0] for p in pts.values()]; ys = [p[1] for p in pts.values()]; zs = [p[2] for p in pts.values()]
     dims = {'w': round(2 * max(abs(v) for v in xs), 2), 'd': round(2 * max(abs(v) for v in ys), 2), 'h': round(max(zs) - min(zs), 2)}
