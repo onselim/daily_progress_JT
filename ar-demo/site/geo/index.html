@@ -23,9 +23,13 @@
   .row button.small { flex:0 0 auto; padding:10px 14px; }
   #status { font-size:12px; color:var(--dim); line-height:1.5; }
   .hint { font-size:11px; color:var(--dim); margin:-2px 0 8px; line-height:1.4; }
+  details { margin-bottom:8px; } summary { font-size:13px; color:var(--dim); padding:4px 0; cursor:pointer; }
+  .row button.on { outline:2px solid var(--acc); }
   .pin { width:24px; height:24px; border-radius:50%; background:#8fb4d9; border:2px solid #fff; box-shadow:0 0 0 2px #0008; color:#102030; font:700 12px/20px system-ui; text-align:center; }
   .pin.sel { background:var(--warn); width:28px; height:28px; line-height:24px; margin:-2px 0 0 -2px; border-width:3px; }
   .pin.me { background:#2f81f7; color:#fff; border-radius:8px; width:auto; padding:0 6px; }
+  .pin.ref { background:#e5484d; color:#fff; border-radius:6px; width:auto; padding:0 6px; }
+  #sheet .box { max-height:82vh; overflow:auto; }
 
   /* model library sheet */
   #sheet { display:none; position:fixed; inset:0; background:#000a; z-index:1000; align-items:flex-end; }
@@ -62,7 +66,12 @@
       <button id="btnDel" class="small">🗑</button>
     </div>
     <div class="row">
-      <label>Merkez koordinatı: alt orta nokta (enlem, boylam)
+      <label>Koordinat sistemi<select id="crsSel"><option value="latlng">WGS84 enlem, boylam</option><option value="utm">UTM (WGS84) E, N, Z</option></select></label>
+      <label id="lbZone" style="flex:0 0 70px">UTM zone<input id="utmZone" inputmode="numeric"></label>
+      <label id="lbHemi" style="flex:0 0 84px">Yarıküre<select id="utmHemi"><option value="N">Kuzey</option><option value="S">Güney</option></select></label>
+    </div>
+    <div class="row">
+      <label id="lbCoord">Merkez koordinatı: alt orta nokta (enlem, boylam)
         <input id="coord" type="text" autocomplete="off" spellcheck="false" placeholder="41.0082000, 28.9784000">
       </label>
     </div>
@@ -70,18 +79,25 @@
       <label id="lbW">En (m)<input id="w" inputmode="decimal"></label>
       <label id="lbD">Boy (m)<input id="d" inputmode="decimal"></label>
       <label id="lbH">Yükseklik (m)<input id="h" inputmode="decimal"></label>
-      <label>Yön (°)<input id="rot" inputmode="decimal"></label>
+      <label id="lbR">Yön (°)<input id="rot" inputmode="decimal"></label>
     </div>
     <div class="row">
       <label>Bulunduğum yer kotu (m)<input id="zUser" inputmode="decimal"></label>
       <label>Arazi kotu (m)<input id="zGround" inputmode="decimal"></label>
       <label>Taban kotu (m)<input id="zBase" inputmode="decimal"></label>
     </div>
+    <details id="geoDet">
+      <summary>📐 Koordinat sistemi ve georeferans</summary>
+      <div class="row" style="margin-top:8px"><label id="lbRef1">Georeferans 1<input id="ref1" type="text" autocomplete="off" spellcheck="false"></label></div>
+      <div class="row"><label id="lbRef2">Georeferans 2<input id="ref2" type="text" autocomplete="off" spellcheck="false"></label></div>
+      <div class="hint">Sahada koordinatı bilinen (RTK vb.) iki nokta. Aralarında en az 20-30 m olsun; ne kadar uzaksa yön o kadar hassas olur.</div>
+    </details>
     <div class="row">
-      <button id="btnPick">📍 Duruş noktamı haritada işaretle</button>
+      <button id="btnPick">📍 Duruş noktam</button>
+      <button id="btnRefMode">📐 2 referans</button>
       <button id="btnGps" class="small">GPS</button>
     </div>
-    <div class="hint" id="pickHint">Doğruluk için: AR'ı başlatacağın yeri haritada işaretle ve AR'ı tam orada başlat. GPS sapmasından etkilenmezsin.</div>
+    <div class="hint" id="pickHint"></div>
     <div class="row">
       <button id="btnHere">📍 Seçili nesneyi konumuma koy</button>
       <button id="btnAR" class="primary">▶ AR'ı başlat</button>
@@ -104,7 +120,7 @@
   <div id="ctl">
     <div id="pObj" class="apanel">
       <div class="r"><button id="btnPrev" style="flex:0 0 46px">◀</button><span id="objName" style="flex:1;width:auto;text-align:center"></span><button id="btnNext" style="flex:0 0 46px">▶</button></div>
-      <div class="r"><input id="coord2" type="text" autocomplete="off" spellcheck="false" placeholder="merkez: enlem, boylam"><button id="btnGo" style="flex:0 0 62px">Git</button></div>
+      <div class="r"><input id="coord2" type="text" autocomplete="off" spellcheck="false" placeholder="merkez koordinatı"><button id="btnGo" style="flex:0 0 62px">Git</button></div>
       <div class="r" id="rowW"><span id="lblW">En</span><button data-k="w" data-v="-5">-5</button><button data-k="w" data-v="-1">-1</button><button data-k="w" data-v="1">+1</button><button data-k="w" data-v="5">+5</button></div>
       <div class="r" id="rowD"><span id="lblD">Boy</span><button data-k="d" data-v="-5">-5</button><button data-k="d" data-v="-1">-1</button><button data-k="d" data-v="1">+1</button><button data-k="d" data-v="5">+5</button></div>
       <div class="r" id="rowH"><span id="lblH">Yükseklik</span><button data-k="h" data-v="-5">-5</button><button data-k="h" data-v="-1">-1</button><button data-k="h" data-v="1">+1</button><button data-k="h" data-v="5">+5</button></div>
@@ -116,7 +132,14 @@
       <div class="r"><span>Arazi kotu</span><input id="zGround2" inputmode="decimal"><button data-z="zGround" data-v="-1">-1</button><button data-z="zGround" data-v="1">+1</button></div>
       <div class="r"><span>Taban kotu</span><input id="zBase2" inputmode="decimal"><button data-z="zBase" data-v="-1">-1</button><button data-z="zBase" data-v="1">+1</button></div>
     </div>
+    <div id="pRef" class="apanel">
+      <div class="note"><b>2 referansla hizala:</b> noktanın <b>üstünde dur</b> ve 📍'e bas, ya da daireyi noktanın <b>tam üstüne tut</b> ve 🎯'e bas. İki noktayı da işaretleyince nesneler bu ikisine göre yerleşir (GPS ve pusula kullanılmaz).</div>
+      <div class="r"><span id="rl1">R1</span><input id="ref1b" type="text" autocomplete="off" spellcheck="false" placeholder="E, N, Z"><button data-ref="0" data-m="aim" style="flex:0 0 40px">🎯</button><button data-ref="0" data-m="here" style="flex:0 0 40px">📍</button></div>
+      <div class="r"><span id="rl2">R2</span><input id="ref2b" type="text" autocomplete="off" spellcheck="false" placeholder="E, N, Z"><button data-ref="1" data-m="aim" style="flex:0 0 40px">🎯</button><button data-ref="1" data-m="here" style="flex:0 0 40px">📍</button></div>
+      <button class="full" id="btnRefReset">Referansları sıfırla</button>
+    </div>
     <div id="pAlign" class="apanel">
+      <button class="full" id="btnRecal">GPS / pusulayı yeniden kalibre et</button>
       <div class="note"><b>Yönü nişanla:</b> ortadaki daireyi seçili nesnenin <b>gerçekte olması gereken yerine</b> (araziye) tut ve bas. Pusula hatasını tek dokunuşta düzeltir.</div>
       <button class="full" id="btnAim">🎯 Yönü nişanla</button>
       <div class="r"><span>Yön (°)</span><button data-k="rot" data-v="-5">-5</button><button data-k="rot" data-v="-1">-1</button><button data-k="rot" data-v="1">+1</button><button data-k="rot" data-v="5">+5</button></div>
@@ -128,7 +151,7 @@
       <button class="full" id="btnNorth">Şu an tam kuzeye bakıyorum</button>
     </div>
     <div class="bar">
-      <button id="btnRecal">Kalibre</button>
+      <button id="btnRef">Referans</button>
       <button id="btnObj">Nesne</button>
       <button id="btnElev">Kot</button>
       <button id="btnAlign">Hizalama</button>
@@ -149,6 +172,42 @@ const wrapPi = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.P
 const enuFrom = (lat0, lng0, lat, lng) => ({ e: (lng - lng0) * rad * R * Math.cos(lat0 * rad), n: (lat - lat0) * rad * R });
 const offsetLatLng = (lat, lng, e, n) => [lat + n / (rad * R), lng + e / (rad * R * Math.cos(lat * rad))];
 const distM = (a, b) => { const o = enuFrom(a.lat, a.lng, b.lat, b.lng); return Math.hypot(o.e, o.n); };
+
+// UTM <-> WGS84 (Krüger series, sub-millimetre inside a zone)
+const WGS = (() => {
+  const a = 6378137, f = 1 / 298.257223563, n = f / (2 - f), n2 = n * n, n3 = n2 * n, n4 = n3 * n;
+  return {
+    A: a / (1 + n) * (1 + n2 / 4 + n4 / 64), n,
+    alpha: [n / 2 - 2 * n2 / 3 + 5 * n3 / 16 + 41 * n4 / 180, 13 * n2 / 48 - 3 * n3 / 5 + 557 * n4 / 1440, 61 * n3 / 240 - 103 * n4 / 140, 49561 * n4 / 161280],
+    beta: [n / 2 - 2 * n2 / 3 + 37 * n3 / 96 - n4 / 360, n2 / 48 + n3 / 15 - 437 * n4 / 1440, 17 * n3 / 480 - 37 * n4 / 840, 4397 * n4 / 161280],
+    delta: [2 * n - 2 * n2 / 3 - 2 * n3 + 116 * n4 / 45, 7 * n2 / 3 - 8 * n3 / 5 - 227 * n4 / 45, 56 * n3 / 15 - 136 * n4 / 35, 4279 * n4 / 630],
+  };
+})();
+const utmZoneOf = (lng) => Math.min(60, Math.max(1, Math.floor((lng + 180) / 6) + 1));
+function latLngToUtm(lat, lng, zone, north = true) {
+  const { n, A, alpha } = WGS, k0 = 0.9996, c = 2 * Math.sqrt(n) / (1 + n);
+  const lam = lng * rad - ((zone - 1) * 6 - 180 + 3) * rad, sp = Math.sin(lat * rad);
+  const t = Math.sinh(Math.atanh(sp) - c * Math.atanh(c * sp));
+  const xi0 = Math.atan2(t, Math.cos(lam)), eta0 = Math.asinh(Math.sin(lam) / Math.hypot(t, Math.cos(lam)));
+  let xi = xi0, eta = eta0;
+  for (let j = 1; j <= 4; j++) { xi += alpha[j - 1] * Math.sin(2 * j * xi0) * Math.cosh(2 * j * eta0); eta += alpha[j - 1] * Math.cos(2 * j * xi0) * Math.sinh(2 * j * eta0); }
+  return [500000 + k0 * A * eta, (north ? 0 : 10000000) + k0 * A * xi];
+}
+function utmToLatLng(zone, north, E, N) {
+  const { A, beta, delta } = WGS, k0 = 0.9996;
+  const xi0 = (N - (north ? 0 : 10000000)) / (k0 * A), eta0 = (E - 500000) / (k0 * A);
+  let xi = xi0, eta = eta0;
+  for (let j = 1; j <= 4; j++) { xi -= beta[j - 1] * Math.sin(2 * j * xi0) * Math.cosh(2 * j * eta0); eta -= beta[j - 1] * Math.cos(2 * j * xi0) * Math.sinh(2 * j * eta0); }
+  const chi = Math.asin(Math.sin(xi) / Math.cosh(eta));
+  let phi = chi; for (let j = 1; j <= 4; j++) phi += delta[j - 1] * Math.sin(2 * j * chi);
+  return [phi * deg, ((zone - 1) * 6 - 180 + 3) + Math.atan2(Math.sinh(eta), Math.cos(xi)) * deg];
+}
+// "a, b" / "a b c" / "a;b;c" (";" or tab allows decimal commas) -> numbers or null
+function parseNums(s) {
+  s = String(s).trim();
+  const p = (/[;\t]/.test(s) ? s.split(/[;\t]+/).map((x) => x.trim().replace(',', '.')) : s.split(/\s*,\s*|\s+/)).filter(Boolean).map(Number);
+  return p.length && p.every(Number.isFinite) ? p : null;
+}
 
 // ================= model library =================
 const TYPES = {
@@ -318,6 +377,38 @@ TYPES.kutu.build = (o) => {
   return g;
 };
 
+// ---- PLS-TOWER lattice towers (parsed from .tow files by tools/parse_tow.py -> towers.json) ----
+// PLS x (along the line) -> scene x, PLS y (across) -> scene -z, PLS z (0 at top, negative down) -> height above the base.
+function buildTow(o) {
+  const tw = TYPES[o.type].tw, g = new THREE.Group();
+  const sx = o.w / tw.dims.w, sy = o.d / tw.dims.d, sz = o.h / tw.dims.h, zmin = tw.zmin;
+  const P = (x, y, z) => [x / 1000 * sx, (z - zmin) / 1000 * sz, -y / 1000 * sy];
+  const steel = [], ceramic = [], wire = [];
+  for (const [ax, ay, az, bx, by, bz, leg] of tw.segs) steel.push(beamGeo(P(ax, ay, az), P(bx, by, bz), leg ? 0.2 : 0.09));
+  for (const s of tw.ins) {
+    const p = P(...s.p);
+    if (s.k === 'susp') {
+      const q = [p[0], p[1] - 2.0, p[2]]; ceramic.push(beamGeo(p, q, 0.16)); wire.push(beamGeo([q[0] - 8, q[1], q[2]], [q[0] + 8, q[1], q[2]], 0.07));
+    } else {   // strain: horizontal along the line, azimuth measured from the +y axis
+      const dx = Math.sin(s.az) * 1.5, dy = Math.cos(s.az) * 1.5, q = [p[0] + dx * sx, p[1], p[2] - dy * sy];
+      ceramic.push(beamGeo(p, q, 0.16)); wire.push(beamGeo(q, [q[0] + Math.sign(dx || 1) * 5, q[1] - 0.3, q[2]], 0.07));
+    }
+  }
+  if (steel.length) g.add(new THREE.Mesh(mergeGeometries(steel), std(0x9aa4ae, 0.55, 0.7)));
+  if (ceramic.length) g.add(new THREE.Mesh(mergeGeometries(ceramic), std(0x9c6b3f, 0.6, 0.0)));
+  if (wire.length) g.add(new THREE.Mesh(mergeGeometries(wire), std(0x1b1c1e, 0.5, 0.3)));
+  return g;
+}
+let TOWERS = {};
+try { TOWERS = await (await fetch('towers.json')).json(); } catch (e) { console.warn('towers.json yüklenemedi', e); }
+for (const [k, tw] of Object.entries(TOWERS)) {
+  TYPES['tow_' + k] = {
+    label: tw.title.split(',')[0].replace(/\s+/g, ' ').trim(), icon: '🗼', pls: true, dims: { ...tw.dims },
+    lw: 'Boyuna (x)', ld: 'Enine (y)', lh: 'Yükseklik', usesD: true, rotOffset: -90, lrot: 'Hat azimutu (°)', tw, build: buildTow,
+  };
+}
+const effRot = (o) => o.rot + (TYPES[o.type].rotOffset || 0);   // PLS towers: x axis = line direction, so azimuth - 90
+
 // ================= state =================
 const uid = () => Math.random().toString(36).slice(2, 9);
 function mkObj(type, lat, lng, over = {}) {
@@ -329,7 +420,10 @@ let hadSaved = false;
 function loadState() {
   try {
     const s2 = JSON.parse(localStorage.getItem('arGeoState2') || 'null');
-    if (s2 && Array.isArray(s2.objs) && s2.objs.length && s2.objs.every((o) => TYPES[o.type] && isFinite(o.lat))) return s2;
+    if (s2 && Array.isArray(s2.objs)) {
+      s2.objs = s2.objs.filter((o) => TYPES[o.type] && isFinite(o.lat) && isFinite(o.lng));
+      if (s2.objs.length) { if (!s2.objs.some((o) => o.id === s2.sel)) s2.sel = s2.objs[0].id; return s2; }
+    }
   } catch (e) {}
   try {
     const s1 = JSON.parse(localStorage.getItem('arGeoState') || 'null');
@@ -343,6 +437,8 @@ function loadState() {
 S = loadState();
 if (S) hadSaved = true; else { S = { objs: [], sel: null, zUser: 0, origin: { mode: 'gps' } }; S.objs.push(mkObj('bina', 41.0082, 28.9784)); S.sel = S.objs[0].id; }
 if (!S.origin) S.origin = { mode: 'gps' };
+if (!S.crs) S.crs = { type: 'latlng', zone: 38, north: true, zoneSet: true };   // 38N covers Erbil and Jvari-Tskaltubo
+if (!Array.isArray(S.refs)) S.refs = [null, null];
 const cur = () => S.objs.find((o) => o.id === S.sel) || S.objs[0];
 const save = () => { try { localStorage.setItem('arGeoState2', JSON.stringify(S)); } catch (e) {} };
 const footD = (o) => (TYPES[o.type].usesD ? o.d : o.w);
@@ -387,7 +483,7 @@ let pickMe = false;
 
 const pinIcon = (i, sel) => L.divIcon({ className: '', html: `<div class="pin ${sel ? 'sel' : ''}">${i + 1}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
 function footprintLatLngs(o) {
-  const hw = o.w / 2, hd = footD(o) / 2, r = o.rot * rad;
+  const hw = o.w / 2, hd = footD(o) / 2, r = effRot(o) * rad;
   return [[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]].map(([x, y]) => offsetLatLng(o.lat, o.lng, x * Math.cos(r) + y * Math.sin(r), -x * Math.sin(r) + y * Math.cos(r)));
 }
 function refreshMap() {
@@ -406,10 +502,15 @@ function updateUser() {
   if (!userMarkerInit) { userDot.addTo(map); userAcc.addTo(map); userMarkerInit = true; }
   userDot.setLatLng([fix.lat, fix.lng]); userAcc.setLatLng([fix.lat, fix.lng]).setRadius(fix.acc);
 }
-const originPoint = () => (S.origin.mode === 'map' ? S.origin : fix);
+const originPoint = () => (S.origin.mode === 'map' ? S.origin : S.origin.mode === 'ref' ? S.refs[0] : fix);
 function refreshOverlays() {
   ovLayer.clearLayers();
   const op = originPoint(), o = cur();
+  S.refs.forEach((r, i) => { if (r) L.marker([r.lat, r.lng], { icon: L.divIcon({ className: '', html: `<div class="pin ref">R${i + 1}</div>`, iconSize: [30, 24], iconAnchor: [15, 12] }) }).addTo(ovLayer); });
+  if (S.refs[0] && S.refs[1]) {
+    L.polyline([[S.refs[0].lat, S.refs[0].lng], [S.refs[1].lat, S.refs[1].lng]], { color: '#e5484d', weight: 2 })
+      .bindTooltip(`R1–R2: ${distM(S.refs[0], S.refs[1]).toFixed(1)} m`, { permanent: true, direction: 'center' }).addTo(ovLayer);
+  }
   if (S.origin.mode === 'map') {
     const mk = L.marker([S.origin.lat, S.origin.lng], { draggable: true, icon: L.divIcon({ className: '', html: '<div class="pin me">Ben</div>', iconSize: [40, 24], iconAnchor: [20, 12] }) }).addTo(ovLayer);
     mk.on('dragend', () => { const p = mk.getLatLng(); S.origin = { mode: 'map', lat: p.lat, lng: p.lng }; save(); refreshOverlays(); updateStatus(); });
@@ -429,18 +530,37 @@ map.on('click', (e) => {
 
 // ================= inputs =================
 const num = (id, fb) => { const v = parseFloat(String($(id).value).replace(',', '.')); return isFinite(v) ? v : fb; };
-const coordText = (o) => `${o.lat.toFixed(7)}, ${o.lng.toFixed(7)}`;
-function parseCoord(s) {
-  const m = String(s).trim().match(/^(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)$/);
-  if (!m) return null;
-  const lat = parseFloat(m[1].replace(',', '.')), lng = parseFloat(m[2].replace(',', '.'));
-  return Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? [lat, lng] : null;
+const isUtm = () => S.crs.type === 'utm';
+function llToText(lat, lng, z) {
+  const [a, b] = isUtm() ? latLngToUtm(lat, lng, S.crs.zone, S.crs.north) : [lat, lng], d = isUtm() ? 3 : 7;
+  return `${a.toFixed(d)}, ${b.toFixed(d)}` + (z != null ? `, ${z}` : '');
 }
+function textToLL(s) {   // -> {lat, lng, z?} in the active coordinate system, or null
+  const p = parseNums(s); if (!p || p.length < 2) return null;
+  const [lat, lng] = isUtm() ? utmToLatLng(S.crs.zone, S.crs.north, p[0], p[1]) : [p[0], p[1]];
+  return Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng, z: p[2] } : null;
+}
+const coordText = (o) => llToText(o.lat, o.lng, isUtm() ? o.zBase : null);
+const refText = (i) => (S.refs[i] ? llToText(S.refs[i].lat, S.refs[i].lng, S.refs[i].z) : '');
 function refreshInputs() {
   const o = cur(), T = TYPES[o.type], act = document.activeElement;
   $('objSel').innerHTML = S.objs.map((x, i) => `<option value="${x.id}" ${x.id === o.id ? 'selected' : ''}>${i + 1}. ${x.name}</option>`).join('');
   const put = (id, v) => { if (act !== $(id)) $(id).value = v; };
+  const u = isUtm(), sys = u ? 'E, N, Z' : 'enlem, boylam';
+  $('lbCoord').firstChild.textContent = u ? `Merkez koordinatı (alt orta nokta): Doğu E, Kuzey N, Kot Z (m)` : 'Merkez koordinatı: alt orta nokta (enlem, boylam)';
+  $('coord').placeholder = u ? '410916.249, 4005610.512, 412.3' : '41.0082000, 28.9784000'; $('coord2').placeholder = sys;
+  $('crsSel').value = S.crs.type; put('utmZone', S.crs.zone); $('utmHemi').value = S.crs.north ? 'N' : 'S';
+  $('lbZone').style.display = $('lbHemi').style.display = u ? '' : 'none';
+  $('lbRef1').firstChild.textContent = `Georeferans 1 (${sys}${u ? '' : ', kot'})`; $('lbRef2').firstChild.textContent = `Georeferans 2 (${sys}${u ? '' : ', kot'})`;
+  $('ref1').placeholder = $('ref2').placeholder = $('ref1b').placeholder = $('ref2b').placeholder = u ? 'E, N, Z' : 'enlem, boylam, Z';
+  put('ref1', refText(0)); put('ref2', refText(1)); put('ref1b', refText(0)); put('ref2b', refText(1));
+  const mode = S.origin.mode;
+  for (const [b, m] of [['btnPick', 'map'], ['btnRefMode', 'ref'], ['btnGps', 'gps']]) $(b).classList.toggle('on', mode === m);
+  $('pickHint').textContent = mode === 'gps' ? 'Konum kaynağı GPS: telefonun GPS konumu kullanılır, yüzlerce metre sapabilir.'
+    : mode === 'map' ? 'Haritada işaretlediğin noktada dur ve AR\'ı orada başlat. GPS sapmasından etkilenmezsin.'
+    : 'Sahada iki georeferans noktasını AR içindeki "Referans" panelinden işaretleyeceksin. GPS ve pusula kullanılmaz.';
   put('coord', coordText(o)); put('coord2', coordText(o));
+  $('lbR').firstChild.textContent = T.lrot || 'Yön (°)';
   put('w', o.w); put('d', o.d); put('h', o.h); put('rot', o.rot);
   put('zUser', S.zUser); put('zUser2', S.zUser); put('zGround', o.zGround); put('zGround2', o.zGround); put('zBase', o.zBase); put('zBase2', o.zBase);
   $('lbW').firstChild.textContent = `${T.lw} (m)`; $('lbH').firstChild.textContent = `${T.lh} (m)`;
@@ -448,12 +568,11 @@ function refreshInputs() {
   $('lblW').textContent = `${T.lw} ${o.w} m`; $('lblH').textContent = `${T.lh} ${o.h} m`;
   $('lblD').textContent = `${T.ld} ${o.d} m`; $('rowD').style.display = T.usesD ? 'flex' : 'none';
   $('objName').textContent = `${S.objs.indexOf(o) + 1}/${S.objs.length}  ${o.name}`;
-  $('btnPick').textContent = S.origin.mode === 'map' ? '📍 Duruş noktamı değiştir' : '📍 Duruş noktamı haritada işaretle';
-  $('btnGps').style.display = S.origin.mode === 'map' ? '' : 'none';
 }
 function updateStatus() {
   const p = [], op = originPoint(), o = cur();
-  p.push(S.origin.mode === 'map' ? 'Konum: haritadan işaretli nokta' : (fix ? `GPS ±${fix.acc.toFixed(0)} m` : 'GPS bekleniyor…'));
+  p.push(S.origin.mode === 'map' ? 'Konum: haritadan işaretli nokta' : S.origin.mode === 'ref' ? 'Konum: 2 georeferans'
+    : (fix ? `GPS ±${fix.acc.toFixed(0)} m` : 'GPS bekleniyor…'));
   if (op && o) p.push(`Seçili nesneye: ${distM(op, o).toFixed(0)} m`);
   p.push(xrSupported ? 'AR: hazır' : 'AR: bu tarayıcıda yok (Android Chrome kullan)');
   $('status').textContent = p.join(' · ');
@@ -462,10 +581,28 @@ let xrSupported = false;
 if (navigator.xr) navigator.xr.isSessionSupported('immersive-ar').then((ok) => { xrSupported = ok; updateStatus(); }).catch(() => {});
 
 function applyCoord(id) {
-  const c = parseCoord($(id).value);
-  if (!c) { alert('Koordinatı "enlem, boylam" şeklinde yaz. Örn: 41.0082, 28.9784'); refreshInputs(); return; }
-  const o = cur(); o.lat = c[0]; o.lng = c[1]; map.setView(c, Math.max(map.getZoom(), 18)); refreshAll(); rebuildObj(o.id);
+  const r = textToLL($(id).value);
+  if (!r) { alert(isUtm() ? `Koordinatı "E, N, Z" şeklinde yaz (UTM zone ${S.crs.zone}${S.crs.north ? 'N' : 'S'}). Örn: 410916.249, 4005610.512, 412.3` : 'Koordinatı "enlem, boylam" şeklinde yaz. Örn: 41.0082, 28.9784'); refreshInputs(); return; }
+  const o = cur(); o.lat = r.lat; o.lng = r.lng;
+  if (r.z !== undefined) o.zGround = o.zBase = r.z;   // Z = elevation of the tower/structure base on the ground
+  map.setView([r.lat, r.lng], Math.max(map.getZoom(), 18)); refreshAll(); rebuildObj(o.id);
 }
+// coordinate system
+$('crsSel').addEventListener('change', () => {
+  if ($('crsSel').value === 'utm') { const c = cur(); S.crs = { type: 'utm', zone: S.crs.zone && S.crs.zoneSet ? S.crs.zone : utmZoneOf(c.lng), north: c.lat >= 0, zoneSet: !!S.crs.zoneSet }; }
+  else S.crs = { ...S.crs, type: 'latlng' };
+  refreshAll();
+});
+$('utmZone').addEventListener('change', () => { S.crs.zone = Math.min(60, Math.max(1, Math.round(num('utmZone', S.crs.zone)))); S.crs.zoneSet = true; refreshAll(); });
+$('utmHemi').addEventListener('change', () => { S.crs.north = $('utmHemi').value === 'N'; S.crs.zoneSet = true; refreshAll(); });
+// georeference points (typed on the main screen or inside AR)
+[['ref1', 0], ['ref2', 1], ['ref1b', 0], ['ref2b', 1]].forEach(([id, k]) => $(id).addEventListener('change', () => {
+  const t = $(id).value.trim();
+  if (!t) S.refs[k] = null;
+  else { const r = textToLL(t); if (!r) { alert('Referans koordinatı okunamadı.'); refreshInputs(); return; } S.refs[k] = { lat: r.lat, lng: r.lng, z: r.z }; }
+  refMarks[k] = null; if (S.origin.mode === 'ref') origin = null;
+  refreshAll();
+}));
 $('coord').addEventListener('change', () => applyCoord('coord'));
 $('coord2').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyCoord('coord2'); $('coord2').blur(); } });
 $('btnGo').addEventListener('click', () => applyCoord('coord2'));
@@ -484,9 +621,16 @@ $('btnHere').addEventListener('click', () => {
 });
 $('btnPick').addEventListener('click', () => { pickMe = true; $('status').textContent = 'Haritada, AR\'ı başlatacağın noktaya dokun…'; });
 $('btnGps').addEventListener('click', () => { S.origin = { mode: 'gps' }; refreshAll(); });
+$('btnRefMode').addEventListener('click', () => {
+  S.origin = { mode: 'ref' }; $('geoDet').open = true; refreshAll();
+  if (!S.refs[0] || !S.refs[1]) $('status').textContent = 'Önce yukarıya iki georeferans noktasının koordinatını yaz.';
+});
 
 // library sheet
-$('libGrid').innerHTML = Object.entries(TYPES).map(([k, T]) => `<button class="card" data-type="${k}"><b>${T.icon}</b>${T.label}</button>`).join('');
+const cardHtml = ([k, T]) => `<button class="card" data-type="${k}"><b>${T.icon}</b>${T.label}</button>`;
+const libEntries = Object.entries(TYPES);
+$('libGrid').innerHTML = libEntries.filter(([, T]) => !T.pls).map(cardHtml).join('') +
+  (libEntries.some(([, T]) => T.pls) ? '<div style="grid-column:1/-1;font-size:11px;color:var(--dim);margin-top:4px">PLS-TOWER direkleri (.tow dosyalarından)</div>' + libEntries.filter(([, T]) => T.pls).map(cardHtml).join('') : '');
 $('btnAdd').addEventListener('click', () => { $('sheet').style.display = 'flex'; });
 $('btnSheetClose').addEventListener('click', () => { $('sheet').style.display = 'none'; });
 $('sheet').addEventListener('click', (e) => { if (e.target === $('sheet')) $('sheet').style.display = 'none'; });
@@ -505,7 +649,8 @@ $('btnDel').addEventListener('click', () => {
 let renderer, scene, camera, session = null, hitSource = null, ghost = false;
 const rts = new Map();
 let cal = null, origin = null, thetaN = 0, calQuality = null, noCompass = false, calSpread = null, originSrc = '';
-let groundY = 0, wantGround = false, wantGroundT = 0, lastHitY = null, groundMsg = null;
+let groundY = 0, wantGround = false, wantGroundT = 0, lastHit = null, groundMsg = null;
+let refMarks = [null, null], refInfo = null;   // AR-space positions of the two georeference points
 const adj = { e: 0, n: 0, up: 0, rot: 0 };
 const q = new THREE.Quaternion(), fwd = new THREE.Vector3();
 let camYaw = 0, camPos = { x: 0, y: 0, z: 0 }, level = false, lastHud = 0, selInfo = null;
@@ -608,8 +753,9 @@ function frame(t, xrFrame) {
   }
   if (hitSource) {
     const res = xrFrame.getHitTestResults(hitSource);
-    lastHitY = res.length ? res[0].getPose(ref).transform.position.y : null;
-    if (wantGround && lastHitY != null) { groundY = lastHitY; wantGround = false; groundMsg = { t: performance.now(), s: 'Zemin seviyesi ölçüldü ✓' }; }
+    const hp = res.length ? res[0].getPose(ref).transform.position : null;
+    lastHit = hp ? { x: hp.x, y: hp.y, z: hp.z } : null;
+    if (wantGround && lastHit) { groundY = lastHit.y; wantGround = false; groundMsg = { t: performance.now(), s: 'Zemin seviyesi ölçüldü ✓' }; }
     else if (wantGround && performance.now() - wantGroundT > 2500) { wantGround = false; groundMsg = { t: performance.now(), s: '⚠ Zemin bulunamadı. Daireyi yakındaki zemine tut, yavaşça gezdir, tekrar bas.' }; }
   }
   const now = performance.now();
@@ -630,7 +776,7 @@ function frame(t, xrFrame) {
       const en = enuFrom(origin.lat, origin.lng, o.lat, o.lng), e = en.e + adj.e, n = en.n + adj.n;
       const dist = Math.hypot(e, n), bearing = Math.atan2(e, n), yaw = tn + bearing;
       rt.group.position.set(origin.x + dist * Math.sin(yaw), groundY + adj.up + (o.zBase - S.zUser), origin.z - dist * Math.cos(yaw));
-      rt.group.rotation.y = -(tn + o.rot * rad); rt.group.visible = true;
+      rt.group.rotation.y = -(tn + effRot(o) * rad); rt.group.visible = true;
       const yT = rt.group.position.y + (o.zGround - o.zBase); rt.clipAbove.constant = -yT; rt.clipBelow.constant = yT;
       if (o === sel) selInfo = { o, dist, yaw, rel: wrapPi(yaw - camYaw), dz: o.zGround - o.zBase };
     }
@@ -644,11 +790,26 @@ function hudText(now) {
     const el = Math.min(8, (now - cal.t0) / 1000);
     return `Kalibrasyon… ${el.toFixed(0)}/8 sn. Telefonu dik tut, ufka bak, kıpırdama.<br>Konum: ${S.origin.mode === 'map' ? 'haritadan' : (fix ? 'GPS ±' + fix.acc.toFixed(0) + ' m' : 'GPS yok')} · Pusula: ${heading != null ? 'var' : 'yok'}`;
   }
+  if (!selInfo) {   // georeference mode, waiting for the two points
+    const ok = (i) => (refMarks[i] ? '✓' : '…');
+    const next = !S.refs[0] || !S.refs[1] ? '⚠ Referans koordinatları yazılmamış (Referans paneli)'
+      : !refMarks[0] ? 'R1 noktasına git: üstünde dur 📍 ya da daireyi tam üstüne tut 🎯 (Referans paneli)'
+      : !refMarks[1] ? 'Şimdi R2 noktasını işaretle' : '';
+    return `<b>Georeferans</b>  R1 ${ok(0)}   R2 ${ok(1)}<br>${next}` + (groundMsg && now - groundMsg.t < 3500 ? '<br>' + groundMsg.s : '');
+  }
   const { o, dist, rel, dz } = selInfo;
   const dir = Math.abs(rel) < 0.35 ? 'önünde' : (rel > 0 ? `sağında ${(rel * deg).toFixed(0)}°` : `solunda ${(-rel * deg).toFixed(0)}°`);
-  let s = `<b>${o.name}</b>: ${dist.toFixed(0)} m uzakta, ${dir}<br>Konum: ${originSrc}` +
-    (originSrc === 'GPS' ? ` ±${fix ? fix.acc.toFixed(0) : '?'} m${calSpread != null && calSpread > 12 ? ' <b style="color:#ffd166">⚠ GPS oynak (' + calSpread.toFixed(0) + ' m)</b>' : ''}` : '') + ' · ' +
-    (noCompass ? '⚠ Pusula yok: "Şu an tam kuzeye bakıyorum"' : `Pusula %${(calQuality * 100).toFixed(0)}`);
+  let s = `<b>${o.name}</b>: ${dist.toFixed(0)} m uzakta, ${dir}<br>`;
+  if (originSrc === 'georeferans' && refInfo) {
+    const err = refInfo.meas - refInfo.truth;
+    s += `Georeferans ✓ R1–R2: ${refInfo.truth.toFixed(1)} m, ölçülen fark ${err >= 0 ? '+' : ''}${err.toFixed(2)} m (%${(err / refInfo.truth * 100).toFixed(2)})` +
+      (Math.abs(err / refInfo.truth) > 0.01 ? ' <b style="color:#ffd166">⚠ büyük, noktaları yeniden işaretle</b>' : '') +
+      (refInfo.approx ? '<br><b style="color:#ffd166">⚠ Zemin ölçülmedi: yükseklik yaklaşık</b>' : '');
+  } else {
+    s += `Konum: ${originSrc}` +
+      (originSrc === 'GPS' ? ` ±${fix ? fix.acc.toFixed(0) : '?'} m${calSpread != null && calSpread > 12 ? ' <b style="color:#ffd166">⚠ GPS oynak (' + calSpread.toFixed(0) + ' m)</b>' : ''}` : '') + ' · ' +
+      (noCompass ? '⚠ Pusula yok: "Şu an tam kuzeye bakıyorum"' : `Pusula %${(calQuality * 100).toFixed(0)}`);
+  }
   if (o.zGround !== 0 || o.zBase !== 0 || S.zUser !== 0) {
     s += '<br>' + (Math.abs(dz) < 0.05 ? '⬛ Taban arazi seviyesinde'
       : dz > 0 ? `<b style="color:#ff8a70">GÖMÜLÜ: taban arazinin ${dz.toFixed(1)} m altında</b>` : `<b style="color:#ffd166">HAVADA: taban arazinin ${(-dz).toFixed(1)} m üstünde</b>`);
@@ -659,7 +820,9 @@ function hudText(now) {
 
 async function startAR() {
   if (!xrSupported) { alert('Bu tarayıcı/telefon AR desteklemiyor. Android\'de Chrome ile aç.'); return; }
-  if (S.origin.mode === 'gps') {
+  if (S.origin.mode === 'ref') {
+    if (!S.refs[0] || !S.refs[1]) { alert('Önce "Koordinat sistemi ve georeferans" bölümüne iki referans noktasının koordinatını yaz.'); $('geoDet').open = true; return; }
+  } else if (S.origin.mode === 'gps') {
     if (!fix) { alert('GPS konumu henüz alınamadı. Birkaç saniye bekle ya da "Duruş noktamı haritada işaretle" ile elle belirt.'); return; }
     if (fix.acc > 30 && !confirm(`GPS zayıf (±${fix.acc.toFixed(0)} m). Bu, nesnelerin yüzlerce metre kaymasına yol açabilir.\nDaha doğrusu: "Duruş noktamı haritada işaretle". Yine de devam edilsin mi?`)) return;
   }
@@ -672,8 +835,36 @@ async function startAR() {
   session.addEventListener('end', onEnd);
   await renderer.xr.setSession(session);
   try { const vs = await session.requestReferenceSpace('viewer'); hitSource = await session.requestHitTestSource({ space: vs }); } catch (e) { hitSource = null; }
-  groundY = 0; wantGround = false; adj.e = adj.n = adj.up = adj.rot = 0;
-  startCal(); renderer.setAnimationLoop(frame);
+  groundY = 0; wantGround = false; adj.e = adj.n = adj.up = adj.rot = 0; refMarks = [null, null]; refInfo = null; lastHit = null;
+  if (S.origin.mode === 'ref') { cal = null; origin = null; showPanel('pRef'); } else startCal();
+  renderer.setAnimationLoop(frame);
+}
+
+// ----- two-point georeference: the phone is put at / aimed at two points with known coordinates -----
+function markRef(i, how) {
+  const r = S.refs[i], now = performance.now();
+  if (!r) { groundMsg = { t: now, s: `⚠ R${i + 1} koordinatı yazılmamış` }; return; }
+  if (S.origin.mode !== 'ref') { S.origin = { mode: 'ref' }; cal = null; origin = null; refMarks = [null, null]; refInfo = null; save(); }
+  let p;
+  if (how === 'aim') {
+    if (!lastHit) { groundMsg = { t: now, s: '⚠ Zemin bulunamadı: daireyi noktaya tut, telefonu yavaşça gezdir, tekrar bas' }; return; }
+    p = { ...lastHit, approx: false };
+  } else p = { x: camPos.x, z: camPos.z, y: lastHit ? lastHit.y : camPos.y - 1.4, approx: !lastHit };
+  refMarks[i] = p; groundMsg = { t: now, s: `R${i + 1} işaretlendi ✓` };
+  solveRefs();
+}
+function solveRefs() {
+  const [a, b] = refMarks, [r1, r2] = S.refs;
+  if (!(a && b && r1 && r2)) return;
+  const en = enuFrom(r1.lat, r1.lng, r2.lat, r2.lng), truth = Math.hypot(en.e, en.n), meas = Math.hypot(b.x - a.x, b.z - a.z);
+  if (truth < 3 || meas < 1) { groundMsg = { t: performance.now(), s: '⚠ R1 ve R2 çok yakın; yeniden işaretle' }; refMarks[1] = null; return; }
+  // XR yaw of a direction = thetaN + bearing, so thetaN = yaw(R1->R2 in XR) - bearing(R1->R2 on the ground)
+  thetaN = Math.atan2(b.x - a.x, -(b.z - a.z)) - Math.atan2(en.e, en.n);
+  origin = { lat: r1.lat, lng: r1.lng, x: a.x, z: a.z }; groundY = a.y; originSrc = 'georeferans';
+  if (r1.z !== undefined) S.zUser = r1.z;
+  adj.e = adj.n = adj.up = adj.rot = 0; noCompass = false; calQuality = null;
+  refInfo = { truth, meas, approx: a.approx || b.approx };
+  refreshInputs(); save();
 }
 function onEnd() {
   renderer.setAnimationLoop(null); session = null; hitSource = null;
@@ -684,14 +875,23 @@ function onEnd() {
 
 // ----- AR controls -----
 function showPanel(id) {
-  for (const [p, b] of [['pObj', 'btnObj'], ['pElev', 'btnElev'], ['pAlign', 'btnAlign']]) {
+  for (const [p, b] of [['pRef', 'btnRef'], ['pObj', 'btnObj'], ['pElev', 'btnElev'], ['pAlign', 'btnAlign']]) {
     const on = p === id; $(p).style.display = on ? 'block' : 'none'; $(b).classList.toggle('on', on);
   }
 }
 const togglePanel = (id) => showPanel($(id).style.display === 'block' ? null : id);
 $('btnAR').addEventListener('click', startAR);
 $('btnExit').addEventListener('click', () => { if (session) session.end(); });
-$('btnRecal').addEventListener('click', () => { startCal(); });
+$('btnRecal').addEventListener('click', () => {
+  if (S.origin.mode === 'ref') { groundMsg = { t: performance.now(), s: 'Georeferans modunda GPS kullanılmaz. Referans panelinden sıfırla.' }; return; }
+  startCal();
+});
+$('btnRef').addEventListener('click', () => togglePanel('pRef'));
+$('pRef').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-ref]'); if (!b) return;
+  markRef(+b.dataset.ref, b.dataset.m);
+});
+$('btnRefReset').addEventListener('click', () => { refMarks = [null, null]; refInfo = null; if (S.origin.mode === 'ref') origin = null; groundMsg = { t: performance.now(), s: 'Referanslar sıfırlandı' }; });
 $('btnObj').addEventListener('click', () => togglePanel('pObj'));
 $('btnElev').addEventListener('click', () => togglePanel('pElev'));
 $('btnAlign').addEventListener('click', () => togglePanel('pAlign'));
@@ -751,7 +951,15 @@ function startPreview(only) {
 if (location.hash.startsWith('#onizleme')) startPreview(location.hash.split('=')[1]);
 
 refreshAll();
-window.__geo = { S, TYPES, enuFrom, offsetLatLng, compassHeading, cur, mkObj, rebuildAll, refreshAll };
+window.__geo = {
+  S, TYPES, enuFrom, offsetLatLng, compassHeading, cur, mkObj, rebuildAll, refreshAll, latLngToUtm, utmToLatLng, textToLL, llToText,
+  // test hook: solve the georeference from two AR-space marks and report where an object at (lat,lng) would be placed
+  solveTest: (a, b, lat, lng) => {
+    refMarks = [a, b]; solveRefs();
+    const en = enuFrom(origin.lat, origin.lng, lat, lng), dist = Math.hypot(en.e, en.n), yaw = thetaN + Math.atan2(en.e, en.n);
+    return { thetaN_deg: thetaN * deg, x: origin.x + dist * Math.sin(yaw), z: origin.z - dist * Math.cos(yaw), refInfo };
+  },
+};
 </script>
 </body>
 </html>
