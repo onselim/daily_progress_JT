@@ -6,40 +6,50 @@
 <title>AR Konum Demo</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <style>
   :root { --bg:#0f1720; --panel:#16202b; --line:#2a3846; --fg:#e6edf3; --dim:#9fb0c0; --acc:#2f81f7; --warn:#ffb020; }
   * { box-sizing: border-box; }
   html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font-family:system-ui,sans-serif; }
   #app { display:flex; flex-direction:column; height:100dvh; }
   #map { flex:1; min-height:200px; }
-  #panel { background:var(--panel); border-top:1px solid var(--line); padding:10px 12px calc(10px + env(safe-area-inset-bottom)); max-height:52%; overflow:auto; }
+  #panel { background:var(--panel); border-top:1px solid var(--line); padding:10px 12px calc(10px + env(safe-area-inset-bottom)); max-height:46%; overflow:auto; }
   .row { display:flex; gap:8px; margin-bottom:8px; }
-  label { flex:1; font-size:11px; color:var(--dim); display:flex; flex-direction:column; gap:3px; }
-  input { width:100%; background:#0d141b; color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:9px 8px; font-size:15px; }
+  label { flex:1; font-size:11px; color:var(--dim); display:flex; flex-direction:column; gap:3px; min-width:0; }
+  input, select { width:100%; background:#0d141b; color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:9px 8px; font-size:15px; }
   button { font:inherit; color:#fff; background:#2a3846; border:0; border-radius:10px; padding:12px 14px; font-size:15px; }
   button.primary { background:var(--acc); font-weight:600; }
   .row button { flex:1; }
+  .row button.small { flex:0 0 auto; padding:10px 14px; }
   #status { font-size:12px; color:var(--dim); line-height:1.5; }
-  .pin { width:22px; height:22px; border-radius:50%; background:var(--warn); border:3px solid #fff; box-shadow:0 0 0 2px #0008; }
+  .hint { font-size:11px; color:var(--dim); margin:-2px 0 8px; line-height:1.4; }
+  .pin { width:24px; height:24px; border-radius:50%; background:#8fb4d9; border:2px solid #fff; box-shadow:0 0 0 2px #0008; color:#102030; font:700 12px/20px system-ui; text-align:center; }
+  .pin.sel { background:var(--warn); width:28px; height:28px; line-height:24px; margin:-2px 0 0 -2px; border-width:3px; }
+  .pin.me { background:#2f81f7; color:#fff; border-radius:8px; width:auto; padding:0 6px; }
+
+  /* model library sheet */
+  #sheet { display:none; position:fixed; inset:0; background:#000a; z-index:1000; align-items:flex-end; }
+  #sheet .box { background:var(--panel); width:100%; border-radius:16px 16px 0 0; padding:14px 14px calc(14px + env(safe-area-inset-bottom)); }
+  #sheet h3 { margin:0 0 10px; font-size:15px; }
+  #sheet .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:10px; }
+  #sheet .card { background:#0d141b; border:1px solid var(--line); padding:12px 4px; text-align:center; font-size:13px; }
+  #sheet .card b { display:block; font-size:26px; margin-bottom:4px; }
 
   /* AR overlay */
   #overlay { display:none; position:fixed; inset:0; pointer-events:none; font-size:14px; color:#fff; text-shadow:0 1px 3px #000; }
   #hud { position:absolute; top:calc(8px + env(safe-area-inset-top)); left:8px; right:8px; background:#000a; border-radius:10px; padding:8px 10px; line-height:1.45; }
   #cross { position:absolute; left:50%; top:50%; width:26px; height:26px; margin:-13px 0 0 -13px; border:2px solid #fff8; border-radius:50%; }
   #ctl { position:absolute; left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom)); pointer-events:auto; }
-  #ctl .bar { display:flex; gap:8px; }
-  #ctl button { flex:1; background:#000b; padding:11px 6px; font-size:14px; }
+  #ctl .bar { display:flex; gap:6px; }
+  #ctl button { flex:1; background:#000b; padding:11px 2px; font-size:13px; }
+  #ctl .bar button.on { background:var(--acc); }
   .apanel { display:none; background:#000b; border-radius:10px; padding:6px 8px 2px; margin-bottom:6px; max-height:40vh; overflow:auto; }
   .apanel .r { display:flex; align-items:center; gap:5px; margin-bottom:5px; }
   .apanel .r span { width:104px; font-size:12px; }
-  .apanel .r input { flex:1; min-width:0; padding:7px 8px; font-size:14px; }
+  .apanel .r input { flex:1; min-width:70px; padding:7px 8px; font-size:14px; }
   .apanel .r button { padding:7px 0; font-size:13px; background:#2a3846; }
   .apanel .full { width:100%; margin-bottom:5px; padding:8px; font-size:13px; background:#2a3846; }
-  #ctl .bar button.on { background:var(--acc); }
-  #ctl .bar button { padding:11px 2px; font-size:13px; }
   .apanel .note { font-size:11px; color:#c8d3de; line-height:1.4; margin-bottom:6px; }
-  .apanel .r input { min-width:70px; }
 </style>
 </head>
 <body>
@@ -47,26 +57,44 @@
   <div id="map"></div>
   <div id="panel">
     <div class="row">
-      <label>Merkez koordinatı: binanın alt orta noktası (enlem, boylam)
-        <input id="coord" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="41.0082000, 28.9784000">
+      <select id="objSel"></select>
+      <button id="btnAdd" class="small">＋ Ekle</button>
+      <button id="btnDel" class="small">🗑</button>
+    </div>
+    <div class="row">
+      <label>Merkez koordinatı: alt orta nokta (enlem, boylam)
+        <input id="coord" type="text" autocomplete="off" spellcheck="false" placeholder="41.0082000, 28.9784000">
       </label>
     </div>
     <div class="row">
-      <label>En (m)<input id="w" inputmode="decimal"></label>
-      <label>Boy (m)<input id="d" inputmode="decimal"></label>
-      <label>Yükseklik (m)<input id="h" inputmode="decimal"></label>
+      <label id="lbW">En (m)<input id="w" inputmode="decimal"></label>
+      <label id="lbD">Boy (m)<input id="d" inputmode="decimal"></label>
+      <label id="lbH">Yükseklik (m)<input id="h" inputmode="decimal"></label>
       <label>Yön (°)<input id="rot" inputmode="decimal"></label>
     </div>
     <div class="row">
       <label>Bulunduğum yer kotu (m)<input id="zUser" inputmode="decimal"></label>
       <label>Arazi kotu (m)<input id="zGround" inputmode="decimal"></label>
-      <label>Bina taban kotu (m)<input id="zBase" inputmode="decimal"></label>
+      <label>Taban kotu (m)<input id="zBase" inputmode="decimal"></label>
     </div>
     <div class="row">
-      <button id="btnHere">📍 Konumuma koy</button>
+      <button id="btnPick">📍 Duruş noktamı haritada işaretle</button>
+      <button id="btnGps" class="small">GPS</button>
+    </div>
+    <div class="hint" id="pickHint">Doğruluk için: AR'ı başlatacağın yeri haritada işaretle ve AR'ı tam orada başlat. GPS sapmasından etkilenmezsin.</div>
+    <div class="row">
+      <button id="btnHere">📍 Seçili nesneyi konumuma koy</button>
       <button id="btnAR" class="primary">▶ AR'ı başlat</button>
     </div>
     <div id="status">GPS bekleniyor…</div>
+  </div>
+</div>
+
+<div id="sheet">
+  <div class="box">
+    <h3>Model kütüphanesi <span style="color:var(--dim);font-weight:400;font-size:12px">— haritanın ortasına eklenir</span></h3>
+    <div class="grid" id="libGrid"></div>
+    <button id="btnSheetClose" style="width:100%">Kapat</button>
   </div>
 </div>
 
@@ -74,31 +102,34 @@
   <div id="hud">Hazırlanıyor…</div>
   <div id="cross"></div>
   <div id="ctl">
-    <div id="pBuild" class="apanel">
-      <div class="r"><input id="coord2" type="text" autocomplete="off" spellcheck="false" placeholder="merkez: enlem, boylam"><button id="btnGo" style="width:62px">Git</button></div>
-      <div class="r"><span id="lblW">En</span><button data-k="w" data-v="-5">-5</button><button data-k="w" data-v="-1">-1</button><button data-k="w" data-v="1">+1</button><button data-k="w" data-v="5">+5</button></div>
-      <div class="r"><span id="lblD">Boy</span><button data-k="d" data-v="-5">-5</button><button data-k="d" data-v="-1">-1</button><button data-k="d" data-v="1">+1</button><button data-k="d" data-v="5">+5</button></div>
-      <div class="r"><span id="lblH">Yükseklik</span><button data-k="h" data-v="-5">-5</button><button data-k="h" data-v="-1">-1</button><button data-k="h" data-v="1">+1</button><button data-k="h" data-v="5">+5</button></div>
+    <div id="pObj" class="apanel">
+      <div class="r"><button id="btnPrev" style="flex:0 0 46px">◀</button><span id="objName" style="flex:1;width:auto;text-align:center"></span><button id="btnNext" style="flex:0 0 46px">▶</button></div>
+      <div class="r"><input id="coord2" type="text" autocomplete="off" spellcheck="false" placeholder="merkez: enlem, boylam"><button id="btnGo" style="flex:0 0 62px">Git</button></div>
+      <div class="r" id="rowW"><span id="lblW">En</span><button data-k="w" data-v="-5">-5</button><button data-k="w" data-v="-1">-1</button><button data-k="w" data-v="1">+1</button><button data-k="w" data-v="5">+5</button></div>
+      <div class="r" id="rowD"><span id="lblD">Boy</span><button data-k="d" data-v="-5">-5</button><button data-k="d" data-v="-1">-1</button><button data-k="d" data-v="1">+1</button><button data-k="d" data-v="5">+5</button></div>
+      <div class="r" id="rowH"><span id="lblH">Yükseklik</span><button data-k="h" data-v="-5">-5</button><button data-k="h" data-v="-1">-1</button><button data-k="h" data-v="1">+1</button><button data-k="h" data-v="5">+5</button></div>
       <button class="full" id="btnStyle">Görünüm: Katı (dokun: şeffaf yap)</button>
     </div>
     <div id="pElev" class="apanel">
-      <div class="note">Kotları aynı kaynaktan (Google Earth vb.) gir. Bina taban kotu araziden düşükse arazinin altında kalan kısım kırmızı ve şeffaf görünür (gömülü). Yeşil çizgi, arazinin binayı kestiği yerdir.</div>
+      <div class="note">Kotları aynı kaynaktan (Google Earth vb.) gir. Bina taban kotu araziden düşükse arazinin altında kalan kısım kırmızı ve şeffaf görünür (gömülü). Yeşil çizgi, arazinin nesneyi kestiği yerdir. Arazi ve taban kotu seçili nesne içindir.</div>
       <div class="r"><span>Bulunduğum kot</span><input id="zUser2" inputmode="decimal"><button data-z="zUser" data-v="-1">-1</button><button data-z="zUser" data-v="1">+1</button></div>
       <div class="r"><span>Arazi kotu</span><input id="zGround2" inputmode="decimal"><button data-z="zGround" data-v="-1">-1</button><button data-z="zGround" data-v="1">+1</button></div>
       <div class="r"><span>Taban kotu</span><input id="zBase2" inputmode="decimal"><button data-z="zBase" data-v="-1">-1</button><button data-z="zBase" data-v="1">+1</button></div>
     </div>
     <div id="pAlign" class="apanel">
+      <div class="note"><b>Yönü nişanla:</b> ortadaki daireyi seçili nesnenin <b>gerçekte olması gereken yerine</b> (araziye) tut ve bas. Pusula hatasını tek dokunuşta düzeltir.</div>
+      <button class="full" id="btnAim">🎯 Yönü nişanla</button>
       <div class="r"><span>Yön (°)</span><button data-k="rot" data-v="-5">-5</button><button data-k="rot" data-v="-1">-1</button><button data-k="rot" data-v="1">+1</button><button data-k="rot" data-v="5">+5</button></div>
-      <div class="r"><span>Doğu-Batı (m)</span><button data-k="e" data-v="-5">-5</button><button data-k="e" data-v="-1">-1</button><button data-k="e" data-v="1">+1</button><button data-k="e" data-v="5">+5</button></div>
-      <div class="r"><span>Kuzey-Güney (m)</span><button data-k="n" data-v="-5">-5</button><button data-k="n" data-v="-1">-1</button><button data-k="n" data-v="1">+1</button><button data-k="n" data-v="5">+5</button></div>
+      <div class="r"><span>Uzağa/Yakına (m)</span><button data-n="f" data-v="-10">-10</button><button data-n="f" data-v="-1">-1</button><button data-n="f" data-v="1">+1</button><button data-n="f" data-v="10">+10</button></div>
+      <div class="r"><span>Sağa/Sola (m)</span><button data-n="r" data-v="-5">-5</button><button data-n="r" data-v="-1">-1</button><button data-n="r" data-v="1">+1</button><button data-n="r" data-v="5">+5</button></div>
       <div class="r"><span>Yükseklik (m)</span><button data-k="up" data-v="-1">-1</button><button data-k="up" data-v="-0.1">-0.1</button><button data-k="up" data-v="0.1">+0.1</button><button data-k="up" data-v="1">+1</button></div>
-      <div class="note">Zemin seviyesi: ortadaki daireyi <b>ayağının yakınındaki zemine</b> (birkaç metre ötede) tutup düğmeye bas. Bina yüksekliğinin başlangıcı o zemin olur. Uzaktaki binanın zeminini değil, senin durduğun zemini ölçer; iki zemin farklıysa "Kot" panelini kullan.</div>
+      <div class="note">Zemin seviyesi: daireyi <b>ayağının yakınındaki zemine</b> tutup bas. Senin durduğun zemini ölçer; iki zemin farklıysa "Kot" panelini kullan.</div>
       <button class="full" id="btnGround">Zemin seviyesini ölç</button>
       <button class="full" id="btnNorth">Şu an tam kuzeye bakıyorum</button>
     </div>
     <div class="bar">
       <button id="btnRecal">Kalibre</button>
-      <button id="btnBuild">Bina</button>
+      <button id="btnObj">Nesne</button>
       <button id="btnElev">Kot</button>
       <button id="btnAlign">Hizalama</button>
       <button id="btnExit">Çık</button>
@@ -108,85 +139,297 @@
 
 <script type="module">
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const R = 6378137, rad = Math.PI / 180, deg = 180 / Math.PI;
 const $ = (id) => document.getElementById(id);
-
-// ---------- state ----------
-const DEFAULT = { lat: 41.0082, lng: 28.9784, w: 15, d: 15, h: 25, rot: 0, zUser: 0, zGround: 0, zBase: 0 };
-const S = { ...DEFAULT };
-let hadSaved = false;
-try {
-  const saved = JSON.parse(localStorage.getItem('arGeoState') || 'null');
-  if (saved && isFinite(saved.lat) && isFinite(saved.lng)) { Object.assign(S, saved); hadSaved = true; }
-} catch (e) {}
-const save = () => { try { localStorage.setItem('arGeoState', JSON.stringify(S)); } catch (e) {} };
-
-// ---------- geo math ----------
-const enuFrom = (lat0, lng0, lat, lng) => ({
-  e: (lng - lng0) * rad * R * Math.cos(lat0 * rad),
-  n: (lat - lat0) * rad * R,
-});
-const offsetLatLng = (lat, lng, e, n) => [lat + n / (rad * R), lng + e / (rad * R * Math.cos(lat * rad))];
 const wrapPi = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 
-// ---------- GPS ----------
-let fix = null;
+// ================= geo math =================
+const enuFrom = (lat0, lng0, lat, lng) => ({ e: (lng - lng0) * rad * R * Math.cos(lat0 * rad), n: (lat - lat0) * rad * R });
+const offsetLatLng = (lat, lng, e, n) => [lat + n / (rad * R), lng + e / (rad * R * Math.cos(lat * rad))];
+const distM = (a, b) => { const o = enuFrom(a.lat, a.lng, b.lat, b.lng); return Math.hypot(o.e, o.n); };
+
+// ================= model library =================
+const TYPES = {
+  bina:  { label: 'Bina',        icon: '🏢', dims: { w: 15, d: 15, h: 25 }, lw: 'En', ld: 'Boy', lh: 'Yükseklik', usesD: true },
+  duvar: { label: 'Duvar',       icon: '🧱', dims: { w: 30, d: 0.5, h: 3 }, lw: 'Uzunluk', ld: 'Kalınlık', lh: 'Yükseklik', usesD: true, step: { d: 0.1, h: 0.5 } },
+  direk: { label: 'Direk (ENH)', icon: '⚡', dims: { w: 8, d: 8, h: 45 },  lw: 'Taban en', ld: 'Taban boy', lh: 'Yükseklik', usesD: true },
+  cami:  { label: 'Cami',        icon: '🕌', dims: { w: 24, d: 24, h: 25 }, lw: 'En', ld: 'Boy', lh: 'Kubbe tepesi', usesD: true },
+  tank:  { label: 'Tank / Silo', icon: '🛢️', dims: { w: 12, d: 12, h: 15 }, lw: 'Çap', ld: '', lh: 'Yükseklik', usesD: false },
+  kutu:  { label: 'Kutu (hacim)', icon: '📦', dims: { w: 10, d: 10, h: 10 }, lw: 'En', ld: 'Boy', lh: 'Yükseklik', usesD: true },
+};
+
+const texCache = {};
+function canvasTex(key, w, h, draw) {
+  if (texCache[key]) return texCache[key];
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return (texCache[key] = t);
+}
+const repeated = (base, rx, ry) => { const t = base.clone(); t.needsUpdate = true; t.repeat.set(rx, ry); return t; };
+const std = (color, rough = 0.8, metal = 0.05, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
+const addBox = (g, w, h, d, mat, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); g.add(m); return m; };
+const addCyl = (g, rt, rb, h, seg, mat, x, y, z) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat); m.position.set(x, y, z); g.add(m); return m; };
+const addDome = (g, r, mat, x, y, z) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), mat); m.position.set(x, y, z); g.add(m); return m; };
+
+const drawFacade = (g) => {
+  g.fillStyle = '#dfe3e8'; g.fillRect(0, 0, 128, 128); g.fillStyle = '#c9cfd6'; g.fillRect(0, 104, 128, 24);
+  const gr = g.createLinearGradient(0, 14, 0, 92); gr.addColorStop(0, '#6f97b8'); gr.addColorStop(1, '#2f4d68');
+  g.fillStyle = gr; g.fillRect(22, 14, 84, 78);
+  g.fillStyle = 'rgba(255,255,255,0.16)'; g.beginPath(); g.moveTo(22, 14); g.lineTo(62, 14); g.lineTo(22, 70); g.closePath(); g.fill();
+  g.strokeStyle = '#f2f4f6'; g.lineWidth = 4; g.strokeRect(22, 14, 84, 78); g.beginPath(); g.moveTo(64, 14); g.lineTo(64, 92); g.stroke();
+};
+const drawBrick = (g) => {
+  g.fillStyle = '#d3c4b2'; g.fillRect(0, 0, 128, 64);
+  for (let r = 0; r < 4; r++) for (let c = -1; c < 4; c++) {
+    const x = c * 32 + (r % 2 ? 16 : 0), y = r * 16;
+    g.fillStyle = ['#b5654a', '#a85a41', '#be6f52'][(r * 3 + c + 9) % 3]; g.fillRect(x + 1, y + 1, 30, 14);
+  }
+};
+const drawArch = (g) => {
+  g.fillStyle = '#e9e0cf'; g.fillRect(0, 0, 128, 128); g.fillStyle = '#d9cfbb'; g.fillRect(0, 112, 128, 16);
+  g.fillStyle = '#3b5670'; g.beginPath(); g.moveTo(40, 100); g.lineTo(40, 52); g.arc(64, 52, 24, Math.PI, 0); g.lineTo(88, 100); g.closePath(); g.fill();
+  g.strokeStyle = '#f5efe2'; g.lineWidth = 4; g.stroke(); g.beginPath(); g.moveTo(64, 28); g.lineTo(64, 100); g.stroke();
+};
+const drawBand = (g) => { g.fillStyle = '#b9c2cb'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#8f9aa5'; g.fillRect(0, 0, 64, 4); g.fillStyle = '#cfd6dc'; g.fillRect(0, 30, 64, 2); };
+
+function beamGeo(p0, p1, t) {
+  const a = new THREE.Vector3(...p0), b = new THREE.Vector3(...p1), len = a.distanceTo(b);
+  const g = new THREE.BoxGeometry(t, t, len);
+  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), b.clone().sub(a).normalize());
+  g.applyMatrix4(new THREE.Matrix4().compose(a.clone().add(b).multiplyScalar(0.5), q, new THREE.Vector3(1, 1, 1)));
+  return g;
+}
+
+TYPES.bina.build = (o) => {
+  const { w, d, h } = o, g = new THREE.Group();
+  const floors = Math.max(1, Math.round(h / 3.5)), base = canvasTex('facade', 128, 128, drawFacade);
+  const side = (width) => std(0xffffff, 0.65, 0.05, { map: repeated(base, Math.max(1, Math.round(width / 3.2)), floors) });
+  const roof = std(0x59626c, 0.9);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [side(d), side(d), roof, roof, side(w), side(w)]); body.position.y = h / 2; g.add(body);
+  const trim = std(0xaeb6bf), dark = std(0x626b75, 0.85);
+  addBox(g, w + 0.5, 1.0, d + 0.5, dark, 0, 0.5, 0);
+  const pt = 0.4, ph = 0.9;
+  addBox(g, w + 0.2, ph, pt, trim, 0, h + ph / 2, d / 2 - pt / 2 + 0.1);
+  addBox(g, w + 0.2, ph, pt, trim, 0, h + ph / 2, -d / 2 + pt / 2 - 0.1);
+  addBox(g, pt, ph, d - pt, trim, w / 2 - pt / 2 + 0.1, h + ph / 2, 0);
+  addBox(g, pt, ph, d - pt, trim, -w / 2 + pt / 2 - 0.1, h + ph / 2, 0);
+  if (h > 8 && w > 6 && d > 6) addBox(g, w * 0.3, 2.2, d * 0.25, dark, -w * 0.15, h + 1.1, -d * 0.15);
+  if (w > 5) {
+    const dw = Math.min(2.8, w * 0.3);
+    addBox(g, dw, 3.0, 0.15, std(0x3a2f28, 0.7), 0, 2.0, d / 2 + 0.28);
+    addBox(g, dw + 1.2, 0.25, 1.4, trim, 0, 3.6, d / 2 + 0.7);
+  }
+  return g;
+};
+
+TYPES.duvar.build = (o) => {
+  const { w, d, h } = o, g = new THREE.Group();
+  const base = canvasTex('brick', 128, 64, drawBrick);
+  const face = std(0xffffff, 0.9, 0.0, { map: repeated(base, Math.max(1, w / 2.2), Math.max(1, h / 0.55)) });
+  const end = std(0xb5654a, 0.9), top = std(0xcfc6ba, 0.85);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [end, end, top, top, face, face]); body.position.y = h / 2; g.add(body);
+  addBox(g, w + 0.1, 0.14, d + 0.16, top, 0, h + 0.07, 0);                      // coping
+  const n = Math.max(1, Math.round(w / 6));
+  for (let i = 0; i <= n; i++) addBox(g, Math.max(0.5, d + 0.2), h + 0.3, d + 0.3, top, -w / 2 + (w * i) / n, (h + 0.3) / 2, 0);   // pillars
+  return g;
+};
+
+TYPES.direk.build = (o) => {
+  const { w, d, h } = o, g = new THREE.Group(), S_ = [], I_ = [], W_ = [];
+  const bx = w / 2, bz = d / 2, topY = h * 0.8, tx = bx * 0.22, tz = bz * 0.22, t = Math.max(0.08, h * 0.0045);
+  const hx = (y) => bx + (tx - bx) * y / topY, hz = (y) => bz + (tz - bz) * y / topY;
+  const cor = (y) => [[-hx(y), y, -hz(y)], [hx(y), y, -hz(y)], [hx(y), y, hz(y)], [-hx(y), y, hz(y)]];
+  const ys = [0, 0.2, 0.4, 0.6, 0.8, 1].map((f) => f * topY);
+  for (let k = 0; k < ys.length - 1; k++) {
+    const a = cor(ys[k]), b = cor(ys[k + 1]);
+    for (let i = 0; i < 4; i++) {
+      const j = (i + 1) % 4;
+      S_.push(beamGeo(a[i], b[i], t * 1.6), beamGeo(a[i], b[j], t * 0.7), beamGeo(a[j], b[i], t * 0.7));
+    }
+  }
+  for (const y of ys) { const c = cor(y); for (let i = 0; i < 4; i++) S_.push(beamGeo(c[i], c[(i + 1) % 4], t)); }
+  S_.push(beamGeo([0, topY, 0], [0, h * 0.94, 0], t * 1.4));
+  const ey = h * 0.88, wz = h * 0.12;
+  for (const s of [-1, 1]) {
+    S_.push(beamGeo([0, ey, 0], [s * h * 0.1, ey, 0], t * 1.2), beamGeo([0, h * 0.94, 0], [s * h * 0.1, ey, 0], t * 0.6));
+    W_.push(beamGeo([s * h * 0.1, ey, -wz], [s * h * 0.1, ey, wz], t * 0.5));
+    for (const [f, L] of [[0.56, 0.16], [0.68, 0.19], [0.8, 0.14]]) {
+      const y = h * f, tip = s * h * L, ih = h * 0.08;
+      S_.push(beamGeo([s * hx(Math.min(y, topY)), y, 0], [tip, y, 0], t * 1.3), beamGeo([s * hx(Math.min(y, topY)), y - h * 0.07, 0], [tip, y, 0], t * 0.6));
+      I_.push(beamGeo([tip, y, 0], [tip, y - ih, 0], t * 1.8));
+      W_.push(beamGeo([tip, y - ih, -wz], [tip, y - ih, wz], t * 0.6));
+    }
+  }
+  g.add(new THREE.Mesh(mergeGeometries(S_), std(0x9aa4ae, 0.5, 0.8)));
+  g.add(new THREE.Mesh(mergeGeometries(I_), std(0x8b5a3a, 0.6, 0.0)));
+  g.add(new THREE.Mesh(mergeGeometries(W_), std(0x1b1c1e, 0.5, 0.3)));
+  return g;
+};
+
+TYPES.cami.build = (o) => {
+  const { w, d, h } = o, g = new THREE.Group();
+  const wallH = h * 0.42, r = Math.min(w, d) * 0.34;
+  const stone = std(0xe6dccb, 0.85), stoneL = std(0xf0eadf, 0.8), lead = std(0x8aa0b0, 0.5, 0.3), dark = std(0x4a5560, 0.8);
+  const base = canvasTex('arch', 128, 128, drawArch);
+  const side = (width) => std(0xffffff, 0.8, 0.02, { map: repeated(base, Math.max(1, Math.round(width / 4.5)), Math.max(1, Math.round(wallH / 5))) });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w, wallH, d), [side(d), side(d), stone, stone, side(w), side(w)]); body.position.y = wallH / 2; g.add(body);
+  addBox(g, w + 0.5, 0.5, d + 0.5, stoneL, 0, wallH + 0.25, 0);
+  const y0 = wallH + 0.5, drumH = Math.max(1.5, h - y0 - r - 1.5);
+  addCyl(g, r, r, drumH, 32, stone, 0, y0 + drumH / 2, 0);
+  addDome(g, r * 1.03, lead, 0, y0 + drumH, 0);
+  addCyl(g, 0.1, 0.1, 1.4, 8, lead, 0, y0 + drumH + r * 1.03 + 0.5, 0);
+  if (w > 10 && d > 10) {
+    const rs = r * 0.28;
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const x = sx * (w / 2 - r * 0.34), z = sz * (d / 2 - r * 0.34);
+      addCyl(g, rs, rs, 1.2, 20, stone, x, y0 + 0.6, z); addDome(g, rs * 1.03, lead, x, y0 + 1.2, z);
+    }
+  }
+  const mr = Math.min(1.6, Math.max(0.7, w * 0.04)), mh = h * 1.55, capH = mh * 0.14;
+  for (const sx of [-1, 1]) {
+    const x = sx * (w / 2 + mr + 0.4), z = d / 2 - mr;
+    addCyl(g, mr * 0.8, mr, mh, 20, stoneL, x, mh / 2, z);
+    addCyl(g, mr * 1.6, mr * 1.6, 0.35, 20, stone, x, mh * 0.75, z);
+    addCyl(g, mr * 0.95, mr * 0.95, mh * 0.1, 20, stoneL, x, mh + mh * 0.05, z);
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(mr * 0.95, capH, 20), lead); cone.position.set(x, mh + mh * 0.1 + capH / 2, z); g.add(cone);
+    addCyl(g, 0.06, 0.06, capH * 0.5, 6, lead, x, mh + mh * 0.1 + capH + capH * 0.2, z);
+  }
+  addBox(g, Math.min(3.5, w * 0.15), wallH * 0.5, 0.2, dark, 0, wallH * 0.25, d / 2 + 0.11);
+  return g;
+};
+
+TYPES.tank.build = (o) => {
+  const r = o.w / 2, h = o.h, g = new THREE.Group();
+  const base = canvasTex('band', 64, 64, drawBand);
+  const shell = std(0xffffff, 0.55, 0.35, { map: repeated(base, 1, Math.max(1, Math.round(h / 2.5))) });
+  addCyl(g, r, r, h, 48, shell, 0, h / 2, 0);
+  const ch = Math.max(0.6, r * 0.18);
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(r * 1.02, ch, 48), std(0x7d8792, 0.6, 0.3)); cone.position.y = h + ch / 2; g.add(cone);
+  addCyl(g, r * 1.04, r * 1.04, 0.5, 48, std(0x626b75), 0, 0.25, 0);
+  addBox(g, 0.5, h, 0.12, std(0x3a4048), r + 0.06, h / 2, 0);        // ladder rail
+  return g;
+};
+
+TYPES.kutu.build = (o) => {
+  const g = new THREE.Group();
+  addBox(g, o.w, o.h, o.d, std(0xc9c4bb, 0.9), 0, o.h / 2, 0);
+  return g;
+};
+
+// ================= state =================
+const uid = () => Math.random().toString(36).slice(2, 9);
+function mkObj(type, lat, lng, over = {}) {
+  const T = TYPES[type], n = S ? S.objs.filter((o) => o.type === type).length + 1 : 1;
+  return { id: uid(), type, name: `${T.label} ${n}`, lat, lng, ...T.dims, rot: 0, zGround: 0, zBase: 0, ...over };
+}
+let S = null;
+let hadSaved = false;
+function loadState() {
+  try {
+    const s2 = JSON.parse(localStorage.getItem('arGeoState2') || 'null');
+    if (s2 && Array.isArray(s2.objs) && s2.objs.length && s2.objs.every((o) => TYPES[o.type] && isFinite(o.lat))) return s2;
+  } catch (e) {}
+  try {
+    const s1 = JSON.parse(localStorage.getItem('arGeoState') || 'null');
+    if (s1 && isFinite(s1.lat) && isFinite(s1.lng)) {
+      const o = { id: uid(), type: 'bina', name: 'Bina 1', lat: s1.lat, lng: s1.lng, w: s1.w || 15, d: s1.d || 15, h: s1.h || 25, rot: s1.rot || 0, zGround: s1.zGround || 0, zBase: s1.zBase || 0 };
+      return { objs: [o], sel: o.id, zUser: s1.zUser || 0, origin: { mode: 'gps' } };
+    }
+  } catch (e) {}
+  return null;
+}
+S = loadState();
+if (S) hadSaved = true; else { S = { objs: [], sel: null, zUser: 0, origin: { mode: 'gps' } }; S.objs.push(mkObj('bina', 41.0082, 28.9784)); S.sel = S.objs[0].id; }
+if (!S.origin) S.origin = { mode: 'gps' };
+const cur = () => S.objs.find((o) => o.id === S.sel) || S.objs[0];
+const save = () => { try { localStorage.setItem('arGeoState2', JSON.stringify(S)); } catch (e) {} };
+const footD = (o) => (TYPES[o.type].usesD ? o.d : o.w);
+
+// ================= GPS / compass =================
+let fix = null, userMarkerInit = false;
 if ('geolocation' in navigator) {
   navigator.geolocation.watchPosition((p) => {
     fix = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() };
-    if (!hadSaved && !userMarkerInit) { hadSaved = true; const [la, ln] = offsetLatLng(fix.lat, fix.lng, 0, 30); setPos(la, ln, true); }
-    updateUser(); updateStatus();
-  }, (err) => { $('status').textContent = 'GPS hatası: ' + err.message; },
-  { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+    if (!hadSaved) { hadSaved = true; const [la, ln] = offsetLatLng(fix.lat, fix.lng, 0, 30); const o = cur(); o.lat = la; o.lng = ln; map.setView([la, ln], 18); refreshAll(); }
+    updateUser(); updateStatus(); refreshOverlays();
+  }, (err) => { $('status').textContent = 'GPS hatası: ' + err.message; }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
 }
-let userMarkerInit = false;
-
-// ---------- compass ----------
 let heading = null, headingT = 0, haveAbs = false;
 function compassHeading(alpha, beta, gamma) {
   const x = beta * rad, y = gamma * rad, z = alpha * rad;
   const cY = Math.cos(y), cZ = Math.cos(z), sX = Math.sin(x), sY = Math.sin(y), sZ = Math.sin(z);
-  const Vx = -cZ * sY - sZ * sX * cY;
-  const Vy = -sZ * sY + cZ * sX * cY;
+  const Vx = -cZ * sY - sZ * sX * cY, Vy = -sZ * sY + cZ * sX * cY;
   let h = Math.atan(Vx / Vy);
   if (Vy < 0) h += Math.PI; else if (Vx < 0) h += 2 * Math.PI;
   return h * deg;
 }
 function onOrient(ev) {
   if (ev.alpha == null || ev.beta == null || ev.gamma == null) return;
-  heading = compassHeading(ev.alpha, ev.beta, ev.gamma);
-  headingT = performance.now();
+  heading = compassHeading(ev.alpha, ev.beta, ev.gamma); headingT = performance.now();
 }
 window.addEventListener('deviceorientationabsolute', (e) => { haveAbs = true; onOrient(e); }, true);
 window.addEventListener('deviceorientation', (e) => { if (!haveAbs && e.absolute) onOrient(e); }, true);
 
-// ---------- map ----------
-const map = L.map('map', { zoomControl: true }).setView([S.lat, S.lng], 17);
+// ================= map =================
+const c0 = cur();
+const map = L.map('map').setView([c0.lat, c0.lng], 17);
 const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri' });
 const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
 sat.addTo(map);
 L.control.layers({ 'Uydu': sat, 'Harita': osm }, null, { position: 'topright' }).addTo(map);
-
-const marker = L.marker([S.lat, S.lng], { draggable: true, icon: L.divIcon({ className: '', html: '<div class="pin"></div>', iconSize: [22, 22], iconAnchor: [11, 11] }) }).addTo(map);
-const footprint = L.polygon([], { color: '#ffb020', weight: 2, fillOpacity: 0.25 }).addTo(map);
+const objLayer = L.layerGroup().addTo(map);
+const ovLayer = L.layerGroup().addTo(map);
 const userDot = L.circleMarker([0, 0], { radius: 7, color: '#fff', weight: 2, fillColor: '#2f81f7', fillOpacity: 1 });
 const userAcc = L.circle([0, 0], { radius: 1, color: '#2f81f7', weight: 1, fillOpacity: 0.1 });
+let pickMe = false;
 
+const pinIcon = (i, sel) => L.divIcon({ className: '', html: `<div class="pin ${sel ? 'sel' : ''}">${i + 1}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
+function footprintLatLngs(o) {
+  const hw = o.w / 2, hd = footD(o) / 2, r = o.rot * rad;
+  return [[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]].map(([x, y]) => offsetLatLng(o.lat, o.lng, x * Math.cos(r) + y * Math.sin(r), -x * Math.sin(r) + y * Math.cos(r)));
+}
+function refreshMap() {
+  objLayer.clearLayers();
+  S.objs.forEach((o, i) => {
+    const sel = o.id === S.sel, col = sel ? '#ffb020' : '#8fb4d9';
+    if (o.type === 'tank') L.circle([o.lat, o.lng], { radius: o.w / 2, color: col, weight: 2, fillOpacity: 0.25 }).addTo(objLayer);
+    else L.polygon(footprintLatLngs(o), { color: col, weight: 2, fillOpacity: 0.25 }).addTo(objLayer);
+    const mk = L.marker([o.lat, o.lng], { draggable: true, icon: pinIcon(i, sel) }).addTo(objLayer);
+    mk.on('click', () => select(o.id));
+    mk.on('dragend', () => { const p = mk.getLatLng(); o.lat = p.lat; o.lng = p.lng; S.sel = o.id; refreshAll(); });
+  });
+}
 function updateUser() {
   if (!fix) return;
   if (!userMarkerInit) { userDot.addTo(map); userAcc.addTo(map); userMarkerInit = true; }
   userDot.setLatLng([fix.lat, fix.lng]); userAcc.setLatLng([fix.lat, fix.lng]).setRadius(fix.acc);
 }
-function updateFootprint() {
-  const hw = S.w / 2, hd = S.d / 2, r = S.rot * rad;
-  const pts = [[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]].map(([x, y]) => {
-    const e = x * Math.cos(r) + y * Math.sin(r), n = -x * Math.sin(r) + y * Math.cos(r);
-    return offsetLatLng(S.lat, S.lng, e, n);
-  });
-  footprint.setLatLngs(pts);
+const originPoint = () => (S.origin.mode === 'map' ? S.origin : fix);
+function refreshOverlays() {
+  ovLayer.clearLayers();
+  const op = originPoint(), o = cur();
+  if (S.origin.mode === 'map') {
+    const mk = L.marker([S.origin.lat, S.origin.lng], { draggable: true, icon: L.divIcon({ className: '', html: '<div class="pin me">Ben</div>', iconSize: [40, 24], iconAnchor: [20, 12] }) }).addTo(ovLayer);
+    mk.on('dragend', () => { const p = mk.getLatLng(); S.origin = { mode: 'map', lat: p.lat, lng: p.lng }; save(); refreshOverlays(); updateStatus(); });
+  }
+  if (op && o) {
+    L.polyline([[op.lat, op.lng], [o.lat, o.lng]], { color: '#fff', weight: 2, dashArray: '6 6' })
+      .bindTooltip(`${distM(op, o).toFixed(0)} m`, { permanent: true, direction: 'center', className: '' }).addTo(ovLayer);
+  }
 }
-const coordText = () => `${S.lat.toFixed(7)}, ${S.lng.toFixed(7)}`;
+function refreshAll() { refreshMap(); refreshOverlays(); refreshInputs(); updateStatus(); save(); }
+
+function select(id) { S.sel = id; refreshAll(); }
+map.on('click', (e) => {
+  if (pickMe) { pickMe = false; S.origin = { mode: 'map', lat: e.latlng.lat, lng: e.latlng.lng }; refreshAll(); return; }
+  const o = cur(); o.lat = e.latlng.lat; o.lng = e.latlng.lng; refreshAll();
+});
+
+// ================= inputs =================
+const num = (id, fb) => { const v = parseFloat(String($(id).value).replace(',', '.')); return isFinite(v) ? v : fb; };
+const coordText = (o) => `${o.lat.toFixed(7)}, ${o.lng.toFixed(7)}`;
 function parseCoord(s) {
   const m = String(s).trim().match(/^(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)$/);
   if (!m) return null;
@@ -194,292 +437,243 @@ function parseCoord(s) {
   return Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? [lat, lng] : null;
 }
 function refreshInputs() {
-  for (const id of ['coord', 'coord2']) if (document.activeElement !== $(id)) $(id).value = coordText();
-  $('w').value = S.w; $('d').value = S.d; $('h').value = S.h; $('rot').value = S.rot;
-  for (const k of ['zUser', 'zGround', 'zBase']) for (const id of [k, k + '2']) if (document.activeElement !== $(id)) $(id).value = S[k];
-  $('lblW').textContent = `En ${S.w} m`; $('lblD').textContent = `Boy ${S.d} m`; $('lblH').textContent = `Yükseklik ${S.h} m`;
+  const o = cur(), T = TYPES[o.type], act = document.activeElement;
+  $('objSel').innerHTML = S.objs.map((x, i) => `<option value="${x.id}" ${x.id === o.id ? 'selected' : ''}>${i + 1}. ${x.name}</option>`).join('');
+  const put = (id, v) => { if (act !== $(id)) $(id).value = v; };
+  put('coord', coordText(o)); put('coord2', coordText(o));
+  put('w', o.w); put('d', o.d); put('h', o.h); put('rot', o.rot);
+  put('zUser', S.zUser); put('zUser2', S.zUser); put('zGround', o.zGround); put('zGround2', o.zGround); put('zBase', o.zBase); put('zBase2', o.zBase);
+  $('lbW').firstChild.textContent = `${T.lw} (m)`; $('lbH').firstChild.textContent = `${T.lh} (m)`;
+  $('lbD').firstChild.textContent = T.usesD ? `${T.ld} (m)` : '—'; $('d').disabled = !T.usesD;
+  $('lblW').textContent = `${T.lw} ${o.w} m`; $('lblH').textContent = `${T.lh} ${o.h} m`;
+  $('lblD').textContent = `${T.ld} ${o.d} m`; $('rowD').style.display = T.usesD ? 'flex' : 'none';
+  $('objName').textContent = `${S.objs.indexOf(o) + 1}/${S.objs.length}  ${o.name}`;
+  $('btnPick').textContent = S.origin.mode === 'map' ? '📍 Duruş noktamı değiştir' : '📍 Duruş noktamı haritada işaretle';
+  $('btnGps').style.display = S.origin.mode === 'map' ? '' : 'none';
 }
-function setPos(lat, lng, recenter) {
-  S.lat = lat; S.lng = lng; marker.setLatLng([lat, lng]);
-  if (recenter) map.setView([lat, lng], Math.max(map.getZoom(), 18));
-  refreshInputs(); updateFootprint(); save(); updateStatus();
+function updateStatus() {
+  const p = [], op = originPoint(), o = cur();
+  p.push(S.origin.mode === 'map' ? 'Konum: haritadan işaretli nokta' : (fix ? `GPS ±${fix.acc.toFixed(0)} m` : 'GPS bekleniyor…'));
+  if (op && o) p.push(`Seçili nesneye: ${distM(op, o).toFixed(0)} m`);
+  p.push(xrSupported ? 'AR: hazır' : 'AR: bu tarayıcıda yok (Android Chrome kullan)');
+  $('status').textContent = p.join(' · ');
 }
-marker.on('dragend', () => { const p = marker.getLatLng(); setPos(p.lat, p.lng, false); });
-map.on('click', (e) => setPos(e.latlng.lat, e.latlng.lng, false));
+let xrSupported = false;
+if (navigator.xr) navigator.xr.isSessionSupported('immersive-ar').then((ok) => { xrSupported = ok; updateStatus(); }).catch(() => {});
 
-const num = (id, fb) => { const v = parseFloat(String($(id).value).replace(',', '.')); return isFinite(v) ? v : fb; };
 function applyCoord(id) {
   const c = parseCoord($(id).value);
-  if (!c) { alert('Koordinatı "enlem, boylam" şeklinde yaz. Örn: 41.0082, 28.9784'); $(id).value = coordText(); return; }
-  setPos(c[0], c[1], true);
+  if (!c) { alert('Koordinatı "enlem, boylam" şeklinde yaz. Örn: 41.0082, 28.9784'); refreshInputs(); return; }
+  const o = cur(); o.lat = c[0]; o.lng = c[1]; map.setView(c, Math.max(map.getZoom(), 18)); refreshAll(); rebuildObj(o.id);
 }
 $('coord').addEventListener('change', () => applyCoord('coord'));
 $('coord2').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyCoord('coord2'); $('coord2').blur(); } });
 $('btnGo').addEventListener('click', () => applyCoord('coord2'));
-for (const k of ['w', 'd', 'h', 'rot']) {
-  $(k).addEventListener('change', () => { S[k] = Math.max(k === 'rot' ? -360 : 0.1, num(k, S[k])); refreshInputs(); updateFootprint(); save(); });
-}
-for (const k of ['zUser', 'zGround', 'zBase']) {
-  for (const id of [k, k + '2']) {
-    $(id).addEventListener('change', () => {
-      S[k] = num(id, S[k]); if (group) buildModel(); refreshInputs(); save();
-    });
-  }
-}
+$('objSel').addEventListener('change', () => select($('objSel').value));
+
+for (const k of ['w', 'd', 'h']) $(k).addEventListener('change', () => {
+  const o = cur(); o[k] = Math.max(0.1, num(k, o[k])); if (!TYPES[o.type].usesD) o.d = o.w; refreshAll(); rebuildObj(o.id);
+});
+$('rot').addEventListener('change', () => { const o = cur(); o.rot = num('rot', o.rot); refreshAll(); });
+for (const k of ['zUser', 'zGround', 'zBase']) for (const id of [k, k + '2']) $(id).addEventListener('change', () => {
+  const tgt = k === 'zUser' ? S : cur(); tgt[k] = num(id, tgt[k]); refreshAll(); rebuildObj(cur().id);
+});
 $('btnHere').addEventListener('click', () => {
   if (!fix) { alert('GPS konumu henüz alınamadı. Konum iznini ve GPS\'i kontrol et.'); return; }
-  setPos(fix.lat, fix.lng, true);
+  const o = cur(); o.lat = fix.lat; o.lng = fix.lng; map.setView([o.lat, o.lng], 18); refreshAll();
+});
+$('btnPick').addEventListener('click', () => { pickMe = true; $('status').textContent = 'Haritada, AR\'ı başlatacağın noktaya dokun…'; });
+$('btnGps').addEventListener('click', () => { S.origin = { mode: 'gps' }; refreshAll(); });
+
+// library sheet
+$('libGrid').innerHTML = Object.entries(TYPES).map(([k, T]) => `<button class="card" data-type="${k}"><b>${T.icon}</b>${T.label}</button>`).join('');
+$('btnAdd').addEventListener('click', () => { $('sheet').style.display = 'flex'; });
+$('btnSheetClose').addEventListener('click', () => { $('sheet').style.display = 'none'; });
+$('sheet').addEventListener('click', (e) => { if (e.target === $('sheet')) $('sheet').style.display = 'none'; });
+$('libGrid').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-type]'); if (!b) return;
+  const c = map.getCenter(), o = mkObj(b.dataset.type, c.lat, c.lng);
+  S.objs.push(o); S.sel = o.id; $('sheet').style.display = 'none'; refreshAll();
+});
+$('btnDel').addEventListener('click', () => {
+  if (S.objs.length < 2) { alert('Son nesne silinemez. Önce başka bir nesne ekle.'); return; }
+  const o = cur(); if (!confirm(`"${o.name}" silinsin mi?`)) return;
+  S.objs = S.objs.filter((x) => x.id !== o.id); S.sel = S.objs[0].id; refreshAll();
 });
 
-let xrSupported = false;
-function updateStatus() {
-  const parts = [];
-  parts.push(fix ? `GPS: ±${fix.acc.toFixed(0)} m` : 'GPS bekleniyor…');
-  if (fix) { const o = enuFrom(fix.lat, fix.lng, S.lat, S.lng); parts.push(`Binaya uzaklık: ${Math.hypot(o.e, o.n).toFixed(0)} m`); }
-  parts.push(xrSupported ? 'AR: hazır' : 'AR: bu tarayıcıda yok (Android Chrome kullan)');
-  $('status').textContent = parts.join(' · ');
-}
-refreshInputs(); updateFootprint(); updateStatus();
-if (navigator.xr) navigator.xr.isSessionSupported('immersive-ar').then((ok) => { xrSupported = ok; updateStatus(); }).catch(() => {});
-
-// ---------- AR ----------
-let renderer, scene, camera, group, session = null, hitSource = null;
-let cal = null, origin = null, thetaN = 0, calQuality = null, noCompass = false;
+// ================= AR runtime =================
+let renderer, scene, camera, session = null, hitSource = null, ghost = false;
+const rts = new Map();
+let cal = null, origin = null, thetaN = 0, calQuality = null, noCompass = false, calSpread = null, originSrc = '';
 let groundY = 0, wantGround = false, wantGroundT = 0, lastHitY = null, groundMsg = null;
 const adj = { e: 0, n: 0, up: 0, rot: 0 };
 const q = new THREE.Quaternion(), fwd = new THREE.Vector3();
-let camYaw = 0, camPos = { x: 0, y: 0, z: 0 }, level = false, lastHud = 0;
+let camYaw = 0, camPos = { x: 0, y: 0, z: 0 }, level = false, lastHud = 0, selInfo = null;
 
-let ghost = false;
-const FLOOR_H = 3.5, BAY_W = 3.2;
+function retint(src, mat) { const c = src.clone(true); c.traverse((m) => { if (m.isMesh) m.material = mat; }); return c; }
 
-function facadeTexture() {
-  const c = document.createElement('canvas'); c.width = c.height = 128;
-  const g = c.getContext('2d');
-  g.fillStyle = '#dfe3e8'; g.fillRect(0, 0, 128, 128);          // wall
-  g.fillStyle = '#c9cfd6'; g.fillRect(0, 104, 128, 24);         // floor slab band
-  const gr = g.createLinearGradient(0, 14, 0, 92);
-  gr.addColorStop(0, '#6f97b8'); gr.addColorStop(1, '#2f4d68');
-  g.fillStyle = gr; g.fillRect(22, 14, 84, 78);                  // glass
-  g.fillStyle = 'rgba(255,255,255,0.16)';                        // reflection
-  g.beginPath(); g.moveTo(22, 14); g.lineTo(62, 14); g.lineTo(22, 70); g.closePath(); g.fill();
-  g.strokeStyle = '#f2f4f6'; g.lineWidth = 4; g.strokeRect(22, 14, 84, 78);
-  g.beginPath(); g.moveTo(64, 14); g.lineTo(64, 92); g.stroke();  // mullion
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-  return t;
-}
-function shadowTexture() {
-  const c = document.createElement('canvas'); c.width = c.height = 128;
-  const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 8, 64, 64, 64);
-  gr.addColorStop(0, 'rgba(0,0,0,0.45)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
-  return new THREE.CanvasTexture(c);
-}
-let facadeBase = null, shadowTex = null;
-
-function disposeGroup() {
-  group.traverse((o) => {
-    if (o.geometry) o.geometry.dispose();
-    const m = o.material; if (m) (Array.isArray(m) ? m : [m]).forEach((x) => { if (x.map && x.map !== facadeBase && x.map !== shadowTex) x.map.dispose(); x.dispose(); });
-  });
-  group.clear();
-}
-
-// world-space clip planes: keep what is above / below the real terrain level (updated every frame)
-const clipAbove = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-const clipBelow = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
-const terrainLocalY = () => S.zGround - S.zBase;   // terrain height relative to the building base
-
-function buildModel() {
-  disposeGroup();
-  const { w, d, h } = S;
-  const box = new THREE.BoxGeometry(w, h, d); box.translate(0, h / 2, 0);
-  const solid = new THREE.Group(); group.add(solid);
-
+function makeRuntime(o) {
+  const T = TYPES[o.type], group = new THREE.Group();
+  const rt = { group, clipAbove: new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), clipBelow: new THREE.Plane(new THREE.Vector3(0, -1, 0), 0) };
+  const solid = T.build(o), fd = footD(o);
   if (ghost) {
-    group.add(new THREE.Mesh(box, new THREE.MeshBasicMaterial({ color: 0xffb020, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false })));
-    group.add(new THREE.LineSegments(new THREE.EdgesGeometry(box), new THREE.LineBasicMaterial({ color: 0xffd166 })));
-    const plate = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ color: 0x2f81f7, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false }));
-    plate.rotation.x = -Math.PI / 2; plate.position.y = 0.03; group.add(plate);
+    const gc = retint(solid, new THREE.MeshBasicMaterial({ color: 0xffb020, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }));
+    const lm = new THREE.LineBasicMaterial({ color: 0xffd166 }), meshes = [];
+    gc.traverse((m) => { if (m.isMesh) meshes.push(m); });
+    meshes.forEach((m) => m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 35), lm)));
+    group.add(gc);
   } else {
-    facadeBase = facadeBase || facadeTexture();
-    shadowTex = shadowTex || shadowTexture();
-    const floors = Math.max(1, Math.round(h / FLOOR_H));
-    const side = (width) => {
-      const t = facadeBase.clone(); t.needsUpdate = true;
-      t.repeat.set(Math.max(1, Math.round(width / BAY_W)), floors);
-      return new THREE.MeshStandardMaterial({ map: t, roughness: 0.65, metalness: 0.05 });
-    };
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x59626c, roughness: 0.9 });
-    const mats = [side(d), side(d), roofMat, roofMat, side(w), side(w)];   // +x, -x, +y, -y, +z, -z
-    solid.add(new THREE.Mesh(box, mats));
-
-    const trim = new THREE.MeshStandardMaterial({ color: 0xaeb6bf, roughness: 0.8 });
-    const dark = new THREE.MeshStandardMaterial({ color: 0x626b75, roughness: 0.85 });
-    const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); solid.add(m); return m; };
-    // plinth (slightly wider than the body)
-    add(new THREE.BoxGeometry(w + 0.5, 1.0, d + 0.5), dark, 0, 0.5, 0);
-    // roof parapet
-    const pt = 0.4, ph = 0.9;
-    add(new THREE.BoxGeometry(w + 0.2, ph, pt), trim, 0, h + ph / 2, d / 2 - pt / 2 + 0.1);
-    add(new THREE.BoxGeometry(w + 0.2, ph, pt), trim, 0, h + ph / 2, -d / 2 + pt / 2 - 0.1);
-    add(new THREE.BoxGeometry(pt, ph, d - pt), trim, w / 2 - pt / 2 + 0.1, h + ph / 2, 0);
-    add(new THREE.BoxGeometry(pt, ph, d - pt), trim, -w / 2 + pt / 2 - 0.1, h + ph / 2, 0);
-    // rooftop unit
-    if (h > 8 && w > 6 && d > 6) add(new THREE.BoxGeometry(w * 0.3, 2.2, d * 0.25), dark, -w * 0.15, h + 1.1, -d * 0.15);
-    // entrance on the +z face (south when Yön = 0)
-    if (w > 5) {
-      const dw = Math.min(2.8, w * 0.3);
-      add(new THREE.BoxGeometry(dw, 3.0, 0.15), new THREE.MeshStandardMaterial({ color: 0x3a2f28, roughness: 0.7 }), 0, 2.0, d / 2 + 0.28);
-      add(new THREE.BoxGeometry(dw + 1.2, 0.25, 1.4), trim, 0, 3.6, d / 2 + 0.7);
-    }
-    // soft ground shadow
-    const sh = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.9 + 6, d * 1.9 + 6), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+    solid.traverse((m) => { if (m.material) (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => { x.clippingPlanes = [rt.clipAbove]; }); });
+    group.add(solid);
+    group.add(retint(solid, new THREE.MeshBasicMaterial({ color: 0xff5a3c, transparent: true, opacity: 0.42, side: THREE.DoubleSide, depthWrite: false, clippingPlanes: [rt.clipBelow] })));
+    const sh = new THREE.Mesh(new THREE.PlaneGeometry(o.w * 1.9 + 6, fd * 1.9 + 6), new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false }));
     sh.rotation.x = -Math.PI / 2; sh.position.y = 0.03; group.add(sh);
   }
-
-  // terrain level: solid part above it, tinted "buried" part below it, green disc + outline where the ground cuts the building
-  const gl = terrainLocalY();
-  if (!ghost) {
-    solid.traverse((o) => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { m.clippingPlanes = [clipAbove]; }); });
-    const buriedMat = new THREE.MeshBasicMaterial({ color: 0xff5a3c, transparent: true, opacity: 0.42, side: THREE.DoubleSide, depthWrite: false, clippingPlanes: [clipBelow] });
-    group.add(new THREE.Mesh(box, buriedMat));
-    group.add(new THREE.LineSegments(new THREE.EdgesGeometry(box), new THREE.LineBasicMaterial({ color: 0xff8a70, clippingPlanes: [clipBelow] })));
-  }
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(Math.max(w, d) * 1.1 + 10, 48), new THREE.MeshBasicMaterial({ color: 0x3fae5a, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }));
+  const gl = o.zGround - o.zBase;
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(Math.max(o.w, fd) * 1.1 + 10, 48), new THREE.MeshBasicMaterial({ color: 0x3fae5a, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }));
   disc.rotation.x = -Math.PI / 2; disc.position.y = gl; group.add(disc);
-  const hw = w / 2, hd = d / 2;
-  const outline = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]].map(([x, z]) => new THREE.Vector3(x, gl + 0.03, z))), new THREE.LineBasicMaterial({ color: 0x58ff7d }));
-  group.add(outline);
-
-  // reference marker: red cross at the base centre + tall beacon so the spot can be found from afar
+  const pts = o.type === 'tank'
+    ? Array.from({ length: 48 }, (_, i) => new THREE.Vector3(Math.cos((i / 48) * 2 * Math.PI) * o.w / 2, gl + 0.03, Math.sin((i / 48) * 2 * Math.PI) * o.w / 2))
+    : [[-o.w / 2, -fd / 2], [o.w / 2, -fd / 2], [o.w / 2, fd / 2], [-o.w / 2, fd / 2]].map(([x, z]) => new THREE.Vector3(x, gl + 0.03, z));
+  group.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x58ff7d })));
   const red = new THREE.LineBasicMaterial({ color: 0xff3b30 });
   const line = (a, b) => new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...a), new THREE.Vector3(...b)]), red);
-  group.add(line([-3, 0.06, 0], [3, 0.06, 0]), line([0, 0.06, -3], [0, 0.06, 3]), line([0, 0, 0], [0, h + 15, 0]));
+  group.add(line([-3, 0.06, 0], [3, 0.06, 0]), line([0, 0.06, -3], [0, 0.06, 3]), line([0, 0, 0], [0, o.h + 15, 0]));
+  return rt;
+}
+let shadowTex = null;
+function shadowTexture() {
+  if (shadowTex) return shadowTex;
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 8, 64, 64, 64);
+  gr.addColorStop(0, 'rgba(0,0,0,0.45)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  return (shadowTex = new THREE.CanvasTexture(c));
+}
+function disposeRt(rt) {
+  const geos = new Set(), mats = new Set();
+  rt.group.traverse((m) => { if (m.geometry) geos.add(m.geometry); if (m.material) (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => mats.add(x)); });
+  geos.forEach((g) => g.dispose());
+  mats.forEach((x) => { if (x.map && x.map !== shadowTex && !Object.values(texCache).includes(x.map)) x.map.dispose(); x.dispose(); });
+  scene.remove(rt.group);
+}
+function rebuildObj(id) {
+  if (!renderer) return;
+  const o = S.objs.find((x) => x.id === id); if (!o) return;
+  const old = rts.get(id); if (old) disposeRt(old);
+  const rt = makeRuntime(o); rts.set(id, rt); scene.add(rt.group);
+}
+function rebuildAll() {
+  for (const rt of rts.values()) disposeRt(rt);
+  rts.clear(); S.objs.forEach((o) => rebuildObj(o.id));
 }
 
 function initThree() {
   if (renderer) return;
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.xr.enabled = true;
-  renderer.localClippingEnabled = true;
-  renderer.xr.setReferenceSpaceType('local-floor');
-  const c = renderer.domElement;
-  Object.assign(c.style, { position: 'fixed', left: '0', top: '0', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none' });
-  document.body.appendChild(c);
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(70, 1, 0.1, 3000);
-  group = new THREE.Group(); scene.add(group);
+  renderer.xr.enabled = true; renderer.localClippingEnabled = true; renderer.xr.setReferenceSpaceType('local-floor');
+  Object.assign(renderer.domElement.style, { position: 'fixed', left: '0', top: '0', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none' });
+  document.body.appendChild(renderer.domElement);
+  scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(70, 1, 0.1, 3000);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x8fa0b3, 1.5));
   const sun = new THREE.DirectionalLight(0xfff4e0, 2.0); sun.position.set(40, 80, 30); scene.add(sun);
 }
 
+// ----- calibration -----
 function startCal() {
-  cal = { t0: performance.now(), tDate: Date.now(), n: 0, sx: 0, sy: 0, gw: 0, glat: 0, glng: 0, lastFix: 0 };
-  origin = null; calQuality = null; noCompass = false;
+  cal = { t0: performance.now(), tDate: Date.now(), n: 0, sx: 0, sy: 0, gw: 0, glat: 0, glng: 0, lastFix: 0, pts: [] };
+  origin = null; calQuality = null; noCompass = false; calSpread = null;
 }
-
 function finishCal() {
   let lat, lng;
-  if (cal.gw > 0) { lat = cal.glat / cal.gw; lng = cal.glng / cal.gw; } else { lat = fix.lat; lng = fix.lng; }
-  if (cal.n >= 15) {
-    thetaN = Math.atan2(cal.sy, cal.sx);
-    calQuality = Math.hypot(cal.sx, cal.sy) / cal.n;
-  } else { thetaN = camYaw; noCompass = true; }
+  if (S.origin.mode === 'map') { lat = S.origin.lat; lng = S.origin.lng; originSrc = 'haritadan'; }
+  else {
+    if (cal.gw > 0) { lat = cal.glat / cal.gw; lng = cal.glng / cal.gw; } else { lat = fix.lat; lng = fix.lng; }
+    originSrc = 'GPS';
+    if (cal.pts.length > 1) calSpread = Math.max(...cal.pts.map((p) => distM({ lat, lng }, { lat: p[0], lng: p[1] })));
+  }
+  if (cal.n >= 15) { thetaN = Math.atan2(cal.sy, cal.sx); calQuality = Math.hypot(cal.sx, cal.sy) / cal.n; }
+  else { thetaN = camYaw; noCompass = true; }
   origin = { lat, lng, x: camPos.x, z: camPos.z };
   cal = null;
 }
 
 function frame(t, xrFrame) {
   if (!xrFrame) return;
-  const ref = renderer.xr.getReferenceSpace();
-  const pose = xrFrame.getViewerPose(ref);
+  const ref = renderer.xr.getReferenceSpace(), pose = xrFrame.getViewerPose(ref);
   if (pose) {
     const o = pose.transform.orientation, p = pose.transform.position;
     q.set(o.x, o.y, o.z, o.w); fwd.set(0, 0, -1).applyQuaternion(q);
-    camYaw = Math.atan2(fwd.x, -fwd.z); level = Math.abs(fwd.y) < 0.6;
-    camPos = { x: p.x, y: p.y, z: p.z };
+    camYaw = Math.atan2(fwd.x, -fwd.z); level = Math.abs(fwd.y) < 0.6; camPos = { x: p.x, y: p.y, z: p.z };
   }
   if (hitSource) {
     const res = xrFrame.getHitTestResults(hitSource);
     lastHitY = res.length ? res[0].getPose(ref).transform.position.y : null;
     if (wantGround && lastHitY != null) { groundY = lastHitY; wantGround = false; groundMsg = { t: performance.now(), s: 'Zemin seviyesi ölçüldü ✓' }; }
-    else if (wantGround && performance.now() - wantGroundT > 2500) { wantGround = false; groundMsg = { t: performance.now(), s: '⚠ Zemin bulunamadı. Artıyı yakındaki zemine tut, yavaşça gezdir, tekrar bas.' }; }
+    else if (wantGround && performance.now() - wantGroundT > 2500) { wantGround = false; groundMsg = { t: performance.now(), s: '⚠ Zemin bulunamadı. Daireyi yakındaki zemine tut, yavaşça gezdir, tekrar bas.' }; }
   }
-
   const now = performance.now();
   if (cal && pose) {
-    if (level && heading != null && now - headingT < 500) {
-      const off = camYaw - heading * rad; cal.sx += Math.cos(off); cal.sy += Math.sin(off); cal.n++;
+    if (level && heading != null && now - headingT < 500) { const off = camYaw - heading * rad; cal.sx += Math.cos(off); cal.sy += Math.sin(off); cal.n++; }
+    if (S.origin.mode === 'gps' && fix && fix.t > cal.tDate && fix.t !== cal.lastFix && fix.acc <= 35) {
+      const w = 1 / Math.max(fix.acc, 3) ** 2; cal.gw += w; cal.glat += fix.lat * w; cal.glng += fix.lng * w; cal.lastFix = fix.t; cal.pts.push([fix.lat, fix.lng]);
     }
-    if (fix && fix.t > cal.tDate && fix.t !== cal.lastFix) {
-      const w = 1 / Math.max(fix.acc, 3) ** 2; cal.gw += w; cal.glat += fix.lat * w; cal.glng += fix.lng * w; cal.lastFix = fix.t;
-    }
-    const el = (now - cal.t0) / 1000;
-    if (fix && (el >= 6 && cal.n >= 15 || el >= 10)) finishCal();
+    const el = (now - cal.t0) / 1000, gpsOk = S.origin.mode === 'map' || fix;
+    if (gpsOk && (el >= 8 && cal.n >= 15 || el >= 12)) finishCal();
   }
 
-  let rel = 0, dist = 0, bearing = 0;
+  selInfo = null;
   if (origin) {
-    const en = enuFrom(origin.lat, origin.lng, S.lat, S.lng);
-    const e = en.e + adj.e, n = en.n + adj.n, tn = thetaN + adj.rot * rad;
-    dist = Math.hypot(e, n); bearing = Math.atan2(e, n);
-    const yaw = tn + bearing;
-    // vertical: floor under the user + (base elevation - user's elevation)
-    group.position.set(origin.x + dist * Math.sin(yaw), groundY + adj.up + (S.zBase - S.zUser), origin.z - dist * Math.cos(yaw));
-    const yTerrain = group.position.y + terrainLocalY();
-    clipAbove.constant = -yTerrain; clipBelow.constant = yTerrain;
-    group.rotation.y = -(tn + S.rot * rad);
-    group.visible = true;
-    rel = wrapPi(yaw - camYaw);
-  } else group.visible = false;
+    const tn = thetaN + adj.rot * rad, sel = cur();
+    for (const o of S.objs) {
+      const rt = rts.get(o.id); if (!rt) continue;
+      const en = enuFrom(origin.lat, origin.lng, o.lat, o.lng), e = en.e + adj.e, n = en.n + adj.n;
+      const dist = Math.hypot(e, n), bearing = Math.atan2(e, n), yaw = tn + bearing;
+      rt.group.position.set(origin.x + dist * Math.sin(yaw), groundY + adj.up + (o.zBase - S.zUser), origin.z - dist * Math.cos(yaw));
+      rt.group.rotation.y = -(tn + o.rot * rad); rt.group.visible = true;
+      const yT = rt.group.position.y + (o.zGround - o.zBase); rt.clipAbove.constant = -yT; rt.clipBelow.constant = yT;
+      if (o === sel) selInfo = { o, dist, yaw, rel: wrapPi(yaw - camYaw), dz: o.zGround - o.zBase };
+    }
+  } else for (const rt of rts.values()) rt.group.visible = false;
 
   renderer.render(scene, camera);
-
-  if (now - lastHud > 250) {
-    lastHud = now;
-    let s;
-    if (cal) {
-      const el = Math.min(6, (now - cal.t0) / 1000);
-      s = `Kalibrasyon… ${el.toFixed(0)}/6 sn. Telefonu dik tut, ufka bak, kıpırdama.<br>GPS: ${fix ? '±' + fix.acc.toFixed(0) + ' m' : 'yok'} · Pusula: ${heading != null ? 'var' : 'yok'}`;
-    } else {
-      const dir = Math.abs(rel) < 0.35 ? 'önünde' : (rel > 0 ? `sağında ${(rel * deg).toFixed(0)}°` : `solunda ${(-rel * deg).toFixed(0)}°`);
-      s = `Bina ${dist.toFixed(0)} m uzakta, ${dir}<br>GPS ±${fix ? fix.acc.toFixed(0) : '?'} m · ` +
-        (noCompass ? '⚠ Pusula yok: kuzeye bakıp Ayarlar › "Şu an tam kuzeye bakıyorum"' : `Pusula tutarlılığı %${(calQuality * 100).toFixed(0)}${calQuality < 0.9 ? ' ⚠ düşük, yeniden kalibre et' : ''}`);
-    }
-    if (!cal) {
-      const dz = S.zGround - S.zBase;   // >0: base below the terrain (buried)
-      s += '<br>' + (Math.abs(dz) < 0.05 ? '⬛ Taban arazi seviyesinde'
-        : dz > 0 ? `<b style="color:#ff8a70">GÖMÜLÜ: taban arazinin ${dz.toFixed(1)} m altında</b>`
-        : `<b style="color:#ffd166">HAVADA: taban arazinin ${(-dz).toFixed(1)} m üstünde</b>`);
-    }
-    if (groundMsg && now - groundMsg.t < 3500) s += '<br>' + groundMsg.s;
-    $('hud').innerHTML = s;
+  if (now - lastHud > 250) { lastHud = now; $('hud').innerHTML = hudText(now); }
+}
+function hudText(now) {
+  if (cal) {
+    const el = Math.min(8, (now - cal.t0) / 1000);
+    return `Kalibrasyon… ${el.toFixed(0)}/8 sn. Telefonu dik tut, ufka bak, kıpırdama.<br>Konum: ${S.origin.mode === 'map' ? 'haritadan' : (fix ? 'GPS ±' + fix.acc.toFixed(0) + ' m' : 'GPS yok')} · Pusula: ${heading != null ? 'var' : 'yok'}`;
   }
+  const { o, dist, rel, dz } = selInfo;
+  const dir = Math.abs(rel) < 0.35 ? 'önünde' : (rel > 0 ? `sağında ${(rel * deg).toFixed(0)}°` : `solunda ${(-rel * deg).toFixed(0)}°`);
+  let s = `<b>${o.name}</b>: ${dist.toFixed(0)} m uzakta, ${dir}<br>Konum: ${originSrc}` +
+    (originSrc === 'GPS' ? ` ±${fix ? fix.acc.toFixed(0) : '?'} m${calSpread != null && calSpread > 12 ? ' <b style="color:#ffd166">⚠ GPS oynak (' + calSpread.toFixed(0) + ' m)</b>' : ''}` : '') + ' · ' +
+    (noCompass ? '⚠ Pusula yok: "Şu an tam kuzeye bakıyorum"' : `Pusula %${(calQuality * 100).toFixed(0)}`);
+  if (o.zGround !== 0 || o.zBase !== 0 || S.zUser !== 0) {
+    s += '<br>' + (Math.abs(dz) < 0.05 ? '⬛ Taban arazi seviyesinde'
+      : dz > 0 ? `<b style="color:#ff8a70">GÖMÜLÜ: taban arazinin ${dz.toFixed(1)} m altında</b>` : `<b style="color:#ffd166">HAVADA: taban arazinin ${(-dz).toFixed(1)} m üstünde</b>`);
+  }
+  if (groundMsg && now - groundMsg.t < 3500) s += '<br>' + groundMsg.s;
+  return s;
 }
 
 async function startAR() {
   if (!xrSupported) { alert('Bu tarayıcı/telefon AR desteklemiyor. Android\'de Chrome ile aç.'); return; }
-  if (!fix) { alert('GPS konumu henüz alınamadı. Birkaç saniye bekle ve tekrar dene.'); return; }
-  initThree(); buildModel();
+  if (S.origin.mode === 'gps') {
+    if (!fix) { alert('GPS konumu henüz alınamadı. Birkaç saniye bekle ya da "Duruş noktamı haritada işaretle" ile elle belirt.'); return; }
+    if (fix.acc > 30 && !confirm(`GPS zayıf (±${fix.acc.toFixed(0)} m). Bu, nesnelerin yüzlerce metre kaymasına yol açabilir.\nDaha doğrusu: "Duruş noktamı haritada işaretle". Yine de devam edilsin mi?`)) return;
+  }
+  initThree(); rebuildAll();
   const overlay = $('overlay');
   try {
-    session = await navigator.xr.requestSession('immersive-ar', {
-      requiredFeatures: ['local-floor'], optionalFeatures: ['hit-test', 'dom-overlay'], domOverlay: { root: overlay },
-    });
+    session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['local-floor'], optionalFeatures: ['hit-test', 'dom-overlay'], domOverlay: { root: overlay } });
   } catch (err) { alert('AR başlatılamadı: ' + err.message); return; }
   overlay.style.display = 'block';
   session.addEventListener('end', onEnd);
   await renderer.xr.setSession(session);
-  try {
-    const vs = await session.requestReferenceSpace('viewer');
-    hitSource = await session.requestHitTestSource({ space: vs });
-  } catch (e) { hitSource = null; }
+  try { const vs = await session.requestReferenceSpace('viewer'); hitSource = await session.requestHitTestSource({ space: vs }); } catch (e) { hitSource = null; }
   groundY = 0; wantGround = false; adj.e = adj.n = adj.up = adj.rot = 0;
-  startCal();
-  renderer.setAnimationLoop(frame);
+  startCal(); renderer.setAnimationLoop(frame);
 }
 function onEnd() {
   renderer.setAnimationLoop(null); session = null; hitSource = null;
@@ -488,64 +682,76 @@ function onEnd() {
   updateStatus();
 }
 
-$('btnAR').addEventListener('click', startAR);
-$('btnExit').addEventListener('click', () => { if (session) session.end(); });
-$('btnRecal').addEventListener('click', () => { startCal(); });
-// one panel at a time: 'pBuild' | 'pAlign' | null
+// ----- AR controls -----
 function showPanel(id) {
-  for (const [p, b] of [['pBuild', 'btnBuild'], ['pElev', 'btnElev'], ['pAlign', 'btnAlign']]) {
-    const on = p === id;
-    $(p).style.display = on ? 'block' : 'none'; $(b).classList.toggle('on', on);
+  for (const [p, b] of [['pObj', 'btnObj'], ['pElev', 'btnElev'], ['pAlign', 'btnAlign']]) {
+    const on = p === id; $(p).style.display = on ? 'block' : 'none'; $(b).classList.toggle('on', on);
   }
 }
 const togglePanel = (id) => showPanel($(id).style.display === 'block' ? null : id);
-$('btnBuild').addEventListener('click', () => togglePanel('pBuild'));
+$('btnAR').addEventListener('click', startAR);
+$('btnExit').addEventListener('click', () => { if (session) session.end(); });
+$('btnRecal').addEventListener('click', () => { startCal(); });
+$('btnObj').addEventListener('click', () => togglePanel('pObj'));
 $('btnElev').addEventListener('click', () => togglePanel('pElev'));
 $('btnAlign').addEventListener('click', () => togglePanel('pAlign'));
+const stepObj = (d) => { const i = (S.objs.indexOf(cur()) + d + S.objs.length) % S.objs.length; select(S.objs[i].id); };
+$('btnPrev').addEventListener('click', () => stepObj(-1));
+$('btnNext').addEventListener('click', () => stepObj(1));
 $('btnGround').addEventListener('click', () => { if (hitSource) { wantGround = true; wantGroundT = performance.now(); } else alert('Bu telefonda zemin ölçümü yok; yükseklik düğmelerini kullan.'); });
 $('btnNorth').addEventListener('click', () => { if (origin) { thetaN = camYaw; adj.rot = 0; noCompass = false; calQuality = 1; } });
+$('btnAim').addEventListener('click', () => {
+  if (!origin || !selInfo) return;
+  adj.rot = +(adj.rot + wrapPi(camYaw - selInfo.yaw) * deg).toFixed(2);
+  groundMsg = { t: performance.now(), s: '🎯 Yön ayarlandı' };
+});
 function onStep(ev) {
-  const b = ev.target.closest('button[data-k], button[data-z]'); if (!b) return;
-  const k = b.dataset.k, v = parseFloat(b.dataset.v);
+  const b = ev.target.closest('button[data-k],button[data-z],button[data-n]'); if (!b) return;
+  const v = parseFloat(b.dataset.v), o = cur(), T = TYPES[o.type];
   if (b.dataset.z) {
-    const z = b.dataset.z; S[z] = +(S[z] + v).toFixed(2);
-    if (group) buildModel(); refreshInputs(); save();
-  } else if (k === 'w' || k === 'd' || k === 'h') {
-    S[k] = Math.min(500, Math.max(1, +(S[k] + v).toFixed(1)));
-    if (group) buildModel(); refreshInputs(); updateFootprint(); save();
-  } else adj[k] = +(adj[k] + v).toFixed(2);
+    const z = b.dataset.z, tgt = z === 'zUser' ? S : o; tgt[z] = +(tgt[z] + v).toFixed(2); refreshAll(); rebuildObj(o.id);
+  } else if (b.dataset.n) {
+    if (!origin) return;
+    const bb = camYaw - (thetaN + adj.rot * rad), f = [Math.sin(bb), Math.cos(bb)], r = [Math.cos(bb), -Math.sin(bb)], u = b.dataset.n === 'f' ? f : r;
+    adj.e = +(adj.e + v * u[0]).toFixed(2); adj.n = +(adj.n + v * u[1]).toFixed(2);
+  } else if (['w', 'd', 'h'].includes(b.dataset.k)) {
+    const k = b.dataset.k, mult = (T.step && T.step[k]) || 1;
+    o[k] = Math.min(500, Math.max(0.1, +(o[k] + v * mult).toFixed(2))); if (!T.usesD) o.d = o.w; refreshAll(); rebuildObj(o.id);
+  } else adj[b.dataset.k] = +(adj[b.dataset.k] + v).toFixed(2);
 }
-$('pBuild').addEventListener('click', onStep);
-$('pAlign').addEventListener('click', onStep);
-$('pElev').addEventListener('click', onStep);
+for (const id of ['pObj', 'pElev', 'pAlign']) $(id).addEventListener('click', onStep);
 $('btnStyle').addEventListener('click', () => {
-  ghost = !ghost; buildModel();
+  ghost = !ghost; rebuildAll();
   $('btnStyle').textContent = ghost ? 'Görünüm: Şeffaf (dokun: katı yap)' : 'Görünüm: Katı (dokun: şeffaf yap)';
 });
 $('overlay').addEventListener('beforexrselect', (e) => e.preventDefault());
 
-// desktop preview of the model only (no camera / AR): open the page with #onizleme
-function startPreview() {
-  initThree(); buildModel();
-  $('app').style.display = 'none';
-  const c = renderer.domElement;
-  Object.assign(c.style, { position: 'fixed', left: '0', top: '0', width: '100%', height: '100%', opacity: '1', pointerEvents: 'auto' });
+// ----- desktop preview of the whole library: open with #onizleme  (or #onizleme=cami) -----
+function startPreview(only) {
+  initThree(); $('app').style.display = 'none';
+  Object.assign(renderer.domElement.style, { left: '0', top: '0', width: '100%', height: '100%', opacity: '1', pointerEvents: 'auto' });
   renderer.setClearColor(0x9db8d0, 1);
-  const grid = new THREE.GridHelper(200, 40, 0x6d8398, 0x86a0b6); scene.add(grid);
-  let a = 0.6;
+  scene.add(new THREE.GridHelper(400, 80, 0x6d8398, 0x86a0b6));
+  const types = only && TYPES[only] ? [only] : Object.keys(TYPES);
+  let x = 0; const list = [];
+  types.forEach((k) => {
+    const o = { ...mkObj(k, 0, 0), zGround: 0, zBase: 0 }, rt = makeRuntime(o), wd = Math.max(o.w, footD(o)) + 25;
+    rt.group.position.x = x + wd / 2; x += wd; rt.clipAbove.constant = 0; rt.clipBelow.constant = 0; scene.add(rt.group); list.push(o);
+  });
+  const cx = x / 2, span = Math.max(x, 60);
   const resize = () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
   addEventListener('resize', resize); resize();
+  let a = 0.35;
   renderer.setAnimationLoop(() => {
-    a += 0.004; const r = Math.max(S.w, S.d, S.h) * 1.9 + 15;
-    camera.position.set(Math.sin(a) * r, S.h * 0.6 + 5, Math.cos(a) * r); camera.lookAt(0, S.h * 0.45, 0);
-    clipAbove.constant = -terrainLocalY(); clipBelow.constant = terrainLocalY();
+    a += 0.003; const r = span * 0.95 + 30;
+    camera.position.set(cx + Math.sin(a) * r * 0.55, 22, Math.cos(a) * r); camera.lookAt(cx, 12, 0);
     renderer.render(scene, camera);
   });
 }
-if (location.hash === '#onizleme') startPreview();
+if (location.hash.startsWith('#onizleme')) startPreview(location.hash.split('=')[1]);
 
-// exposed for offline math checks
-window.__geo = { enuFrom, offsetLatLng, compassHeading, rebuild: () => buildModel(), terrainLocalY, S, setGhost: (g) => { ghost = g; buildModel(); } };
+refreshAll();
+window.__geo = { S, TYPES, enuFrom, offsetLatLng, compassHeading, cur, mkObj, rebuildAll, refreshAll };
 </script>
 </body>
 </html>
