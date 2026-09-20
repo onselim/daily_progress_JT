@@ -141,6 +141,7 @@
       <div class="r" id="rowW"><span id="lblW">En</span><button data-k="w" data-v="-5">-5</button><button data-k="w" data-v="-1">-1</button><button data-k="w" data-v="1">+1</button><button data-k="w" data-v="5">+5</button></div>
       <div class="r" id="rowD"><span id="lblD">Boy</span><button data-k="d" data-v="-5">-5</button><button data-k="d" data-v="-1">-1</button><button data-k="d" data-v="1">+1</button><button data-k="d" data-v="5">+5</button></div>
       <div class="r" id="rowH"><span id="lblH">Yükseklik</span><button data-k="h" data-v="-5">-5</button><button data-k="h" data-v="-1">-1</button><button data-k="h" data-v="1">+1</button><button data-k="h" data-v="5">+5</button></div>
+      <div class="r"><span id="lblOr">Yön</span><button data-k="orot" data-v="-15">-15</button><button data-k="orot" data-v="-5">-5</button><button data-k="orot" data-v="-1">-1</button><button data-k="orot" data-v="1">+1</button><button data-k="orot" data-v="5">+5</button><button data-k="orot" data-v="15">+15</button></div>
       <button class="full" id="btnStyle">Görünüm: Katı (dokun: şeffaf yap)</button>
     </div>
     <div id="pElev" class="apanel">
@@ -157,9 +158,9 @@
     </div>
     <div id="pAlign" class="apanel">
       <button class="full" id="btnRecal">GPS / pusulayı yeniden kalibre et</button>
-      <div class="note"><b>Yönü nişanla:</b> ortadaki daireyi seçili nesnenin <b>gerçekte olması gereken yerine</b> (araziye) tut ve bas. Pusula hatasını tek dokunuşta düzeltir.</div>
+      <div class="note"><b>Yönü nişanla:</b> ortadaki daireyi seçili nesnenin <b>gerçekte olması gereken yerine</b> (araziye) tut ve bas. Pusula hatasını tek dokunuşta düzeltir.<br><b>Dünyayı döndür</b> tüm nesneleri <b>senin etrafında</b> çevirir (pusula düzeltmesi). Yapıyı <b>kendi ekseninde</b> döndürmek için <b>Nesne</b> panelindeki <b>Yön</b> düğmelerini kullan.</div>
       <button class="full" id="btnAim">🎯 Yönü nişanla</button>
-      <div class="r"><span>Yön (°)</span><button data-k="rot" data-v="-5">-5</button><button data-k="rot" data-v="-1">-1</button><button data-k="rot" data-v="1">+1</button><button data-k="rot" data-v="5">+5</button></div>
+      <div class="r"><span>Dünyayı döndür (°)</span><button data-k="rot" data-v="-5">-5</button><button data-k="rot" data-v="-1">-1</button><button data-k="rot" data-v="1">+1</button><button data-k="rot" data-v="5">+5</button></div>
       <div class="r"><span>Uzağa/Yakına (m)</span><button data-n="f" data-v="-10">-10</button><button data-n="f" data-v="-1">-1</button><button data-n="f" data-v="1">+1</button><button data-n="f" data-v="10">+10</button></div>
       <div class="r"><span>Sağa/Sola (m)</span><button data-n="r" data-v="-5">-5</button><button data-n="r" data-v="-1">-1</button><button data-n="r" data-v="1">+1</button><button data-n="r" data-v="5">+5</button></div>
       <div class="r"><span>Yükseklik (m)</span><button data-k="up" data-v="-1">-1</button><button data-k="up" data-v="-0.1">-0.1</button><button data-k="up" data-v="0.1">+0.1</button><button data-k="up" data-v="1">+1</button></div>
@@ -586,6 +587,7 @@ function refreshInputs() {
   $('lbD').firstChild.textContent = T.usesD ? `${T.ld} (m)` : '—'; $('d').disabled = !T.usesD;
   $('lblW').textContent = `${T.lw} ${o.w} m`; $('lblH').textContent = `${T.lh} ${o.h} m`;
   $('lblD').textContent = `${T.ld} ${o.d} m`; $('rowD').style.display = T.usesD ? 'flex' : 'none';
+  $('lblOr').textContent = `${T.lrot ? 'Hat azimutu' : 'Yön'} ${o.rot}°`;
   $('objName').textContent = `${S.objs.indexOf(o) + 1}/${S.objs.length}  ${o.name}`;
 }
 function updateStatus() {
@@ -1150,6 +1152,8 @@ function onStep(ev) {
     if (!origin) return;
     const bb = camYaw - (thetaN + adj.rot * rad), f = [Math.sin(bb), Math.cos(bb)], r = [Math.cos(bb), -Math.sin(bb)], u = b.dataset.n === 'f' ? f : r;
     adj.e = +(adj.e + v * u[0]).toFixed(2); adj.n = +(adj.n + v * u[1]).toFixed(2);
+  } else if (b.dataset.k === 'orot') {   // rotate this object about its own vertical axis (its base centre)
+    o.rot = +((((o.rot + v) % 360) + 360) % 360).toFixed(1); refreshAll();
   } else if (['w', 'd', 'h'].includes(b.dataset.k)) {
     const k = b.dataset.k, mult = (T.step && T.step[k]) || 1;
     o[k] = Math.min(500, Math.max(0.1, +(o[k] + v * mult).toFixed(2))); if (!T.usesD) o.d = o.w; refreshAll(); rebuildObj(o.id);
