@@ -30,13 +30,13 @@
   #ctl { position:absolute; left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom)); pointer-events:auto; }
   #ctl .bar { display:flex; gap:8px; }
   #ctl button { flex:1; background:#000b; padding:11px 6px; font-size:14px; }
-  #adjust { display:none; background:#000c; border-radius:10px; padding:8px; margin-bottom:8px; max-height:52vh; overflow:auto; }
-  #adjust .r { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
-  #adjust .r span { width:104px; font-size:12px; }
-  #adjust .r input { flex:1; min-width:0; padding:8px; font-size:14px; }
-  #adjust .sec { font-size:11px; color:#9fb0c0; margin:4px 0 6px; text-shadow:none; }
-  #adjust .r button { padding:9px 0; font-size:13px; background:#2a3846; }
-  #adjust .full { width:100%; margin-bottom:6px; padding:9px; font-size:13px; background:#2a3846; }
+  .apanel { display:none; background:#000b; border-radius:10px; padding:6px 8px 2px; margin-bottom:6px; max-height:40vh; overflow:auto; }
+  .apanel .r { display:flex; align-items:center; gap:5px; margin-bottom:5px; }
+  .apanel .r span { width:104px; font-size:12px; }
+  .apanel .r input { flex:1; min-width:0; padding:7px 8px; font-size:14px; }
+  .apanel .r button { padding:7px 0; font-size:13px; background:#2a3846; }
+  .apanel .full { width:100%; margin-bottom:5px; padding:8px; font-size:13px; background:#2a3846; }
+  #ctl .bar button.on { background:var(--acc); }
 </style>
 </head>
 <body>
@@ -66,14 +66,14 @@
   <div id="hud">Hazırlanıyor…</div>
   <div id="cross"></div>
   <div id="ctl">
-    <div id="adjust">
-      <div class="sec">BİNA</div>
+    <div id="pBuild" class="apanel">
       <div class="r"><input id="coord2" type="text" autocomplete="off" spellcheck="false" placeholder="merkez: enlem, boylam"><button id="btnGo" style="width:62px">Git</button></div>
       <div class="r"><span id="lblW">En</span><button data-k="w" data-v="-5">-5</button><button data-k="w" data-v="-1">-1</button><button data-k="w" data-v="1">+1</button><button data-k="w" data-v="5">+5</button></div>
       <div class="r"><span id="lblD">Boy</span><button data-k="d" data-v="-5">-5</button><button data-k="d" data-v="-1">-1</button><button data-k="d" data-v="1">+1</button><button data-k="d" data-v="5">+5</button></div>
       <div class="r"><span id="lblH">Yükseklik</span><button data-k="h" data-v="-5">-5</button><button data-k="h" data-v="-1">-1</button><button data-k="h" data-v="1">+1</button><button data-k="h" data-v="5">+5</button></div>
       <button class="full" id="btnStyle">Görünüm: Katı (dokun: şeffaf yap)</button>
-      <div class="sec">HİZALAMA DÜZELTMESİ</div>
+    </div>
+    <div id="pAlign" class="apanel">
       <div class="r"><span>Yön (°)</span><button data-k="rot" data-v="-5">-5</button><button data-k="rot" data-v="-1">-1</button><button data-k="rot" data-v="1">+1</button><button data-k="rot" data-v="5">+5</button></div>
       <div class="r"><span>Doğu-Batı (m)</span><button data-k="e" data-v="-5">-5</button><button data-k="e" data-v="-1">-1</button><button data-k="e" data-v="1">+1</button><button data-k="e" data-v="5">+5</button></div>
       <div class="r"><span>Kuzey-Güney (m)</span><button data-k="n" data-v="-5">-5</button><button data-k="n" data-v="-1">-1</button><button data-k="n" data-v="1">+1</button><button data-k="n" data-v="5">+5</button></div>
@@ -82,8 +82,9 @@
       <button class="full" id="btnNorth">Şu an tam kuzeye bakıyorum</button>
     </div>
     <div class="bar">
-      <button id="btnRecal">Yeniden kalibre</button>
-      <button id="btnAdj">Ayarlar ▴</button>
+      <button id="btnRecal">Kalibre</button>
+      <button id="btnBuild">Bina</button>
+      <button id="btnAlign">Hizalama</button>
       <button id="btnExit">Çık</button>
     </div>
   </div>
@@ -426,7 +427,7 @@ async function startAR() {
 }
 function onEnd() {
   renderer.setAnimationLoop(null); session = null; hitSource = null;
-  $('overlay').style.display = 'none'; $('adjust').style.display = 'none'; $('btnAdj').textContent = 'Ayarlar ▴';
+  $('overlay').style.display = 'none'; showPanel(null);
   if (renderer) renderer.xr.setSession(null);
   updateStatus();
 }
@@ -434,20 +435,28 @@ function onEnd() {
 $('btnAR').addEventListener('click', startAR);
 $('btnExit').addEventListener('click', () => { if (session) session.end(); });
 $('btnRecal').addEventListener('click', () => { startCal(); });
-$('btnAdj').addEventListener('click', () => {
-  const a = $('adjust'), open = a.style.display === 'block';
-  a.style.display = open ? 'none' : 'block'; $('btnAdj').textContent = open ? 'Ayarlar ▴' : 'Ayarlar ▾';
-});
+// one panel at a time: 'pBuild' | 'pAlign' | null
+function showPanel(id) {
+  for (const [p, b] of [['pBuild', 'btnBuild'], ['pAlign', 'btnAlign']]) {
+    const on = p === id;
+    $(p).style.display = on ? 'block' : 'none'; $(b).classList.toggle('on', on);
+  }
+}
+const togglePanel = (id) => showPanel($(id).style.display === 'block' ? null : id);
+$('btnBuild').addEventListener('click', () => togglePanel('pBuild'));
+$('btnAlign').addEventListener('click', () => togglePanel('pAlign'));
 $('btnGround').addEventListener('click', () => { if (hitSource) wantGround = true; else alert('Bu telefonda zemin ölçümü yok; yükseklik düğmelerini kullan.'); });
 $('btnNorth').addEventListener('click', () => { if (origin) { thetaN = camYaw; adj.rot = 0; noCompass = false; calQuality = 1; } });
-$('adjust').addEventListener('click', (ev) => {
+function onStep(ev) {
   const b = ev.target.closest('button[data-k]'); if (!b) return;
   const k = b.dataset.k, v = parseFloat(b.dataset.v);
   if (k === 'w' || k === 'd' || k === 'h') {
     S[k] = Math.min(500, Math.max(1, +(S[k] + v).toFixed(1)));
     buildModel(); refreshInputs(); updateFootprint(); save();
   } else adj[k] = +(adj[k] + v).toFixed(2);
-});
+}
+$('pBuild').addEventListener('click', onStep);
+$('pAlign').addEventListener('click', onStep);
 $('btnStyle').addEventListener('click', () => {
   ghost = !ghost; buildModel();
   $('btnStyle').textContent = ghost ? 'Görünüm: Şeffaf (dokun: katı yap)' : 'Görünüm: Katı (dokun: şeffaf yap)';
