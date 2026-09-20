@@ -30,9 +30,11 @@
   #ctl { position:absolute; left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom)); pointer-events:auto; }
   #ctl .bar { display:flex; gap:8px; }
   #ctl button { flex:1; background:#000b; padding:11px 6px; font-size:14px; }
-  #adjust { display:none; background:#000c; border-radius:10px; padding:8px; margin-bottom:8px; }
+  #adjust { display:none; background:#000c; border-radius:10px; padding:8px; margin-bottom:8px; max-height:52vh; overflow:auto; }
   #adjust .r { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
-  #adjust .r span { width:92px; font-size:12px; }
+  #adjust .r span { width:104px; font-size:12px; }
+  #adjust .r input { flex:1; min-width:0; padding:8px; font-size:14px; }
+  #adjust .sec { font-size:11px; color:#9fb0c0; margin:4px 0 6px; text-shadow:none; }
   #adjust .r button { padding:9px 0; font-size:13px; background:#2a3846; }
   #adjust .full { width:100%; margin-bottom:6px; padding:9px; font-size:13px; background:#2a3846; }
 </style>
@@ -42,8 +44,9 @@
   <div id="map"></div>
   <div id="panel">
     <div class="row">
-      <label>Enlem (lat)<input id="lat" inputmode="decimal"></label>
-      <label>Boylam (lng)<input id="lng" inputmode="decimal"></label>
+      <label>Merkez koordinatı: binanın alt orta noktası (enlem, boylam)
+        <input id="coord" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="41.0082000, 28.9784000">
+      </label>
     </div>
     <div class="row">
       <label>En (m)<input id="w" inputmode="decimal"></label>
@@ -64,6 +67,13 @@
   <div id="cross"></div>
   <div id="ctl">
     <div id="adjust">
+      <div class="sec">BİNA</div>
+      <div class="r"><input id="coord2" type="text" autocomplete="off" spellcheck="false" placeholder="merkez: enlem, boylam"><button id="btnGo" style="width:62px">Git</button></div>
+      <div class="r"><span id="lblW">En</span><button data-k="w" data-v="-5">-5</button><button data-k="w" data-v="-1">-1</button><button data-k="w" data-v="1">+1</button><button data-k="w" data-v="5">+5</button></div>
+      <div class="r"><span id="lblD">Boy</span><button data-k="d" data-v="-5">-5</button><button data-k="d" data-v="-1">-1</button><button data-k="d" data-v="1">+1</button><button data-k="d" data-v="5">+5</button></div>
+      <div class="r"><span id="lblH">Yükseklik</span><button data-k="h" data-v="-5">-5</button><button data-k="h" data-v="-1">-1</button><button data-k="h" data-v="1">+1</button><button data-k="h" data-v="5">+5</button></div>
+      <button class="full" id="btnStyle">Görünüm: Katı (dokun: şeffaf yap)</button>
+      <div class="sec">HİZALAMA DÜZELTMESİ</div>
       <div class="r"><span>Yön (°)</span><button data-k="rot" data-v="-5">-5</button><button data-k="rot" data-v="-1">-1</button><button data-k="rot" data-v="1">+1</button><button data-k="rot" data-v="5">+5</button></div>
       <div class="r"><span>Doğu-Batı (m)</span><button data-k="e" data-v="-5">-5</button><button data-k="e" data-v="-1">-1</button><button data-k="e" data-v="1">+1</button><button data-k="e" data-v="5">+5</button></div>
       <div class="r"><span>Kuzey-Güney (m)</span><button data-k="n" data-v="-5">-5</button><button data-k="n" data-v="-1">-1</button><button data-k="n" data-v="1">+1</button><button data-k="n" data-v="5">+5</button></div>
@@ -159,9 +169,17 @@ function updateFootprint() {
   });
   footprint.setLatLngs(pts);
 }
+const coordText = () => `${S.lat.toFixed(7)}, ${S.lng.toFixed(7)}`;
+function parseCoord(s) {
+  const m = String(s).trim().match(/^(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)$/);
+  if (!m) return null;
+  const lat = parseFloat(m[1].replace(',', '.')), lng = parseFloat(m[2].replace(',', '.'));
+  return Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? [lat, lng] : null;
+}
 function refreshInputs() {
-  $('lat').value = S.lat.toFixed(7); $('lng').value = S.lng.toFixed(7);
+  for (const id of ['coord', 'coord2']) if (document.activeElement !== $(id)) $(id).value = coordText();
   $('w').value = S.w; $('d').value = S.d; $('h').value = S.h; $('rot').value = S.rot;
+  $('lblW').textContent = `En ${S.w} m`; $('lblD').textContent = `Boy ${S.d} m`; $('lblH').textContent = `Yükseklik ${S.h} m`;
 }
 function setPos(lat, lng, recenter) {
   S.lat = lat; S.lng = lng; marker.setLatLng([lat, lng]);
@@ -172,12 +190,14 @@ marker.on('dragend', () => { const p = marker.getLatLng(); setPos(p.lat, p.lng, 
 map.on('click', (e) => setPos(e.latlng.lat, e.latlng.lng, false));
 
 const num = (id, fb) => { const v = parseFloat(String($(id).value).replace(',', '.')); return isFinite(v) ? v : fb; };
-$('lat').addEventListener('change', () => {
-  const m = $('lat').value.trim().match(/^(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)$/);
-  if (m) { setPos(parseFloat(m[1].replace(',', '.')), parseFloat(m[2].replace(',', '.')), true); return; }
-  setPos(num('lat', S.lat), S.lng, true);
-});
-$('lng').addEventListener('change', () => setPos(S.lat, num('lng', S.lng), true));
+function applyCoord(id) {
+  const c = parseCoord($(id).value);
+  if (!c) { alert('Koordinatı "enlem, boylam" şeklinde yaz. Örn: 41.0082, 28.9784'); $(id).value = coordText(); return; }
+  setPos(c[0], c[1], true);
+}
+$('coord').addEventListener('change', () => applyCoord('coord'));
+$('coord2').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyCoord('coord2'); $('coord2').blur(); } });
+$('btnGo').addEventListener('click', () => applyCoord('coord2'));
 for (const k of ['w', 'd', 'h', 'rot']) {
   $(k).addEventListener('change', () => { S[k] = Math.max(k === 'rot' ? -360 : 0.1, num(k, S[k])); refreshInputs(); updateFootprint(); save(); });
 }
@@ -205,17 +225,93 @@ const adj = { e: 0, n: 0, up: 0, rot: 0 };
 const q = new THREE.Quaternion(), fwd = new THREE.Vector3();
 let camYaw = 0, camPos = { x: 0, y: 0, z: 0 }, level = false, lastHud = 0;
 
-function buildModel() {
+let ghost = false;
+const FLOOR_H = 3.5, BAY_W = 3.2;
+
+function facadeTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#dfe3e8'; g.fillRect(0, 0, 128, 128);          // wall
+  g.fillStyle = '#c9cfd6'; g.fillRect(0, 104, 128, 24);         // floor slab band
+  const gr = g.createLinearGradient(0, 14, 0, 92);
+  gr.addColorStop(0, '#6f97b8'); gr.addColorStop(1, '#2f4d68');
+  g.fillStyle = gr; g.fillRect(22, 14, 84, 78);                  // glass
+  g.fillStyle = 'rgba(255,255,255,0.16)';                        // reflection
+  g.beginPath(); g.moveTo(22, 14); g.lineTo(62, 14); g.lineTo(22, 70); g.closePath(); g.fill();
+  g.strokeStyle = '#f2f4f6'; g.lineWidth = 4; g.strokeRect(22, 14, 84, 78);
+  g.beginPath(); g.moveTo(64, 14); g.lineTo(64, 92); g.stroke();  // mullion
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
+}
+function shadowTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 8, 64, 64, 64);
+  gr.addColorStop(0, 'rgba(0,0,0,0.45)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+}
+let facadeBase = null, shadowTex = null;
+
+function disposeGroup() {
+  group.traverse((o) => {
+    if (o.geometry) o.geometry.dispose();
+    const m = o.material; if (m) (Array.isArray(m) ? m : [m]).forEach((x) => { if (x.map && x.map !== facadeBase && x.map !== shadowTex) x.map.dispose(); x.dispose(); });
+  });
   group.clear();
+}
+
+function buildModel() {
+  disposeGroup();
   const { w, d, h } = S;
   const box = new THREE.BoxGeometry(w, h, d); box.translate(0, h / 2, 0);
-  group.add(new THREE.Mesh(box, new THREE.MeshBasicMaterial({ color: 0xffb020, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false })));
-  group.add(new THREE.LineSegments(new THREE.EdgesGeometry(box), new THREE.LineBasicMaterial({ color: 0xffd166 })));
-  const plate = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ color: 0x2f81f7, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false }));
-  plate.rotation.x = -Math.PI / 2; plate.position.y = 0.03; group.add(plate);
+
+  if (ghost) {
+    group.add(new THREE.Mesh(box, new THREE.MeshBasicMaterial({ color: 0xffb020, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false })));
+    group.add(new THREE.LineSegments(new THREE.EdgesGeometry(box), new THREE.LineBasicMaterial({ color: 0xffd166 })));
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ color: 0x2f81f7, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false }));
+    plate.rotation.x = -Math.PI / 2; plate.position.y = 0.03; group.add(plate);
+  } else {
+    facadeBase = facadeBase || facadeTexture();
+    shadowTex = shadowTex || shadowTexture();
+    const floors = Math.max(1, Math.round(h / FLOOR_H));
+    const side = (width) => {
+      const t = facadeBase.clone(); t.needsUpdate = true;
+      t.repeat.set(Math.max(1, Math.round(width / BAY_W)), floors);
+      return new THREE.MeshStandardMaterial({ map: t, roughness: 0.65, metalness: 0.05 });
+    };
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x59626c, roughness: 0.9 });
+    const mats = [side(d), side(d), roofMat, roofMat, side(w), side(w)];   // +x, -x, +y, -y, +z, -z
+    group.add(new THREE.Mesh(box, mats));
+
+    const trim = new THREE.MeshStandardMaterial({ color: 0xaeb6bf, roughness: 0.8 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x626b75, roughness: 0.85 });
+    const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); group.add(m); return m; };
+    // plinth (slightly wider than the body)
+    add(new THREE.BoxGeometry(w + 0.5, 1.0, d + 0.5), dark, 0, 0.5, 0);
+    // roof parapet
+    const pt = 0.4, ph = 0.9;
+    add(new THREE.BoxGeometry(w + 0.2, ph, pt), trim, 0, h + ph / 2, d / 2 - pt / 2 + 0.1);
+    add(new THREE.BoxGeometry(w + 0.2, ph, pt), trim, 0, h + ph / 2, -d / 2 + pt / 2 - 0.1);
+    add(new THREE.BoxGeometry(pt, ph, d - pt), trim, w / 2 - pt / 2 + 0.1, h + ph / 2, 0);
+    add(new THREE.BoxGeometry(pt, ph, d - pt), trim, -w / 2 + pt / 2 - 0.1, h + ph / 2, 0);
+    // rooftop unit
+    if (h > 8 && w > 6 && d > 6) add(new THREE.BoxGeometry(w * 0.3, 2.2, d * 0.25), dark, -w * 0.15, h + 1.1, -d * 0.15);
+    // entrance on the +z face (south when Yön = 0)
+    if (w > 5) {
+      const dw = Math.min(2.8, w * 0.3);
+      add(new THREE.BoxGeometry(dw, 3.0, 0.15), new THREE.MeshStandardMaterial({ color: 0x3a2f28, roughness: 0.7 }), 0, 2.0, d / 2 + 0.28);
+      add(new THREE.BoxGeometry(dw + 1.2, 0.25, 1.4), trim, 0, 3.6, d / 2 + 0.7);
+    }
+    // soft ground shadow
+    const sh = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.9 + 6, d * 1.9 + 6), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+    sh.rotation.x = -Math.PI / 2; sh.position.y = 0.03; group.add(sh);
+  }
+
+  // reference marker: red cross at the base centre + tall beacon so the spot can be found from afar
   const red = new THREE.LineBasicMaterial({ color: 0xff3b30 });
   const line = (a, b) => new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...a), new THREE.Vector3(...b)]), red);
-  group.add(line([-3, 0.05, 0], [3, 0.05, 0]), line([0, 0.05, -3], [0, 0.05, 3]), line([0, 0, 0], [0, h + 15, 0]));
+  group.add(line([-3, 0.06, 0], [3, 0.06, 0]), line([0, 0.06, -3], [0, 0.06, 3]), line([0, 0, 0], [0, h + 15, 0]));
 }
 
 function initThree() {
@@ -230,6 +326,8 @@ function initThree() {
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(70, 1, 0.1, 3000);
   group = new THREE.Group(); scene.add(group);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8fa0b3, 1.5));
+  const sun = new THREE.DirectionalLight(0xfff4e0, 2.0); sun.position.set(40, 80, 30); scene.add(sun);
 }
 
 function startCal() {
@@ -344,12 +442,39 @@ $('btnGround').addEventListener('click', () => { if (hitSource) wantGround = tru
 $('btnNorth').addEventListener('click', () => { if (origin) { thetaN = camYaw; adj.rot = 0; noCompass = false; calQuality = 1; } });
 $('adjust').addEventListener('click', (ev) => {
   const b = ev.target.closest('button[data-k]'); if (!b) return;
-  adj[b.dataset.k] = +(adj[b.dataset.k] + parseFloat(b.dataset.v)).toFixed(2);
+  const k = b.dataset.k, v = parseFloat(b.dataset.v);
+  if (k === 'w' || k === 'd' || k === 'h') {
+    S[k] = Math.min(500, Math.max(1, +(S[k] + v).toFixed(1)));
+    buildModel(); refreshInputs(); updateFootprint(); save();
+  } else adj[k] = +(adj[k] + v).toFixed(2);
+});
+$('btnStyle').addEventListener('click', () => {
+  ghost = !ghost; buildModel();
+  $('btnStyle').textContent = ghost ? 'Görünüm: Şeffaf (dokun: katı yap)' : 'Görünüm: Katı (dokun: şeffaf yap)';
 });
 $('overlay').addEventListener('beforexrselect', (e) => e.preventDefault());
 
+// desktop preview of the model only (no camera / AR): open the page with #onizleme
+function startPreview() {
+  initThree(); buildModel();
+  $('app').style.display = 'none';
+  const c = renderer.domElement;
+  Object.assign(c.style, { position: 'fixed', left: '0', top: '0', width: '100%', height: '100%', opacity: '1', pointerEvents: 'auto' });
+  renderer.setClearColor(0x9db8d0, 1);
+  const grid = new THREE.GridHelper(200, 40, 0x6d8398, 0x86a0b6); scene.add(grid);
+  let a = 0.6;
+  const resize = () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
+  addEventListener('resize', resize); resize();
+  renderer.setAnimationLoop(() => {
+    a += 0.004; const r = Math.max(S.w, S.d, S.h) * 1.9 + 15;
+    camera.position.set(Math.sin(a) * r, S.h * 0.6 + 5, Math.cos(a) * r); camera.lookAt(0, S.h * 0.45, 0);
+    renderer.render(scene, camera);
+  });
+}
+if (location.hash === '#onizleme') startPreview();
+
 // exposed for offline math checks
-window.__geo = { enuFrom, offsetLatLng, compassHeading };
+window.__geo = { enuFrom, offsetLatLng, compassHeading, rebuild: () => buildModel(), S, setGhost: (g) => { ghost = g; buildModel(); } };
 </script>
 </body>
 </html>
