@@ -6,6 +6,7 @@
 <title>AR Konum Demo</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <style>
   :root { --bg:#0f1720; --panel:#16202b; --line:#2a3846; --fg:#e6edf3; --dim:#9fb0c0; --acc:#2f81f7; --warn:#ffb020; }
@@ -45,7 +46,7 @@
   #cross { position:absolute; left:50%; top:50%; width:26px; height:26px; margin:-13px 0 0 -13px; border:2px solid #fff8; border-radius:50%; }
   #ctl { position:absolute; left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom)); pointer-events:auto; }
   #ctl .bar { display:flex; gap:6px; }
-  #ctl button { flex:1; background:#000b; padding:11px 2px; font-size:13px; }
+  #ctl button { flex:1; background:#000b; padding:11px 2px; font-size:12.5px; }
   #ctl .bar button.on { background:var(--acc); }
   .apanel { display:none; background:#000b; border-radius:10px; padding:6px 8px 2px; margin-bottom:6px; max-height:40vh; overflow:auto; }
   .apanel .r { display:flex; align-items:center; gap:5px; margin-bottom:5px; }
@@ -99,6 +100,15 @@
     </div>
     <div class="hint" id="pickHint"></div>
     <div class="row">
+      <button id="btnKmz">📂 KMZ / KML yükle (PLS-CADD hattı)</button>
+      <input type="file" id="kmzFile" accept=".kmz,.kml,application/vnd.google-earth.kmz,application/vnd.google-earth.kml+xml" style="display:none">
+    </div>
+    <div class="row" id="kmzRow" style="display:none">
+      <label>Hattaki direğe git<select id="kmzStr"></select></label>
+      <button id="btnKmzClear" class="small" style="align-self:flex-end">Hattı sil</button>
+    </div>
+    <div class="hint" id="kmzInfo" style="display:none"></div>
+    <div class="row">
       <button id="btnHere">📍 Seçili nesneyi konumuma koy</button>
       <button id="btnAR" class="primary">▶ AR'ı başlat</button>
     </div>
@@ -118,6 +128,13 @@
   <div id="hud">Hazırlanıyor…</div>
   <div id="cross"></div>
   <div id="ctl">
+    <div id="pKmz" class="apanel">
+      <div class="note" id="kmzNote">KMZ yüklenmemiş. Ana ekrandan "KMZ / KML yükle" ile PLS-CADD hattını yükle.</div>
+      <button class="full" id="btnKmzOn">Hat: Açık</button>
+      <div class="r"><span id="lblKr">Görüş 1000 m</span><button data-kr="-500">-500</button><button data-kr="-100">-100</button><button data-kr="100">+100</button><button data-kr="500">+500</button></div>
+      <button class="full" id="btnKmzLabels">Direk etiketleri: Açık</button>
+      <button class="full" id="btnKmzZ">Bulunduğum kotu en yakın direğin arazi kotundan al</button>
+    </div>
     <div id="pObj" class="apanel">
       <div class="r"><button id="btnPrev" style="flex:0 0 46px">◀</button><span id="objName" style="flex:1;width:auto;text-align:center"></span><button id="btnNext" style="flex:0 0 46px">▶</button></div>
       <div class="r"><input id="coord2" type="text" autocomplete="off" spellcheck="false" placeholder="merkez koordinatı"><button id="btnGo" style="flex:0 0 62px">Git</button></div>
@@ -151,8 +168,9 @@
       <button class="full" id="btnNorth">Şu an tam kuzeye bakıyorum</button>
     </div>
     <div class="bar">
-      <button id="btnRef">Referans</button>
+      <button id="btnRef">Ref.</button>
       <button id="btnObj">Nesne</button>
+      <button id="btnKmzP">Hat</button>
       <button id="btnElev">Kot</button>
       <button id="btnAlign">Hizalama</button>
       <button id="btnExit">Çık</button>
@@ -719,7 +737,7 @@ function initThree() {
   renderer.xr.enabled = true; renderer.localClippingEnabled = true; renderer.xr.setReferenceSpaceType('local-floor');
   Object.assign(renderer.domElement.style, { position: 'fixed', left: '0', top: '0', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none' });
   document.body.appendChild(renderer.domElement);
-  scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(70, 1, 0.1, 3000);
+  scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(70, 1, 0.1, 6000); scene.add(kmzGroup);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x8fa0b3, 1.5));
   const sun = new THREE.DirectionalLight(0xfff4e0, 2.0); sun.position.set(40, 80, 30); scene.add(sun);
 }
@@ -780,7 +798,8 @@ function frame(t, xrFrame) {
       const yT = rt.group.position.y + (o.zGround - o.zBase); rt.clipAbove.constant = -yT; rt.clipBelow.constant = yT;
       if (o === sel) selInfo = { o, dist, yaw, rel: wrapPi(yaw - camYaw), dz: o.zGround - o.zBase };
     }
-  } else for (const rt of rts.values()) rt.group.visible = false;
+    kmzUpdate(tn);
+  } else { for (const rt of rts.values()) rt.group.visible = false; kmzGroup.visible = false; }
 
   renderer.render(scene, camera);
   if (now - lastHud > 250) { lastHud = now; $('hud').innerHTML = hudText(now); }
@@ -814,6 +833,7 @@ function hudText(now) {
     s += '<br>' + (Math.abs(dz) < 0.05 ? '⬛ Taban arazi seviyesinde'
       : dz > 0 ? `<b style="color:#ff8a70">GÖMÜLÜ: taban arazinin ${dz.toFixed(1)} m altında</b>` : `<b style="color:#ffd166">HAVADA: taban arazinin ${(-dz).toFixed(1)} m üstünde</b>`);
   }
+  if (KMZ && kmzOpt.on) { const n = nearestStruct(); if (n) s += `<br>Hat: en yakın direk <b>${n.s.name}</b> (${n.d.toFixed(0)} m), arazi kotu ${n.s.ele} m`; }
   if (groundMsg && now - groundMsg.t < 3500) s += '<br>' + groundMsg.s;
   return s;
 }
@@ -873,9 +893,224 @@ function onEnd() {
   updateStatus();
 }
 
+// ================= KMZ / KML import (PLS-CADD "Google Earth" export) =================
+// Structures = folders "Structure 'N'" (lattice members as 2-point lines), wire spans = folders "Section #N, ..." (conductor polylines +
+// small hardware polygons). Coordinates are lon,lat,alt(MSL). PLS elevations ("ele") differ from these altitudes by a constant (geoid),
+// which is detected from the structures and added back so all heights are in the PLS / RTK datum.
+let KMZ = null;
+const kmzRt = new Map();
+const kmzGroup = new THREE.Group();
+const kmzOpt = { on: true, radius: 1000, labels: true };
+const decodeXml = (s) => s.replace(/&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+
+function parseKml(text, fname) {
+  const t0 = performance.now();
+  const a = text.indexOf('<name>Structure locations</name>'), b = text.indexOf('</Folder>', a);
+  if (a < 0) throw new Error('Bu dosya PLS-CADD "Structure locations" bölümünü içermiyor.');
+  const seg = text.slice(a, b), info = {}, structs = [];
+  // structure balloons (station, X, Y, height, elevation) are <Style id="structInfoN"> blocks, placed before or inside the folder
+  for (let p = 0; (p = text.indexOf('<Style id="structInfo', p)) >= 0;) {
+    const idEnd = text.indexOf('"', p + 11), id = text.slice(p + 11, idEnd), c0 = text.indexOf('<![CDATA[', idEnd), c1 = text.indexOf(']]>', c0);
+    p = idEnd; if (c0 < 0 || c1 < 0) break;
+    const t = text.slice(c0 + 9, c1), g = (re) => { const x = re.exec(t); return x ? parseFloat(x[1]) : null; };
+    info[id] = { name: (/<h3>([^<]*)<\/h3>/.exec(t) || [])[1] || '', sta: g(/sta=([-\d.]+)/), ht: g(/ht=([-\d.]+)/), ele: g(/ele=([-\d.]+)/), x: g(/X=([-\d.]+)/), y: g(/Y=([-\d.]+)/) };
+  }
+  for (const m of seg.matchAll(/<Placemark>\s*<name>([^<]*)<\/name>[\s\S]*?<heading>([-\d.]+)<\/heading>[\s\S]*?<styleUrl>#(structInfo\d+)<\/styleUrl>[\s\S]*?<coordinates>([^<]*)<\/coordinates>/g)) {
+    const [lng, lat] = m[4].trim().split(',').map(Number), i = info[m[3]] || {};
+    structs.push({ name: decodeXml(m[1]), lat, lng, heading: parseFloat(m[2]), sta: i.sta, ht: i.ht, ele: i.ele, x: i.x, y: i.y });
+  }
+  // folders: every <Folder> owns the text up to the next <Folder> or </Folder>
+  const raw = [];
+  let pos = b;
+  while ((pos = text.indexOf('<Folder>', pos)) >= 0) {
+    const close = text.indexOf('</Folder>', pos), next = text.indexOf('<Folder>', pos + 8);
+    const end = next >= 0 && next < close ? next : close, body = text.slice(pos, end);
+    pos = end > pos ? end : pos + 8;
+    const nm = /<name>([^<]*)<\/name>/.exec(body); if (!nm) continue;
+    const name = decodeXml(nm[1]), isSection = name.startsWith('Section #'), pts = { L: [], P: [] };
+    for (const m of body.matchAll(/<(LineString|Polygon)>[\s\S]*?<coordinates>\s*([^<]*?)\s*<\/coordinates>/g)) {
+      const arr = m[2].split(/\s+/).map((t) => t.split(',').map(Number)).filter((v) => v.length >= 3 && v.every(Number.isFinite));
+      if (arr.length >= 2) pts[m[1] === 'LineString' ? 'L' : 'P'].push(arr);
+    }
+    if (!pts.L.length && !pts.P.length) continue;
+    const sm = /Structure '([^']*)'/.exec(name), cable = (/, '([^']+)',/.exec(name) || [])[1] || '';
+    raw.push({ name, kind: isSection ? 'span' : 'tower', sname: sm ? sm[1] : null, cable, pts });
+  }
+  // datum shift: PLS "ele" (project height) minus the lowest KML altitude of each structure (should be a constant)
+  const byName = new Map(structs.map((s) => [s.name, s])), diffs = [];
+  for (const r of raw) if (r.sname && byName.has(r.sname) && byName.get(r.sname).ele != null) {
+    let mn = Infinity; for (const l of r.pts.L) for (const p of l) if (p[2] < mn) mn = p[2];
+    if (isFinite(mn)) diffs.push(byName.get(r.sname).ele - mn);
+  }
+  diffs.sort((x, y) => x - y); const shift = diffs.length ? diffs[diffs.length >> 1] : 0;
+  const chunks = [];
+  raw.forEach((r, ci) => {
+    let mnLat = 90, mxLat = -90, mnLng = 180, mxLng = -180;
+    for (const set of [r.pts.L, r.pts.P]) for (const l of set) for (const p of l) { if (p[1] < mnLat) mnLat = p[1]; if (p[1] > mxLat) mxLat = p[1]; if (p[0] < mnLng) mnLng = p[0]; if (p[0] > mxLng) mxLng = p[0]; }
+    const lat = (mnLat + mxLat) / 2, lng = (mnLng + mxLng) / 2;
+    const conv = (p) => { const o = enuFrom(lat, lng, p[1], p[0]); return [o.e, p[2] + shift, -o.n]; };
+    const segsOf = (set, closed) => {
+      const out = [];
+      for (const l of set) for (let i = 0; i + 1 < l.length; i++) out.push(...conv(l[i]), ...conv(l[i + 1]));
+      return new Float32Array(out);
+    };
+    const c = { id: ci, kind: r.kind, name: r.name, sname: r.sname, cable: r.cable, lat, lng, t: new Float32Array(0), w: new Float32Array(0), h: new Float32Array(0), rad: 1, top: 0 };
+    if (r.kind === 'tower') c.t = segsOf(r.pts.L); else c.w = segsOf(r.pts.L);
+    c.h = segsOf(r.pts.P);
+    let mxr = 1, top = -Infinity;
+    for (const arr of [c.t, c.w, c.h]) for (let i = 0; i < arr.length; i += 3) { mxr = Math.max(mxr, Math.hypot(arr[i], arr[i + 2])); if (arr[i + 1] > top) top = arr[i + 1]; }
+    c.rad = mxr; c.top = top;
+    chunks.push(c);
+  });
+  const doc = /<Document>\s*<name>([\s\S]*?)<\/name>/.exec(text.slice(0, 4000));
+  const title = doc ? decodeXml(decodeXml(doc[1])).replace(/<[^>]+>/g, '').trim() : fname;
+  return { name: title || fname, fname, shift, structs, chunks, ms: Math.round(performance.now() - t0) };
+}
+
+// tiny IndexedDB key/value store so a large import survives reloads
+const idb = {
+  open: () => new Promise((res, rej) => { const r = indexedDB.open('arGeoKmz', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }),
+  async get(k) { const db = await this.open(); return new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); },
+  async set(k, v) { const db = await this.open(); return new Promise((res, rej) => { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, k); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); }); },
+  async del(k) { const db = await this.open(); return new Promise((res, rej) => { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').delete(k); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); }); },
+};
+
+async function kmzReadFile(file) {
+  if (/\.kml$/i.test(file.name)) return file.text();
+  if (typeof JSZip === 'undefined') throw new Error('KMZ açıcı (JSZip) yüklenemedi; bağlantını kontrol et.');
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const f = zip.file(/\.kml$/i)[0]; if (!f) throw new Error('KMZ içinde .kml bulunamadı.');
+  return f.async('string');
+}
+async function kmzImport(file) {
+  const info = $('kmzInfo'); info.style.display = ''; info.textContent = 'KMZ okunuyor… (büyük dosyalarda birkaç saniye sürer)';
+  await new Promise((r) => setTimeout(r, 30));
+  try {
+    const text = await kmzReadFile(file); info.textContent = 'Direkler ve teller ayrıştırılıyor…'; await new Promise((r) => setTimeout(r, 30));
+    kmzSet(parseKml(text, file.name)); try { await idb.set('kmz', KMZ); } catch (e) { console.warn('IndexedDB kaydı yapılamadı', e); }
+    kmzFit();
+  } catch (e) { info.textContent = '⚠ ' + e.message; console.error(e); }
+}
+function kmzSet(k) {
+  for (const rt of kmzRt.values()) kmzDispose(rt); kmzRt.clear(); KMZ = k; kmzShowOnMap(); kmzRefreshUi();
+  if (typeof updateStatus === 'function') updateStatus();
+}
+async function kmzClear() { for (const rt of kmzRt.values()) kmzDispose(rt); kmzRt.clear(); KMZ = null; try { await idb.del('kmz'); } catch (e) {} kmzShowOnMap(); kmzRefreshUi(); }
+
+const kmzMapLayer = L.layerGroup().addTo(map);
+function kmzShowOnMap() {
+  kmzMapLayer.clearLayers(); if (!KMZ) return;
+  const pts = KMZ.structs.map((s) => [s.lat, s.lng]);
+  L.polyline(pts, { color: '#ff5a5a', weight: 2, opacity: 0.9, interactive: false }).addTo(kmzMapLayer);
+  KMZ.structs.forEach((s) => L.circleMarker([s.lat, s.lng], { radius: 3, color: '#fff', weight: 1, fillColor: '#ff5a5a', fillOpacity: 1 })
+    .bindTooltip(`${s.name}${s.ht != null ? ' · ' + s.ht + ' m' : ''}${s.ele != null ? ' · kot ' + s.ele : ''}`).addTo(kmzMapLayer));
+}
+function kmzFit() { if (KMZ && KMZ.structs.length) map.fitBounds(L.latLngBounds(KMZ.structs.map((s) => [s.lat, s.lng])).pad(0.05)); }
+function kmzRefreshUi() {
+  const has = !!KMZ; $('kmzRow').style.display = has ? '' : 'none'; $('kmzInfo').style.display = has ? '' : 'none';
+  if (has) {
+    const nT = KMZ.chunks.filter((c) => c.kind === 'tower').length, nS = KMZ.chunks.filter((c) => c.kind === 'span').length;
+    $('kmzInfo').textContent = `📂 ${KMZ.name}: ${KMZ.structs.length} direk noktası, ${nT} direk modeli, ${nS} tel açıklığı. Kot düzeltmesi: KML kotlarına +${KMZ.shift.toFixed(2)} m eklendi (PLS proje kotu). Hat AR'da "Hat" panelinden açılır.`;
+    $('kmzStr').innerHTML = '<option value="">— seç —</option>' + KMZ.structs.map((s, i) => `<option value="${i}">${s.name}${s.ht != null ? '  (' + s.ht + ' m)' : ''}</option>`).join('');
+    $('kmzNote').textContent = `${KMZ.name}: ${KMZ.structs.length} direk. Yalnızca görüş mesafesi içindeki parçalar çizilir. Kotlar PLS proje kotunda (+${KMZ.shift.toFixed(2)} m düzeltildi).`;
+  } else $('kmzNote').textContent = 'KMZ yüklenmemiş. Ana ekrandan "KMZ / KML yükle" ile PLS-CADD hattını yükle.';
+}
+$('btnKmz').addEventListener('click', () => $('kmzFile').click());
+$('kmzFile').addEventListener('change', () => { const f = $('kmzFile').files[0]; if (f) kmzImport(f); $('kmzFile').value = ''; });
+$('btnKmzClear').addEventListener('click', () => { if (confirm('Yüklü hat silinsin mi? (Cihazdaki kopya da silinir)')) kmzClear(); });
+$('kmzStr').addEventListener('change', () => {
+  const s = KMZ && KMZ.structs[+$('kmzStr').value]; if (!s) return;
+  map.setView([s.lat, s.lng], 18);
+  $('kmzInfo').textContent = `Direk ${s.name}: ${s.ht} m, arazi kotu ${s.ele} m, istasyon ${s.sta}, X=${s.x} Y=${s.y} (UTM). Bu koordinat, direğin taban merkezidir.`;
+});
+
+const kmzLabelTex = (txt) => {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 96; const g = c.getContext('2d');
+  g.fillStyle = 'rgba(15,23,32,0.82)'; g.beginPath(); g.roundRect(4, 4, 248, 88, 14); g.fill();
+  g.fillStyle = '#fff'; g.font = 'bold 44px system-ui,sans-serif'; g.textAlign = 'center'; g.fillText(txt[0], 128, 46);
+  g.fillStyle = '#9fd0ff'; g.font = '28px system-ui,sans-serif'; g.fillText(txt[1] || '', 128, 80);
+  return new THREE.CanvasTexture(c);
+};
+function kmzBeams(arr, t) {
+  const gs = [];
+  for (let i = 0; i + 5 < arr.length; i += 6) {
+    const a = [arr[i], arr[i + 1], arr[i + 2]], b = [arr[i + 3], arr[i + 4], arr[i + 5]];
+    if (Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) > 1e-3) gs.push(beamGeo(a, b, t));
+  }
+  return gs.length ? mergeGeometries(gs) : null;
+}
+function kmzBuild(c) {
+  const g = new THREE.Group();
+  const add = (geo, mat) => { if (geo) g.add(new THREE.Mesh(geo, mat)); };
+  if (c.t.length) add(kmzBeams(c.t, 0.16), std(0xc3ccd6, 0.55, 0.6));
+  if (c.w.length) {
+    const col = c.cable.startsWith('acsr') ? 0xffd23f : c.cable.startsWith('opgw') ? 0x6be3ff : 0x7dff8a;
+    add(kmzBeams(c.w, 0.09), new THREE.MeshBasicMaterial({ color: col }));
+    const pos = new Float32Array(c.w.length); pos.set(c.w);
+    const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: col })));
+  }
+  if (c.h.length) add(kmzBeams(c.h, 0.05), std(0xb07a4a, 0.6, 0.0));
+  let label = null;
+  if (c.kind === 'tower' && c.sname) {
+    const s = KMZ.structs.find((x) => x.name === c.sname);
+    label = new THREE.Sprite(new THREE.SpriteMaterial({ map: kmzLabelTex([`Direk ${c.sname}`, s && s.ht != null ? `${s.ht} m · kot ${s.ele}` : '']), depthTest: false, transparent: true }));
+    label.scale.set(9, 3.4, 1); label.position.set(0, c.top + 5, 0); label.renderOrder = 10; label.visible = kmzOpt.labels; g.add(label);
+  }
+  kmzGroup.add(g);
+  return { group: g, label };
+}
+function kmzDispose(rt) {
+  rt.group.traverse((m) => { if (m.geometry) m.geometry.dispose(); if (m.material) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); } });
+  kmzGroup.remove(rt.group);
+}
+// world position of a lat/lng in the current AR alignment (same maths as the library objects)
+function kmzUpdate(tn) {
+  if (!KMZ || !kmzOpt.on) { kmzGroup.visible = false; return; }
+  kmzGroup.visible = true; let builds = 0;
+  for (const c of KMZ.chunks) {
+    const en = enuFrom(origin.lat, origin.lng, c.lat, c.lng), e = en.e + adj.e, n = en.n + adj.n, dist = Math.hypot(e, n), yaw = tn + Math.atan2(e, n);
+    const px = origin.x + dist * Math.sin(yaw), pz = origin.z - dist * Math.cos(yaw), dc = Math.hypot(px - camPos.x, pz - camPos.z) - c.rad;
+    let rt = kmzRt.get(c.id);
+    if (dc > kmzOpt.radius * 1.3) { if (rt) { kmzDispose(rt); kmzRt.delete(c.id); } continue; }
+    if (dc > kmzOpt.radius) { if (rt) rt.group.visible = false; continue; }
+    if (!rt) { if (builds >= 2) continue; rt = kmzBuild(c); kmzRt.set(c.id, rt); builds++; }
+    rt.group.visible = true; rt.group.position.set(px, groundY + adj.up - S.zUser, pz); rt.group.rotation.y = -tn;
+  }
+}
+// where the user stands, from the AR camera position and the current alignment
+function userLatLng() {
+  if (!origin) return null;
+  const dx = camPos.x - origin.x, dz = camPos.z - origin.z, r = Math.hypot(dx, dz), b = Math.atan2(dx, -dz) - (thetaN + adj.rot * rad);
+  const [lat, lng] = offsetLatLng(origin.lat, origin.lng, r * Math.sin(b) - adj.e, r * Math.cos(b) - adj.n);
+  return { lat, lng };
+}
+function nearestStruct() {
+  const u = userLatLng(); if (!u || !KMZ || !KMZ.structs.length) return null;
+  let best = null, bd = Infinity;
+  for (const s of KMZ.structs) { const d = distM(u, s); if (d < bd) { bd = d; best = s; } }
+  return { s: best, d: bd };
+}
+$('btnKmzP').addEventListener('click', () => togglePanel('pKmz'));
+$('btnKmzOn').addEventListener('click', () => { kmzOpt.on = !kmzOpt.on; $('btnKmzOn').textContent = `Hat: ${kmzOpt.on ? 'Açık' : 'Kapalı'}`; });
+$('btnKmzLabels').addEventListener('click', () => {
+  kmzOpt.labels = !kmzOpt.labels; $('btnKmzLabels').textContent = `Direk etiketleri: ${kmzOpt.labels ? 'Açık' : 'Kapalı'}`;
+  for (const rt of kmzRt.values()) if (rt.label) rt.label.visible = kmzOpt.labels;
+});
+$('pKmz').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-kr]'); if (!b) return;
+  kmzOpt.radius = Math.min(5000, Math.max(200, kmzOpt.radius + +b.dataset.kr)); $('lblKr').textContent = `Görüş ${kmzOpt.radius} m`;
+});
+$('btnKmzZ').addEventListener('click', () => {
+  const n = nearestStruct(); if (!n || n.s.ele == null) { groundMsg = { t: performance.now(), s: '⚠ Önce hizalama tamamlanmalı ve hat yüklü olmalı' }; return; }
+  S.zUser = n.s.ele; refreshAll(); groundMsg = { t: performance.now(), s: `Bulunduğum kot = direk ${n.s.name} arazi kotu (${n.s.ele} m, ${n.d.toFixed(0)} m uzakta)` };
+});
+// restore a previous import
+idb.get('kmz').then((k) => { if (k && k.chunks) kmzSet(k); }).catch(() => {});
+
 // ----- AR controls -----
 function showPanel(id) {
-  for (const [p, b] of [['pRef', 'btnRef'], ['pObj', 'btnObj'], ['pElev', 'btnElev'], ['pAlign', 'btnAlign']]) {
+  for (const [p, b] of [['pRef', 'btnRef'], ['pObj', 'btnObj'], ['pKmz', 'btnKmzP'], ['pElev', 'btnElev'], ['pAlign', 'btnAlign']]) {
     const on = p === id; $(p).style.display = on ? 'block' : 'none'; $(b).classList.toggle('on', on);
   }
 }
@@ -951,8 +1186,33 @@ function startPreview(only) {
 if (location.hash.startsWith('#onizleme')) startPreview(location.hash.split('=')[1]);
 
 refreshAll();
+// desktop preview of an imported line around one structure: __geo.kmzPreview('10')
+function kmzPreview(sname) {
+  initThree(); $('app').style.display = 'none';
+  Object.assign(renderer.domElement.style, { left: '0', top: '0', width: '100%', height: '100%', opacity: '1', pointerEvents: 'auto' });
+  renderer.setClearColor(0x9db8d0, 1);
+  const tw = KMZ.chunks.find((c) => c.sname === sname); kmzOpt.labels = true;
+  let ymin = Infinity; for (let i = 1; i < tw.t.length; i += 3) ymin = Math.min(ymin, tw.t[i]);
+  let n = 0;
+  for (const c of KMZ.chunks) {
+    const en = enuFrom(tw.lat, tw.lng, c.lat, c.lng); if (Math.hypot(en.e, en.n) - c.rad > 900) continue;
+    const rt = kmzBuild(c); rt.group.position.set(en.e, -ymin, -en.n); n++;
+  }
+  scene.add(new THREE.GridHelper(2000, 100, 0x6d8398, 0x86a0b6));
+  const resize = () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
+  addEventListener('resize', resize); resize();
+  let a = 0.9; const h = tw.top - ymin;
+  renderer.setAnimationLoop(() => { a += 0.003; const r = 130; camera.position.set(Math.sin(a) * r, h * 0.7, Math.cos(a) * r); camera.lookAt(0, h * 0.5, 0); renderer.render(scene, camera); });
+  return n;
+}
 window.__geo = {
-  S, TYPES, enuFrom, offsetLatLng, compassHeading, cur, mkObj, rebuildAll, refreshAll, latLngToUtm, utmToLatLng, textToLL, llToText,
+  kmz: () => KMZ, kmzPreview, kmzImport,
+  // test hook: pretend the user stands at (lat,lng) with the given north-yaw and run the KMZ culling/placement once
+  kmzSim: (lat, lng, thDeg) => {
+    origin = { lat, lng, x: 0, z: 0 }; thetaN = thDeg * rad; camPos = { x: 0, y: 1.6, z: 0 }; adj.e = adj.n = adj.up = adj.rot = 0; groundY = 0;
+    for (let i = 0; i < 40; i++) kmzUpdate(thetaN);
+    return { built: kmzRt.size, visible: [...kmzRt.entries()].filter(([, r]) => r.group.visible).map(([id, r]) => ({ name: KMZ.chunks[id].name.slice(0, 28), x: +r.group.position.x.toFixed(1), y: +r.group.position.y.toFixed(1), z: +r.group.position.z.toFixed(1) })) };
+  }, S, TYPES, enuFrom, offsetLatLng, compassHeading, cur, mkObj, rebuildAll, refreshAll, latLngToUtm, utmToLatLng, textToLL, llToText,
   // test hook: solve the georeference from two AR-space marks and report where an object at (lat,lng) would be placed
   solveTest: (a, b, lat, lng) => {
     refMarks = [a, b]; solveRefs();
