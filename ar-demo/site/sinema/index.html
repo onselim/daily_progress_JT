@@ -281,7 +281,8 @@ function buildWorld() {
     }
     videoTex = media.type === 'video' ? new THREE.VideoTexture(media.el) : new THREE.Texture(src);
     const living = media.type === 'image' && kind === 'sphere';     // animated photo shader
-    const useWater = living && $('animate').checked && !!maskTex && /lauter/i.test(media.name || '');
+    const useWater = living && $('animate').checked && !!maskTex && !!media.lauter;
+    waterOn = useWater;
     videoTex.wrapS = THREE.RepeatWrapping; videoTex.anisotropy = 8; videoTex.needsUpdate = true;
     let mat;
     if (living && $('animate').checked) {
@@ -306,6 +307,16 @@ function buildWorld() {
   }
 }
 
+// ---------------------------------------------------------------- recognise the Lauter photo by content (file names change when a photo is shared)
+const LAUTER_FP = [76.0, 89.2, 101.4, 98.7, 106.7, 117.4, 124.4, 114.5, 120.6, 97.5, 116.1, 115.8, 99.6, 95.1, 97.3, 97.4, 83.7, 73.7, 53.2, 58.4, 53.6, 64.2, 104.1, 125.3, 166.7, 144.2, 135.5, 116.4, 109.7, 91.6, 87.6, 109.9, 70.3, 47.2, 44.4, 38.8, 45.2, 60.5, 76.1, 82.1, 97.5, 106.9, 106.7, 151.8, 128.2, 97.8, 67.7, 70.4, 49.3, 32.6, 32.8, 36.0, 44.0, 51.8, 65.6, 67.9, 80.0, 76.7, 61.7, 69.3, 86.4, 97.1, 77.8, 59.0, 41.6, 32.1, 44.6, 54.9, 63.0, 53.0, 78.4, 73.9, 78.8, 80.7, 81.5, 75.2, 91.2, 89.2, 82.2, 76.4, 49.0, 66.3, 83.7, 84.5, 88.3, 90.2, 89.3, 91.7, 76.4, 69.1, 78.9, 74.9, 81.4, 91.6, 71.1, 51.1, 90.4, 89.7, 91.5, 89.2, 96.3, 90.5, 93.7, 93.7, 83.8, 88.1, 89.7, 92.2, 80.3, 82.2, 82.9, 82.1, 91.4, 90.7, 88.4, 94.6, 93.6, 94.6, 95.2, 94.5, 90.6, 90.3, 91.4, 91.5, 87.2, 86.1, 82.1, 86.1];
+function photoFingerprintDiff(img) {
+  const a = document.createElement('canvas'); a.width = 256; a.height = 128; const ga = a.getContext('2d'); ga.imageSmoothingQuality = 'high'; ga.drawImage(img, 0, 0, 256, 128);
+  const b = document.createElement('canvas'); b.width = 16; b.height = 8; const gb = b.getContext('2d', { willReadFrequently: true }); gb.imageSmoothingQuality = 'high'; gb.drawImage(a, 0, 0, 16, 8);
+  const d = gb.getImageData(0, 0, 16, 8).data; let sum = 0;
+  for (let i = 0; i < 128; i++) sum += Math.abs(0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2] - LAUTER_FP[i]);
+  return sum / 128;
+}
+let waterOn = false;
 // ---------------------------------------------------------------- audio (procedural waterfall noise)
 function startAudio() {
   if (audio) return;
@@ -409,6 +420,7 @@ async function prepareMode() {
     if (f.type.startsWith('image/')) {
       const img = new Image(); img.src = URL.createObjectURL(f); await img.decode();
       media = { type: 'image', el: img, w: img.naturalWidth, h: img.naturalHeight, name: f.name };
+      media.fpDiff = photoFingerprintDiff(img); media.lauter = media.fpDiff < 6 || /lauter/i.test(f.name);
       if (maskTex === undefined) { try { const mi = new Image(); mi.src = 'lauter_mask.png'; await mi.decode(); maskTex = new THREE.Texture(mi); maskTex.colorSpace = THREE.NoColorSpace; maskTex.needsUpdate = true; } catch (e) { maskTex = null; } }
     } else {
       video = document.createElement('video'); video.src = URL.createObjectURL(f); video.loop = true; video.playsInline = true; video.muted = muted; video.crossOrigin = 'anonymous';
@@ -443,6 +455,10 @@ function onEnd() {
   $('overlay').style.display = 'none'; $('start').style.display = 'flex';
   if (video) video.pause(); if (audio) { (audio.timers || []).forEach(clearTimeout); audio.ctx.close(); audio = null; }
 }
+function waterStat() {
+  if (!media || media.type !== 'image') return '';
+  return waterOn ? ' · su akışı: açık ✓' : ` · su akışı: kapalı (${!$('animate').checked ? 'Canlandır kapalı' : !maskTex ? 'maske yüklenemedi' : 'fotoğraf tanınmadı, fark ' + media.fpDiff.toFixed(1)})`;
+}
 function frame(t, xrFrame) {
   uni.uTime.value = t / 1000;
   if (xrFrame) {
@@ -459,7 +475,7 @@ function frame(t, xrFrame) {
   if (t - lastStat > 1000) {
     const fps = Math.round(frames * 1000 / (t - lastStat)); frames = 0; lastStat = t;
     const bl = session && session.renderState.baseLayer;
-    $('stat').textContent = `${fps} FPS` + (bl ? ` · ${bl.framebufferWidth}×${bl.framebufferHeight} px (ölçek ${fbScale.toFixed(2)})` : '') + (fps < 24 ? ' · akıcı değil: kaliteyi düşür' : '');
+    $('stat').textContent = `${fps} FPS` + (bl ? ` · ${bl.framebufferWidth}×${bl.framebufferHeight} px (ölçek ${fbScale.toFixed(2)})` : '') + (fps < 24 ? ' · akıcı değil: kaliteyi düşür' : '') + waterStat();
   }
 }
 // centre the cylinder on the user and turn the main waterfall to face where they are looking
@@ -475,7 +491,7 @@ $('btnAR').addEventListener('click', startAR);
 async function startPreview() {
   $('msg').textContent = 'Başlatılıyor…';
   try { if (!(await prepareMode())) return; } catch (e) { $('msg').textContent = e.message; return; }
-  $('msg').textContent = ''; $('start').style.display = 'none'; $('pv').style.display = 'flex'; $('pvHint').style.display = 'block'; setTimeout(() => { $('pvHint').style.display = 'none'; }, 5000);
+  $('msg').textContent = ''; $('start').style.display = 'none'; $('pv').style.display = 'flex'; $('pvHint').style.display = 'block'; $('pvHint').textContent = 'Sürükleyerek çevrene bak.' + waterStat(); setTimeout(() => { $('pvHint').style.display = 'none'; }, 6000);
   world.position.set(0, 0, 0); world.rotation.y = 0; camera.position.set(0, eye, 0);
   preview = { yaw: 0, pitch: 0.12 };
   const cv = renderer.domElement, resize = () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
@@ -490,8 +506,8 @@ $('btnPreview').addEventListener('click', startPreview);
 $('pvSound').addEventListener('click', () => setMuted(!muted));
 $('pvExit').addEventListener('click', () => location.reload());
 
-$('ready').textContent = 'hazır ✓ · sürüm 2026-09-21 · canlı fotoğraf + ses';
-window.__cinema = { draw: (tm, yaw, pitch, ctx2d) => { const cw = ctx2d.canvas.width, ch = ctx2d.canvas.height; renderer.setSize(cw, ch, false); camera.aspect = cw / ch; camera.updateProjectionMatrix(); if (tm !== undefined) uni.uTime.value = tm; camera.rotation.set(pitch, yaw, 0, 'YXZ'); renderer.render(scene, camera); ctx2d.drawImage(renderer.domElement, 0, 0, ctx2d.canvas.width, ctx2d.canvas.height); }, snap: (tm, yaw, pitch) => { if (tm !== undefined) uni.uTime.value = tm; if (yaw !== undefined && preview) { preview.yaw = yaw; preview.pitch = pitch; camera.rotation.set(pitch, yaw, 0, 'YXZ'); } renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); }, get preview() { return preview; }, get video() { return video; }, get tex() { return videoTex; }, uni, setView: (yaw, pitch) => { if (preview) { preview.yaw = yaw; preview.pitch = pitch; } } };
+$('ready').textContent = 'hazır ✓ · sürüm 2026-09-21b · su akışı fotoğraf tanıma';
+window.__cinema = { fp: photoFingerprintDiff, draw: (tm, yaw, pitch, ctx2d) => { const cw = ctx2d.canvas.width, ch = ctx2d.canvas.height; renderer.setSize(cw, ch, false); camera.aspect = cw / ch; camera.updateProjectionMatrix(); if (tm !== undefined) uni.uTime.value = tm; camera.rotation.set(pitch, yaw, 0, 'YXZ'); renderer.render(scene, camera); ctx2d.drawImage(renderer.domElement, 0, 0, ctx2d.canvas.width, ctx2d.canvas.height); }, snap: (tm, yaw, pitch) => { if (tm !== undefined) uni.uTime.value = tm; if (yaw !== undefined && preview) { preview.yaw = yaw; preview.pitch = pitch; camera.rotation.set(pitch, yaw, 0, 'YXZ'); } renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); }, get preview() { return preview; }, get video() { return video; }, get tex() { return videoTex; }, uni, setView: (yaw, pitch) => { if (preview) { preview.yaw = yaw; preview.pitch = pitch; } } };
 </script>
 </body>
 </html>
