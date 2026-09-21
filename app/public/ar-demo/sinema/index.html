@@ -34,18 +34,26 @@
   <label>Perde
     <select id="mode">
       <option value="fall">Şelale (üretilmiş, gerçek zamanlı)</option>
-      <option value="video">Kendi videom (360° / panorama)</option>
+      <option value="video">Kendi 360° videom ya da fotoğrafım</option>
     </select>
   </label>
   <div id="vidBox" style="display:none;flex-direction:column;gap:10px">
-    <label>Video dosyası<input type="file" id="vidFile" accept="video/*"></label>
-    <label>Video türü
+    <label>Video ya da fotoğraf dosyası<input type="file" id="vidFile" accept="video/*,image/*"></label>
+    <label>Görüntü türü
       <select id="vidKind">
-        <option value="equi">360° eşdikdörtgen (2:1), orta bant gösterilir</option>
-        <option value="pano">Geniş panorama (tüm kare perdeye sarılır)</option>
+        <option value="sphere">360° eşdikdörtgen (2:1), tam küre: yukarı ve aşağı da görünür (önerilen)</option>
+        <option value="equi">360° eşdikdörtgen, silindir perde (orta bant)</option>
+        <option value="pano">Geniş panorama (tüm kare silindire sarılır)</option>
       </select>
     </label>
   </div>
+  <label>Görüntü kalitesi
+    <select id="quality">
+      <option value="high" selected>Yüksek: ekranın tam çözünürlüğü (önerilen)</option>
+      <option value="ultra">En yüksek: tam çözünürlükten de yüksek (güçlü telefon)</option>
+      <option value="std">Standart: hızlı, daha düşük çözünürlük</option>
+    </select>
+  </label>
   <button class="primary" id="btnAR">▶ AR'da başlat</button>
   <button id="btnPreview">🖥 Önizleme (kamerasız, sürükleyerek bak)</button>
   <p id="msg"></p>
@@ -58,6 +66,7 @@
 <div id="pv"><button id="pvSound">🔊 Ses</button><button id="pvExit">Çık</button></div>
 
 <div id="overlay">
+  <div id="stat" style="position:absolute;left:10px;bottom:calc(64px + env(safe-area-inset-bottom));font-size:11px;opacity:.75;background:#0007;border-radius:6px;padding:2px 6px"></div>
   <div id="hint">Perdenin tam ortasındasın. Etrafına bak. Ortada durursan en iyisi.</div>
   <div id="bar">
     <button id="bSound">🔊 Ses</button>
@@ -71,7 +80,7 @@
 <script type="module" onerror="document.getElementById('msg').textContent='⚠ Betik yüklenemedi (internet / CDN engeli olabilir).'">
 import * as THREE from 'three';
 const $ = (id) => document.getElementById(id);
-const R = 8, H = 9.5, EYE_DEFAULT = 1.5;
+const R = 8, H = 9.5, EYE_DEFAULT = 1.5, SPHERE_YAW = Math.PI / 2;   // SPHERE_YAW turns the video's centre to the front
 
 // ---------------------------------------------------------------- shaders
 const NOISE = /* glsl */`
@@ -132,7 +141,7 @@ void main(){
   vec3 n = normalize(-rad - tg * (rT - r) / e * 1.1 - vec3(0.0, 1.0, 0.0) * (rY - r) / e * 1.1);
   float light = 0.55 + 0.65 * pow(clamp(dot(n, uSun) * 0.5 + 0.5, 0.0, 1.0), 1.3) + 0.12 * n.y;
   float strata = n3(vec3(p.x * 0.3, y * 3.4, p.z * 0.3));
-  vec3 rock = mix(vec3(0.15,0.13,0.12), vec3(0.50,0.44,0.37), r) * (0.72 + 0.55 * strata) * (0.88 + 0.24 * n3(p * vec3(6.0, 9.0, 6.0)));
+  vec3 rock = mix(vec3(0.15,0.13,0.12), vec3(0.50,0.44,0.37), r) * (0.72 + 0.55 * strata) * (0.85 + 0.15 * n3(p * vec3(6.0, 9.0, 6.0)) + 0.14 * n3(p * vec3(19.0, 27.0, 19.0)));
   float moss = smoothstep(0.52, 0.76, n3(p * 0.85 + 7.0)) * (0.35 + 0.65 * smoothstep(0.0, top, y));
   rock = mix(rock, vec3(0.08,0.27,0.10), moss * 0.75);
   float veg = smoothstep(top - 1.7, top - 0.1, y);
@@ -202,8 +211,8 @@ void main(){
 }`;
 
 // ---------------------------------------------------------------- scene
-let renderer, scene, camera, world, session = null, mode = 'fall', video = null, videoTex = null, audio = null, muted = false;
-let eye = EYE_DEFAULT, needCenter = true, camPos = new THREE.Vector3(), camYaw = 0, preview = null;
+let renderer, scene, camera, world, session = null, mode = 'fall', video = null, media = null, videoTex = null, audio = null, muted = false;
+let fbScale = 1, frames = 0, lastStat = 0, eye = EYE_DEFAULT, needCenter = true, camPos = new THREE.Vector3(), camYaw = 0, preview = null;
 const fwd = new THREE.Vector3(), quat = new THREE.Quaternion();
 
 function initScene() {
@@ -231,15 +240,22 @@ function buildWorld() {
   if (mode === 'fall') {
     const wallG = new THREE.CylinderGeometry(R, R, H, 160, 1, true); wallG.translate(0, H / 2, 0);
     const wall = new THREE.Mesh(wallG, shader(WALL_FS, { side: THREE.BackSide, transparent: true })); wall.renderOrder = 1; world.add(wall);
-  } else if (video) {
-    const kind = $('vidKind').value, ar = video.videoWidth / video.videoHeight, crop = kind === 'equi' ? 0.5 : 1.0;
-    const hh = Math.min(14, (2 * Math.PI * R) / (ar / crop));
-    videoTex = new THREE.VideoTexture(video); videoTex.colorSpace = THREE.SRGBColorSpace; videoTex.wrapS = THREE.RepeatWrapping; videoTex.repeat.x = -1;
-    if (kind === 'equi') { videoTex.repeat.y = 0.5; videoTex.offset.y = 0.25; }
-    const g = new THREE.CylinderGeometry(R, R, hh, 160, 1, true); g.translate(0, eye - 0.0, 0);   // vertically centred on eye height
-    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: videoTex, side: THREE.BackSide, toneMapped: false })); world.add(m);
-    // a faint ring so the floor edge reads in the dark
-    const rg = new THREE.RingGeometry(R - 0.06, R, 128); rg.rotateX(-Math.PI / 2); const ring = new THREE.Mesh(rg, new THREE.MeshBasicMaterial({ color: 0x2f9bf7, side: THREE.DoubleSide })); ring.position.y = 0.01; world.add(ring);
+  } else if (media) {
+    const kind = $('vidKind').value, ar = media.w / media.h, crop = kind === 'equi' ? 0.5 : 1.0;
+    videoTex = media.type === 'video' ? new THREE.VideoTexture(media.el) : new THREE.Texture(media.el);
+    videoTex.colorSpace = THREE.SRGBColorSpace; videoTex.wrapS = THREE.RepeatWrapping; videoTex.repeat.x = -1; videoTex.anisotropy = 8; videoTex.needsUpdate = true;
+    const mat = new THREE.MeshBasicMaterial({ map: videoTex, side: THREE.BackSide, toneMapped: false });
+    if (kind === 'sphere') {
+      floor.visible = false;                                   // the sphere covers the floor too
+      const sg = new THREE.SphereGeometry(40, 128, 64); sg.translate(0, eye, 0);
+      const sm = new THREE.Mesh(sg, mat); sm.rotation.y = SPHERE_YAW; sm.renderOrder = -1; world.add(sm);
+    } else {
+      if (kind === 'equi') { videoTex.repeat.y = 0.5; videoTex.offset.y = 0.25; }
+      const hh = Math.min(14, (2 * Math.PI * R) / (ar / crop));
+      const g = new THREE.CylinderGeometry(R, R, hh, 160, 1, true); g.translate(0, eye, 0);   // vertically centred on eye height
+      world.add(new THREE.Mesh(g, mat));
+      const rg = new THREE.RingGeometry(R - 0.06, R, 128); rg.rotateX(-Math.PI / 2); const ring = new THREE.Mesh(rg, new THREE.MeshBasicMaterial({ color: 0x2f9bf7, side: THREE.DoubleSide })); ring.position.y = 0.01; world.add(ring);
+    }
   }
 }
 
@@ -279,11 +295,17 @@ $('mode').addEventListener('change', () => { $('vidBox').style.display = $('mode
 async function prepareMode() {
   mode = $('mode').value;
   if (mode === 'video') {
-    const f = $('vidFile').files[0]; if (!f) { $('msg').textContent = 'Önce bir video dosyası seç.'; return false; }
-    if (video) { video.pause(); URL.revokeObjectURL(video.src); }
-    video = document.createElement('video'); video.src = URL.createObjectURL(f); video.loop = true; video.playsInline = true; video.muted = muted; video.crossOrigin = 'anonymous';
-    await new Promise((res, rej) => { video.onloadedmetadata = res; video.onerror = () => rej(new Error('Video okunamadı')); });
-    playVideo();
+    const f = $('vidFile').files[0]; if (!f) { $('msg').textContent = 'Önce bir video ya da fotoğraf dosyası seç.'; return false; }
+    if (video) { video.pause(); URL.revokeObjectURL(video.src); video = null; }
+    if (f.type.startsWith('image/')) {
+      const img = new Image(); img.src = URL.createObjectURL(f); await img.decode();
+      media = { type: 'image', el: img, w: img.naturalWidth, h: img.naturalHeight };
+    } else {
+      video = document.createElement('video'); video.src = URL.createObjectURL(f); video.loop = true; video.playsInline = true; video.muted = muted; video.crossOrigin = 'anonymous';
+      await new Promise((res, rej) => { video.onloadedmetadata = res; video.onerror = () => rej(new Error('Video okunamadı')); });
+      media = { type: 'video', el: video, w: video.videoWidth, h: video.videoHeight };
+      playVideo();
+    }
   }
   initScene(); buildWorld(); return true;
 }
@@ -295,6 +317,10 @@ async function startAR() {
     session = await navigator.xr.requestSession('immersive-ar', { optionalFeatures: ['dom-overlay'], domOverlay: { root: $('overlay') } });
   } catch (e) { $('msg').textContent = 'AR başlatılamadı: ' + e.message; return; }
   renderer.xr.setReferenceSpaceType('local');
+  renderer.xr.setFoveation(0);   // foveated rendering lowers resolution towards the edges
+  const nat = (window.XRWebGLLayer && XRWebGLLayer.getNativeFramebufferScaleFactor) ? XRWebGLLayer.getNativeFramebufferScaleFactor(session) : 1;
+  const q = $('quality').value; fbScale = q === 'std' ? 1 : q === 'ultra' ? Math.min(nat * 1.35, 2) : nat;
+  renderer.xr.setFramebufferScaleFactor(fbScale);
   session.addEventListener('end', onEnd);
   await renderer.xr.setSession(session);
   $('start').style.display = 'none'; $('overlay').style.display = 'block'; $('hint').style.opacity = 1;
@@ -318,6 +344,12 @@ function frame(t, xrFrame) {
     }
   }
   renderer.render(scene, camera);
+  frames++;
+  if (t - lastStat > 1000) {
+    const fps = Math.round(frames * 1000 / (t - lastStat)); frames = 0; lastStat = t;
+    const bl = session && session.renderState.baseLayer;
+    $('stat').textContent = `${fps} FPS` + (bl ? ` · ${bl.framebufferWidth}×${bl.framebufferHeight} px (ölçek ${fbScale.toFixed(2)})` : '') + (fps < 24 ? ' · akıcı değil: kaliteyi düşür' : '');
+  }
 }
 // centre the cylinder on the user and turn the main waterfall to face where they are looking
 function placeWorld() { world.position.set(camPos.x, camPos.y - eye, camPos.z); world.rotation.y = -camYaw; }
