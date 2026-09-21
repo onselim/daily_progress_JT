@@ -242,7 +242,12 @@ function buildWorld() {
     const wall = new THREE.Mesh(wallG, shader(WALL_FS, { side: THREE.BackSide, transparent: true })); wall.renderOrder = 1; world.add(wall);
   } else if (media) {
     const kind = $('vidKind').value, ar = media.w / media.h, crop = kind === 'equi' ? 0.5 : 1.0;
-    videoTex = media.type === 'video' ? new THREE.VideoTexture(media.el) : new THREE.Texture(media.el);
+    let src = media.el;
+    if (media.type === 'image') {   // some phones cap textures below 8192 px: downscale instead of showing black
+      const mt = renderer.capabilities.maxTextureSize, k = Math.min(1, mt / Math.max(media.w, media.h));
+      if (k < 1) { const c = document.createElement('canvas'); c.width = Math.floor(media.w * k); c.height = Math.floor(media.h * k); c.getContext('2d').drawImage(media.el, 0, 0, c.width, c.height); src = c; }
+    }
+    videoTex = media.type === 'video' ? new THREE.VideoTexture(media.el) : new THREE.Texture(src);
     videoTex.colorSpace = THREE.SRGBColorSpace; videoTex.wrapS = THREE.RepeatWrapping; videoTex.repeat.x = -1; videoTex.anisotropy = 8; videoTex.needsUpdate = true;
     const mat = new THREE.MeshBasicMaterial({ map: videoTex, side: THREE.BackSide, toneMapped: false });
     if (kind === 'sphere') {
