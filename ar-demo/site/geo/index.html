@@ -424,7 +424,7 @@ let TOWERS = {};
 try { TOWERS = await (await fetch('towers.json')).json(); } catch (e) { console.warn('towers.json yüklenemedi', e); }
 for (const [k, tw] of Object.entries(TOWERS)) {
   TYPES['tow_' + k] = {
-    label: tw.title.split(',')[0].replace(/\s+/g, ' ').trim(), icon: '🗼', pls: true, dims: { ...tw.dims },
+    label: (tw.label || tw.title.split(',')[0]).replace(/\s+/g, ' ').trim(), icon: '🗼', pls: true, project: tw.project || 'PLS direkleri', desc: tw.desc || '', dims: { ...tw.dims },
     lw: 'Boyuna (x)', ld: 'Enine (y)', lh: 'Yükseklik', usesD: true, rotOffset: -90, lrot: 'Hat azimutu (°)', tw, build: buildTow,
   };
 }
@@ -650,10 +650,10 @@ $('btnRefMode').addEventListener('click', () => {
 });
 
 // library sheet
-const cardHtml = ([k, T]) => `<button class="card" data-type="${k}"><b>${T.icon}</b>${T.label}</button>`;
-const libEntries = Object.entries(TYPES);
+const cardHtml = ([k, T]) => `<button class="card" data-type="${k}" title="${(T.desc || '').replace(/"/g, '')}"><b>${T.icon}</b>${T.label}</button>`;
+const libEntries = Object.entries(TYPES), libProjects = [...new Set(libEntries.filter(([, T]) => T.pls).map(([, T]) => T.project))];
 $('libGrid').innerHTML = libEntries.filter(([, T]) => !T.pls).map(cardHtml).join('') +
-  (libEntries.some(([, T]) => T.pls) ? '<div style="grid-column:1/-1;font-size:11px;color:var(--dim);margin-top:4px">PLS-TOWER direkleri (.tow dosyalarından)</div>' + libEntries.filter(([, T]) => T.pls).map(cardHtml).join('') : '');
+  libProjects.map((pj) => `<div style="grid-column:1/-1;font-size:11px;color:var(--dim);margin-top:6px">PLS-TOWER direkleri: ${pj}</div>` + libEntries.filter(([, T]) => T.pls && T.project === pj).map(cardHtml).join('')).join('');
 $('btnAdd').addEventListener('click', () => { $('sheet').style.display = 'flex'; });
 $('btnSheetClose').addEventListener('click', () => { $('sheet').style.display = 'none'; });
 $('sheet').addEventListener('click', (e) => { if (e.target === $('sheet')) $('sheet').style.display = 'none'; });
