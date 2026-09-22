@@ -89,13 +89,23 @@
     </div>
     <details id="geoDet">
       <summary>📐 Koordinat sistemi ve georeferans</summary>
-      <div class="row" style="margin-top:8px"><label id="lbRef1">Georeferans 1<input id="ref1" type="text" autocomplete="off" spellcheck="false"></label></div>
-      <div class="row"><label id="lbRef2">Georeferans 2<input id="ref2" type="text" autocomplete="off" spellcheck="false"></label></div>
-      <div class="hint">Sahada koordinatı bilinen (RTK vb.) iki nokta. Aralarında en az 20-30 m olsun; ne kadar uzaksa yön o kadar hassas olur.</div>
+      <div class="row" style="margin-top:8px">
+        <label id="lbRef1">Georeferans 1<input id="ref1" type="text" autocomplete="off" spellcheck="false"></label>
+        <label id="lbRef1kmz" style="display:none;flex:0 0 128px">KMZ direk<select id="ref1Kmz"></select></label>
+      </div>
+      <div class="row">
+        <label id="lbRef2">Georeferans 2<input id="ref2" type="text" autocomplete="off" spellcheck="false"></label>
+        <label id="lbRef2kmz" style="display:none;flex:0 0 128px">KMZ direk<select id="ref2Kmz"></select></label>
+      </div>
+      <div class="row">
+        <label id="lbRef3">Georeferans 3 (isteğe bağlı)<input id="ref3" type="text" autocomplete="off" spellcheck="false"></label>
+        <label id="lbRef3kmz" style="display:none;flex:0 0 128px">KMZ direk<select id="ref3Kmz"></select></label>
+      </div>
+      <div class="hint">Sahada koordinatı bilinen (RTK vb.) en az iki, en fazla üç nokta. Aralarında en az 20-30 m olsun; ne kadar uzaksa yön o kadar hassas olur. Hat yüklüyse elle yazmak yerine <b>"KMZ direk"</b> listesinden direk seç — koordinat ve kot otomatik dolar, yazım hatası olmaz. Üçüncü nokta hassasiyeti artırır ve hata payını gösterir.</div>
     </details>
     <div class="row">
       <button id="btnPick">📍 Duruş noktam</button>
-      <button id="btnRefMode">📐 2 referans</button>
+      <button id="btnRefMode">📐 Georeferans</button>
       <button id="btnGps" class="small">GPS</button>
     </div>
     <div class="hint" id="pickHint"></div>
@@ -151,9 +161,10 @@
       <div class="r"><span>Taban kotu</span><input id="zBase2" inputmode="decimal"><button data-z="zBase" data-v="-1">-1</button><button data-z="zBase" data-v="1">+1</button></div>
     </div>
     <div id="pRef" class="apanel">
-      <div class="note"><b>2 referansla hizala:</b> noktanın <b>üstünde dur</b> ve 📍'e bas, ya da daireyi noktanın <b>tam üstüne tut</b> ve 🎯'e bas. İki noktayı da işaretleyince nesneler bu ikisine göre yerleşir (GPS ve pusula kullanılmaz).</div>
+      <div class="note"><b>Georeferansla hizala:</b> noktanın <b>üstünde dur</b> ve 📍'e bas, ya da daireyi noktanın <b>tam üstüne tut</b> ve 🎯'e bas. En az 2 nokta işaretleyince nesneler bunlara göre yerleşir (GPS ve pusula kullanılmaz). 3. nokta hassasiyeti artırır.</div>
       <div class="r"><span id="rl1">R1</span><input id="ref1b" type="text" autocomplete="off" spellcheck="false" placeholder="E, N, Z"><button data-ref="0" data-m="aim" style="flex:0 0 40px">🎯</button><button data-ref="0" data-m="here" style="flex:0 0 40px">📍</button></div>
       <div class="r"><span id="rl2">R2</span><input id="ref2b" type="text" autocomplete="off" spellcheck="false" placeholder="E, N, Z"><button data-ref="1" data-m="aim" style="flex:0 0 40px">🎯</button><button data-ref="1" data-m="here" style="flex:0 0 40px">📍</button></div>
+      <div class="r"><span id="rl3">R3</span><input id="ref3b" type="text" autocomplete="off" spellcheck="false" placeholder="E, N, Z (isteğe bağlı)"><button data-ref="2" data-m="aim" style="flex:0 0 40px">🎯</button><button data-ref="2" data-m="here" style="flex:0 0 40px">📍</button></div>
       <button class="full" id="btnRefReset">Referansları sıfırla</button>
     </div>
     <div id="pAlign" class="apanel">
@@ -459,7 +470,9 @@ S = loadState();
 if (S) hadSaved = true; else { S = { objs: [], sel: null, zUser: 0, origin: { mode: 'gps' } }; S.objs.push(mkObj('bina', 41.0082, 28.9784)); S.sel = S.objs[0].id; }
 if (!S.origin) S.origin = { mode: 'gps' };
 if (!S.crs) S.crs = { type: 'latlng', zone: 38, north: true, zoneSet: true };   // 38N covers Erbil and Jvari-Tskaltubo
-if (!Array.isArray(S.refs)) S.refs = [null, null];
+if (!Array.isArray(S.refs)) S.refs = [null, null, null];
+while (S.refs.length < 3) S.refs.push(null);          // 2 required + 1 optional 3rd point
+const refCount = () => S.refs.filter(Boolean).length;
 const cur = () => S.objs.find((o) => o.id === S.sel) || S.objs[0];
 const save = () => { try { localStorage.setItem('arGeoState2', JSON.stringify(S)); } catch (e) {} };
 const footD = (o) => (TYPES[o.type].usesD ? o.d : o.w);
@@ -523,14 +536,15 @@ function updateUser() {
   if (!userMarkerInit) { userDot.addTo(map); userAcc.addTo(map); userMarkerInit = true; }
   userDot.setLatLng([fix.lat, fix.lng]); userAcc.setLatLng([fix.lat, fix.lng]).setRadius(fix.acc);
 }
-const originPoint = () => (S.origin.mode === 'map' ? S.origin : S.origin.mode === 'ref' ? S.refs[0] : fix);
+const originPoint = () => (S.origin.mode === 'map' ? S.origin : S.origin.mode === 'ref' ? (S.refs.find((r) => r) || null) : fix);
 function refreshOverlays() {
   ovLayer.clearLayers();
   const op = originPoint(), o = cur();
   S.refs.forEach((r, i) => { if (r) L.marker([r.lat, r.lng], { icon: L.divIcon({ className: '', html: `<div class="pin ref">R${i + 1}</div>`, iconSize: [30, 24], iconAnchor: [15, 12] }) }).addTo(ovLayer); });
-  if (S.refs[0] && S.refs[1]) {
-    L.polyline([[S.refs[0].lat, S.refs[0].lng], [S.refs[1].lat, S.refs[1].lng]], { color: '#e5484d', weight: 2 })
-      .bindTooltip(`R1–R2: ${distM(S.refs[0], S.refs[1]).toFixed(1)} m`, { permanent: true, direction: 'center' }).addTo(ovLayer);
+  for (let i = 0; i < S.refs.length; i++) for (let j = i + 1; j < S.refs.length; j++) {
+    if (!S.refs[i] || !S.refs[j]) continue;
+    L.polyline([[S.refs[i].lat, S.refs[i].lng], [S.refs[j].lat, S.refs[j].lng]], { color: '#e5484d', weight: 2 })
+      .bindTooltip(`R${i + 1}–R${j + 1}: ${distM(S.refs[i], S.refs[j]).toFixed(1)} m`, { permanent: true, direction: 'center' }).addTo(ovLayer);
   }
   if (S.origin.mode === 'map') {
     const mk = L.marker([S.origin.lat, S.origin.lng], { draggable: true, icon: L.divIcon({ className: '', html: '<div class="pin me">Ben</div>', iconSize: [40, 24], iconAnchor: [20, 12] }) }).addTo(ovLayer);
@@ -573,8 +587,10 @@ function refreshInputs() {
   $('crsSel').value = S.crs.type; put('utmZone', S.crs.zone); $('utmHemi').value = S.crs.north ? 'N' : 'S';
   $('lbZone').style.display = $('lbHemi').style.display = u ? '' : 'none';
   $('lbRef1').firstChild.textContent = `Georeferans 1 (${sys}${u ? '' : ', kot'})`; $('lbRef2').firstChild.textContent = `Georeferans 2 (${sys}${u ? '' : ', kot'})`;
-  $('ref1').placeholder = $('ref2').placeholder = $('ref1b').placeholder = $('ref2b').placeholder = u ? 'E, N, Z' : 'enlem, boylam, Z';
-  put('ref1', refText(0)); put('ref2', refText(1)); put('ref1b', refText(0)); put('ref2b', refText(1));
+  $('lbRef3').firstChild.textContent = `Georeferans 3, isteğe bağlı (${sys}${u ? '' : ', kot'})`;
+  $('ref1').placeholder = $('ref2').placeholder = $('ref3').placeholder = $('ref1b').placeholder = $('ref2b').placeholder = u ? 'E, N, Z' : 'enlem, boylam, Z';
+  put('ref1', refText(0)); put('ref2', refText(1)); put('ref3', refText(2)); put('ref1b', refText(0)); put('ref2b', refText(1)); put('ref3b', refText(2));
+  for (const i of [0, 1, 2]) $(`lbRef${i + 1}kmz`).style.display = KMZ ? '' : 'none';
   const mode = S.origin.mode;
   for (const [b, m] of [['btnPick', 'map'], ['btnRefMode', 'ref'], ['btnGps', 'gps']]) $(b).classList.toggle('on', mode === m);
   $('pickHint').textContent = mode === 'gps' ? 'Konum kaynağı GPS: telefonun GPS konumu kullanılır, yüzlerce metre sapabilir.'
@@ -593,7 +609,7 @@ function refreshInputs() {
 }
 function updateStatus() {
   const p = [], op = originPoint(), o = cur();
-  p.push(S.origin.mode === 'map' ? 'Konum: haritadan işaretli nokta' : S.origin.mode === 'ref' ? 'Konum: 2 georeferans'
+  p.push(S.origin.mode === 'map' ? 'Konum: haritadan işaretli nokta' : S.origin.mode === 'ref' ? `Konum: georeferans (${refCount()} nokta)`
     : (fix ? `GPS ±${fix.acc.toFixed(0)} m` : 'GPS bekleniyor…'));
   if (op && o) p.push(`Seçili nesneye: ${distM(op, o).toFixed(0)} m`);
   p.push(xrSupported ? 'AR: hazır' : 'AR: bu tarayıcıda yok (Android Chrome kullan)');
@@ -618,11 +634,20 @@ $('crsSel').addEventListener('change', () => {
 });
 $('utmZone').addEventListener('change', () => { S.crs.zone = Math.min(60, Math.max(1, Math.round(num('utmZone', S.crs.zone)))); S.crs.zoneSet = true; refreshAll(); });
 $('utmHemi').addEventListener('change', () => { S.crs.north = $('utmHemi').value === 'N'; S.crs.zoneSet = true; refreshAll(); });
-// georeference points (typed on the main screen or inside AR)
-[['ref1', 0], ['ref2', 1], ['ref1b', 0], ['ref2b', 1]].forEach(([id, k]) => $(id).addEventListener('change', () => {
+// georeference points (typed on the main screen or inside AR, or picked from the loaded KMZ's tower list)
+[['ref1', 0], ['ref2', 1], ['ref3', 2], ['ref1b', 0], ['ref2b', 1], ['ref3b', 2]].forEach(([id, k]) => $(id).addEventListener('change', () => {
   const t = $(id).value.trim();
   if (!t) S.refs[k] = null;
   else { const r = textToLL(t); if (!r) { alert('Referans koordinatı okunamadı.'); refreshInputs(); return; } S.refs[k] = { lat: r.lat, lng: r.lng, z: r.z }; }
+  refMarks[k] = null; if (S.origin.mode === 'ref') origin = null;
+  const kmzSel = $(`ref${k + 1}Kmz`); if (kmzSel) kmzSel.value = '';   // typed by hand: no longer tied to a KMZ structure
+  refreshAll();
+}));
+[0, 1, 2].forEach((k) => $(`ref${k + 1}Kmz`).addEventListener('change', () => {
+  const sel = $(`ref${k + 1}Kmz`);
+  if (sel.value === '') { S.refs[k] = null; refMarks[k] = null; if (S.origin.mode === 'ref') origin = null; refreshAll(); return; }
+  const s = KMZ && KMZ.structs[+sel.value]; if (!s) return;
+  S.refs[k] = { lat: s.lat, lng: s.lng, z: s.ele };   // structure base coordinate + its ground elevation, straight from the PLS-CADD export
   refMarks[k] = null; if (S.origin.mode === 'ref') origin = null;
   refreshAll();
 }));
@@ -646,7 +671,7 @@ $('btnPick').addEventListener('click', () => { pickMe = true; $('status').textCo
 $('btnGps').addEventListener('click', () => { S.origin = { mode: 'gps' }; refreshAll(); });
 $('btnRefMode').addEventListener('click', () => {
   S.origin = { mode: 'ref' }; $('geoDet').open = true; refreshAll();
-  if (!S.refs[0] || !S.refs[1]) $('status').textContent = 'Önce yukarıya iki georeferans noktasının koordinatını yaz.';
+  if (refCount() < 2) $('status').textContent = 'Önce yukarıya en az iki georeferans noktasının koordinatını yaz (ya da KMZ yüklüyse direk listesinden seç).';
 });
 
 // library sheet
@@ -673,7 +698,7 @@ let renderer, scene, camera, session = null, hitSource = null, ghost = false;
 const rts = new Map();
 let cal = null, origin = null, thetaN = 0, calQuality = null, noCompass = false, calSpread = null, originSrc = '';
 let groundY = 0, wantGround = false, wantGroundT = 0, lastHit = null, groundMsg = null;
-let refMarks = [null, null], refInfo = null;   // AR-space positions of the two georeference points
+let refMarks = [null, null, null], refInfo = null;   // AR-space positions of the (2 or 3) georeference points
 const adj = { e: 0, n: 0, up: 0, rot: 0 };
 const q = new THREE.Quaternion(), fwd = new THREE.Vector3();
 let camYaw = 0, camPos = { x: 0, y: 0, z: 0 }, level = false, lastHud = 0, selInfo = null;
@@ -816,20 +841,20 @@ function hudText(now) {
     const el = Math.min(8, (now - cal.t0) / 1000);
     return `Kalibrasyon… ${el.toFixed(0)}/8 sn. Telefonu dik tut, ufka bak, kıpırdama.<br>Konum: ${S.origin.mode === 'map' ? 'haritadan' : (fix ? 'GPS ±' + fix.acc.toFixed(0) + ' m' : 'GPS yok')} · Pusula: ${heading != null ? 'var' : 'yok'}`;
   }
-  if (!selInfo) {   // georeference mode, waiting for the two points
-    const ok = (i) => (refMarks[i] ? '✓' : '…');
-    const next = !S.refs[0] || !S.refs[1] ? '⚠ Referans koordinatları yazılmamış (Referans paneli)'
-      : !refMarks[0] ? 'R1 noktasına git: üstünde dur 📍 ya da daireyi tam üstüne tut 🎯 (Referans paneli)'
-      : !refMarks[1] ? 'Şimdi R2 noktasını işaretle' : '';
-    return `<b>Georeferans</b>  R1 ${ok(0)}   R2 ${ok(1)}<br>${next}` + (groundMsg && now - groundMsg.t < 3500 ? '<br>' + groundMsg.s : '');
+  if (!selInfo) {   // georeference mode, waiting for 2 or 3 points
+    const ok = (i) => (S.refs[i] ? (refMarks[i] ? '✓' : '…') : '–');
+    const rows = `R1 ${ok(0)}   R2 ${ok(1)}` + (S.refs[2] || refMarks[2] ? `   R3 ${ok(2)}` : '');
+    let next;
+    if (refCount() < 2) next = '⚠ En az 2 nokta gerekli: yaz ya da KMZ yüklüyse direk listesinden seç (ana ekran)';
+    else { const wait = [0, 1, 2].find((i) => S.refs[i] && !refMarks[i]); next = wait !== undefined ? `R${wait + 1} noktasına git: üstünde dur 📍 ya da daireyi tam üstüne tut 🎯` : (refInfo ? '' : 'Hesaplanıyor…'); }
+    return `<b>Georeferans</b>  ${rows}<br>${next}` + (groundMsg && now - groundMsg.t < 3500 ? '<br>' + groundMsg.s : '');
   }
   const { o, dist, rel, dz } = selInfo;
   const dir = Math.abs(rel) < 0.35 ? 'önünde' : (rel > 0 ? `sağında ${(rel * deg).toFixed(0)}°` : `solunda ${(-rel * deg).toFixed(0)}°`);
   let s = `<b>${o.name}</b>: ${dist.toFixed(0)} m uzakta, ${dir}<br>`;
   if (originSrc === 'georeferans' && refInfo) {
-    const err = refInfo.meas - refInfo.truth;
-    s += `Georeferans ✓ R1–R2: ${refInfo.truth.toFixed(1)} m, ölçülen fark ${err >= 0 ? '+' : ''}${err.toFixed(2)} m (%${(err / refInfo.truth * 100).toFixed(2)})` +
-      (Math.abs(err / refInfo.truth) > 0.01 ? ' <b style="color:#ffd166">⚠ büyük, noktaları yeniden işaretle</b>' : '') +
+    s += `Georeferans ✓ (${refInfo.n} nokta) ortalama sapma ${refInfo.meanResidual.toFixed(2)} m, en kötü ${refInfo.maxResidual.toFixed(2)} m` +
+      (refInfo.maxResidual > Math.max(0.5, refInfo.trueSpan * 0.02) ? ' <b style="color:#ffd166">⚠ büyük, noktaları yeniden işaretle</b>' : '') +
       (refInfo.approx ? '<br><b style="color:#ffd166">⚠ Zemin ölçülmedi: yükseklik yaklaşık</b>' : '');
   } else {
     s += `Konum: ${originSrc}` +
@@ -848,7 +873,7 @@ function hudText(now) {
 async function startAR() {
   if (!xrSupported) { alert('Bu tarayıcı/telefon AR desteklemiyor. Android\'de Chrome ile aç.'); return; }
   if (S.origin.mode === 'ref') {
-    if (!S.refs[0] || !S.refs[1]) { alert('Önce "Koordinat sistemi ve georeferans" bölümüne iki referans noktasının koordinatını yaz.'); $('geoDet').open = true; return; }
+    if (refCount() < 2) { alert('Önce "Koordinat sistemi ve georeferans" bölümüne en az iki referans noktasının koordinatını yaz (ya da KMZ\'den seç).'); $('geoDet').open = true; return; }
   } else if (S.origin.mode === 'gps') {
     if (!fix) { alert('GPS konumu henüz alınamadı. Birkaç saniye bekle ya da "Duruş noktamı haritada işaretle" ile elle belirt.'); return; }
     if (fix.acc > 30 && !confirm(`GPS zayıf (±${fix.acc.toFixed(0)} m). Bu, nesnelerin yüzlerce metre kaymasına yol açabilir.\nDaha doğrusu: "Duruş noktamı haritada işaretle". Yine de devam edilsin mi?`)) return;
@@ -862,16 +887,16 @@ async function startAR() {
   session.addEventListener('end', onEnd);
   await renderer.xr.setSession(session);
   try { const vs = await session.requestReferenceSpace('viewer'); hitSource = await session.requestHitTestSource({ space: vs }); } catch (e) { hitSource = null; }
-  groundY = 0; wantGround = false; adj.e = adj.n = adj.up = adj.rot = 0; refMarks = [null, null]; refInfo = null; lastHit = null;
+  groundY = 0; wantGround = false; adj.e = adj.n = adj.up = adj.rot = 0; refMarks = [null, null, null]; refInfo = null; lastHit = null;
   if (S.origin.mode === 'ref') { cal = null; origin = null; showPanel('pRef'); } else startCal();
   renderer.setAnimationLoop(frame);
 }
 
-// ----- two-point georeference: the phone is put at / aimed at two points with known coordinates -----
+// ----- georeference: the phone is put at / aimed at 2 or 3 points with known coordinates (typed, or picked from a loaded KMZ) -----
 function markRef(i, how) {
   const r = S.refs[i], now = performance.now();
   if (!r) { groundMsg = { t: now, s: `⚠ R${i + 1} koordinatı yazılmamış` }; return; }
-  if (S.origin.mode !== 'ref') { S.origin = { mode: 'ref' }; cal = null; origin = null; refMarks = [null, null]; refInfo = null; save(); }
+  if (S.origin.mode !== 'ref') { S.origin = { mode: 'ref' }; cal = null; origin = null; refMarks = [null, null, null]; refInfo = null; save(); }
   let p;
   if (how === 'aim') {
     if (!lastHit) { groundMsg = { t: now, s: '⚠ Zemin bulunamadı: daireyi noktaya tut, telefonu yavaşça gezdir, tekrar bas' }; return; }
@@ -880,17 +905,36 @@ function markRef(i, how) {
   refMarks[i] = p; groundMsg = { t: now, s: `R${i + 1} işaretlendi ✓` };
   solveRefs();
 }
+// Best-fit rotation (thetaN) + translation (origin) from all marked points at once: a closed-form 2D
+// orthogonal Procrustes fit (see project notes) — exact for 2 points, least-squares for 3, and it reports
+// each point's residual so a mis-marked point is visible instead of silently degrading the whole fit.
 function solveRefs() {
-  const [a, b] = refMarks, [r1, r2] = S.refs;
-  if (!(a && b && r1 && r2)) return;
-  const en = enuFrom(r1.lat, r1.lng, r2.lat, r2.lng), truth = Math.hypot(en.e, en.n), meas = Math.hypot(b.x - a.x, b.z - a.z);
-  if (truth < 3 || meas < 1) { groundMsg = { t: performance.now(), s: '⚠ R1 ve R2 çok yakın; yeniden işaretle' }; refMarks[1] = null; return; }
-  // XR yaw of a direction = thetaN + bearing, so thetaN = yaw(R1->R2 in XR) - bearing(R1->R2 on the ground)
-  thetaN = Math.atan2(b.x - a.x, -(b.z - a.z)) - Math.atan2(en.e, en.n);
-  origin = { lat: r1.lat, lng: r1.lng, x: a.x, z: a.z }; groundY = a.y; originSrc = 'georeferans';
-  if (r1.z !== undefined) S.zUser = r1.z;
+  const idx = [0, 1, 2].filter((i) => refMarks[i] && S.refs[i]);
+  if (idx.length < 2) return;
+  const anchor = S.refs[idx[0]];
+  const pts = idx.map((i) => { const en = enuFrom(anchor.lat, anchor.lng, S.refs[i].lat, S.refs[i].lng), m = refMarks[i]; return { i, e: en.e, n: en.n, x: m.x, z: m.z, approx: m.approx }; });
+  let trueSpan = 0, arSpan = 0;
+  for (let a = 0; a < pts.length; a++) for (let b = a + 1; b < pts.length; b++) {
+    trueSpan = Math.max(trueSpan, Math.hypot(pts[a].e - pts[b].e, pts[a].n - pts[b].n));
+    arSpan = Math.max(arSpan, Math.hypot(pts[a].x - pts[b].x, pts[a].z - pts[b].z));
+  }
+  if (trueSpan < 3 || arSpan < 1) {
+    const last = idx[idx.length - 1]; refMarks[last] = null;
+    groundMsg = { t: performance.now(), s: `⚠ Referans noktaları çok yakın (${trueSpan.toFixed(1)} m); R${last + 1}'i yeniden işaretle` };
+    return;
+  }
+  const ce = pts.reduce((s, p) => s + p.e, 0) / pts.length, cn = pts.reduce((s, p) => s + p.n, 0) / pts.length;
+  const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length, cz = pts.reduce((s, p) => s + p.z, 0) / pts.length;
+  let A = 0, B = 0;
+  for (const p of pts) { const e2 = p.e - ce, n2 = p.n - cn, x2 = p.x - cx, z2 = p.z - cz; A += x2 * e2 - z2 * n2; B += x2 * n2 + z2 * e2; }
+  thetaN = Math.atan2(B, A);
+  const c = Math.cos(thetaN), sn = Math.sin(thetaN), Tx = cx - (c * ce + sn * cn), Tz = cz - (sn * ce - c * cn);
+  origin = { lat: anchor.lat, lng: anchor.lng, x: Tx, z: Tz }; groundY = refMarks[idx[0]].y; originSrc = 'georeferans';
+  if (anchor.z !== undefined) S.zUser = anchor.z;
   adj.e = adj.n = adj.up = adj.rot = 0; noCompass = false; calQuality = null;
-  refInfo = { truth, meas, approx: a.approx || b.approx };
+  let sumR = 0, maxR = 0;
+  for (const p of pts) { const px = Tx + (c * p.e + sn * p.n), pz = Tz + (sn * p.e - c * p.n), r = Math.hypot(px - p.x, pz - p.z); sumR += r; if (r > maxR) maxR = r; }
+  refInfo = { n: pts.length, meanResidual: sumR / pts.length, maxResidual: maxR, approx: pts.some((p) => p.approx), trueSpan };
   refreshInputs(); save();
 }
 function onEnd() {
@@ -1018,9 +1062,12 @@ function kmzRefreshUi() {
   if (has) {
     const nT = KMZ.chunks.filter((c) => c.kind === 'tower').length, nS = KMZ.chunks.filter((c) => c.kind === 'span').length;
     $('kmzInfo').textContent = `📂 ${KMZ.name}: ${KMZ.structs.length} direk noktası, ${nT} direk modeli, ${nS} tel açıklığı. Kot düzeltmesi: KML kotlarına +${KMZ.shift.toFixed(2)} m eklendi (PLS proje kotu). Hat AR'da "Hat" panelinden açılır.`;
-    $('kmzStr').innerHTML = '<option value="">— seç —</option>' + KMZ.structs.map((s, i) => `<option value="${i}">${s.name}${s.ht != null ? '  (' + s.ht + ' m)' : ''}</option>`).join('');
+    const opts = '<option value="">— seç —</option>' + KMZ.structs.map((s, i) => `<option value="${i}">${s.name}${s.ht != null ? '  (' + s.ht + ' m)' : ''}</option>`).join('');
+    $('kmzStr').innerHTML = opts;
+    for (const i of [0, 1, 2]) $(`ref${i + 1}Kmz`).innerHTML = opts;
     $('kmzNote').textContent = `${KMZ.name}: ${KMZ.structs.length} direk. Yalnızca görüş mesafesi içindeki parçalar çizilir. Kotlar PLS proje kotunda (+${KMZ.shift.toFixed(2)} m düzeltildi).`;
-  } else $('kmzNote').textContent = 'KMZ yüklenmemiş. Ana ekrandan "KMZ / KML yükle" ile PLS-CADD hattını yükle.';
+  } else { $('kmzNote').textContent = 'KMZ yüklenmemiş. Ana ekrandan "KMZ / KML yükle" ile PLS-CADD hattını yükle.'; for (const i of [0, 1, 2]) $(`ref${i + 1}Kmz`).innerHTML = ''; }
+  refreshInputs();   // show/hide the "KMZ direk" pickers next to the georeference inputs
 }
 $('btnKmz').addEventListener('click', () => $('kmzFile').click());
 $('kmzFile').addEventListener('change', () => { const f = $('kmzFile').files[0]; if (f) kmzImport(f); $('kmzFile').value = ''; });
@@ -1133,7 +1180,7 @@ $('pRef').addEventListener('click', (ev) => {
   const b = ev.target.closest('button[data-ref]'); if (!b) return;
   markRef(+b.dataset.ref, b.dataset.m);
 });
-$('btnRefReset').addEventListener('click', () => { refMarks = [null, null]; refInfo = null; if (S.origin.mode === 'ref') origin = null; groundMsg = { t: performance.now(), s: 'Referanslar sıfırlandı' }; });
+$('btnRefReset').addEventListener('click', () => { refMarks = [null, null, null]; refInfo = null; if (S.origin.mode === 'ref') origin = null; groundMsg = { t: performance.now(), s: 'Referanslar sıfırlandı' }; });
 $('btnObj').addEventListener('click', () => togglePanel('pObj'));
 $('btnElev').addEventListener('click', () => togglePanel('pElev'));
 $('btnAlign').addEventListener('click', () => togglePanel('pAlign'));
@@ -1229,9 +1276,9 @@ window.__geo = {
     for (let i = 0; i < 40; i++) kmzUpdate(thetaN);
     return { built: kmzRt.size, visible: [...kmzRt.entries()].filter(([, r]) => r.group.visible).map(([id, r]) => ({ name: KMZ.chunks[id].name.slice(0, 28), x: +r.group.position.x.toFixed(1), y: +r.group.position.y.toFixed(1), z: +r.group.position.z.toFixed(1) })) };
   }, S, TYPES, enuFrom, offsetLatLng, compassHeading, cur, mkObj, rebuildAll, refreshAll, latLngToUtm, utmToLatLng, textToLL, llToText,
-  // test hook: solve the georeference from two AR-space marks and report where an object at (lat,lng) would be placed
-  solveTest: (a, b, lat, lng) => {
-    refMarks = [a, b]; solveRefs();
+  // test hook: solve the georeference from 2-3 AR-space marks ([a,b] or [a,b,c]) and report where an object at (lat,lng) would be placed
+  solveTest: (marks, lat, lng) => {
+    refMarks = [marks[0] || null, marks[1] || null, marks[2] || null]; solveRefs();
     const en = enuFrom(origin.lat, origin.lng, lat, lng), dist = Math.hypot(en.e, en.n), yaw = thetaN + Math.atan2(en.e, en.n);
     return { thetaN_deg: thetaN * deg, x: origin.x + dist * Math.sin(yaw), z: origin.z - dist * Math.cos(yaw), refInfo };
   },
