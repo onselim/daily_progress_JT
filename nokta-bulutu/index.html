@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nokta Bulutu</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+  :root { --bg:#0f1720; --panel:#16212d; --line:#26364a; --fg:#e8eef5; --dim:#8da2b8; --acc:#3aa0ff; --ok:#2ecc8f; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:15px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  #app { display:flex; flex-direction:column; height:100%; height:100dvh; }
+  #top { display:flex; gap:6px; padding:8px calc(8px + env(safe-area-inset-right)) 8px calc(8px + env(safe-area-inset-left)); background:var(--panel); border-bottom:1px solid var(--line); overflow-x:auto; }
+  #top button { flex:0 0 auto; }
+  button, select, input { font:inherit; color:var(--fg); background:#1d2c3d; border:1px solid var(--line); border-radius:10px; padding:9px 11px; min-height:42px; }
+  button { cursor:pointer; }
+  button.on { background:var(--acc); border-color:var(--acc); color:#04121f; font-weight:600; }
+  button.primary { background:var(--ok); border-color:var(--ok); color:#03170f; font-weight:700; width:100%; }
+  button:disabled { opacity:.45; }
+  #map { flex:1 1 auto; min-height:180px; }
+  #sheet { flex:0 0 auto; max-height:46%; overflow:auto; background:var(--panel); border-top:1px solid var(--line); padding:10px calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
+  .row { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+  .row > label { flex:1 1 120px; display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--dim); min-width:0; }
+  .row input, .row select { width:100%; }
+  .hint { color:var(--dim); font-size:12.5px; margin:4px 0 8px; }
+  #info { font-weight:600; margin-bottom:6px; }
+  #res { display:none; margin-top:10px; border-top:1px solid var(--line); padding-top:10px; }
+  #res .stats { margin-bottom:6px; }
+  #legend { height:10px; border-radius:6px; background:linear-gradient(90deg,#2c7bb6,#abd9e9,#ffffbf,#fdae61,#d7191c); margin:4px 0 2px; }
+  #legendT { display:flex; justify-content:space-between; font-size:12px; color:var(--dim); margin-bottom:8px; }
+  .dl { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .msg { color:#ffb454; font-size:13px; margin:6px 0; min-height:1em; }
+  .leaflet-container { background:#0b1118; }
+  .vtx { width:16px; height:16px; border-radius:50%; background:#fff; border:3px solid var(--acc); box-shadow:0 0 0 2px rgba(0,0,0,.35); }
+  .vtx.first { border-color:var(--ok); }
+  .lbl { background:rgba(15,23,32,.85); color:#fff; border:0; border-radius:6px; padding:2px 6px; font-size:12px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top">
+    <button data-mode="poly" class="on">⬠ Alan</button>
+    <button data-mode="rect">▭ Dikdörtgen</button>
+    <button data-mode="line">〰 Koridor</button>
+    <button data-mode="pts">• Noktalar</button>
+    <button id="btnUndo">↶ Geri</button>
+    <button id="btnClear">🗑 Temizle</button>
+    <button id="btnLoc">◎ Konumum</button>
+    <button id="btnOpen">📂 KML/KMZ</button>
+    <input type="file" id="fileKml" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" style="display:none">
+  </div>
+  <div id="map"></div>
+  <div id="sheet">
+    <div id="info">Haritaya dokunarak alanın köşelerini işaretle.</div>
+    <div class="hint" id="modeHint"></div>
+    <div class="row">
+      <label>Nokta aralığı (m)<input id="sp" inputmode="decimal" value="5"></label>
+      <label id="lbW" style="display:none">Koridor genişliği (m)<input id="cw" inputmode="decimal" value="60"></label>
+      <label>Yükseklik verisi
+        <select id="src">
+          <option value="terr">Terrarium (SRTM/NED, ~30 m, yoğun)</option>
+          <option value="om">Open-Meteo (Copernicus 90 m)</option>
+        </select>
+      </label>
+    </div>
+    <div class="row">
+      <label>UTM zone (boş = otomatik)<input id="zone" inputmode="numeric" placeholder="otomatik"></label>
+      <label>Kot ofseti (m)<input id="off" inputmode="decimal" value="0"></label>
+      <label>Sınır noktaları<select id="bnd"><option value="1">Ekle</option><option value="0">Ekleme</option></select></label>
+    </div>
+    <div class="msg" id="msg"></div>
+    <button class="primary" id="btnGo">Nokta bulutunu oluştur</button>
+    <div id="res">
+      <div class="stats" id="stats"></div>
+      <div id="legend"></div>
+      <div id="legendT"><span id="zmin"></span><span id="zmax"></span></div>
+      <div class="dl">
+        <button data-fmt="csv">CSV</button><button data-fmt="xyz">XYZ</button><button data-fmt="las">LAS</button>
+        <button data-fmt="dxf">DXF</button><button data-fmt="kml">KML</button><button id="btnShare">📤 Paylaş</button>
+      </div>
+      <div class="hint">Koordinatlar UTM (WGS84), metre. CSV/XYZ: Easting, Northing, Elevation. Yükseklikler uydu verisidir; PLS-CADD kotlarına oturtmak için "Kot ofseti"ni kullan.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// <core> ---- pure functions (no DOM): projection, point generation, file writers. Also run under node for testing. ----
+const rad = Math.PI / 180, deg = 180 / Math.PI;
+const WGS = (() => {
+  const a = 6378137, f = 1 / 298.257223563, n = f / (2 - f), n2 = n * n, n3 = n2 * n, n4 = n3 * n;
+  return {
+    A: a / (1 + n) * (1 + n2 / 4 + n4 / 64), n,
+    alpha: [n / 2 - 2 * n2 / 3 + 5 * n3 / 16 + 41 * n4 / 180, 13 * n2 / 48 - 3 * n3 / 5 + 557 * n4 / 1440, 61 * n3 / 240 - 103 * n4 / 140, 49561 * n4 / 161280],
+    beta: [n / 2 - 2 * n2 / 3 + 37 * n3 / 96 - n4 / 360, n2 / 48 + n3 / 15 - 437 * n4 / 1440, 17 * n3 / 480 - 37 * n4 / 840, 4397 * n4 / 161280],
+  };
+})();
+const utmZoneOf = (lng) => Math.min(60, Math.max(1, Math.floor((lng + 180) / 6) + 1));
+function latLngToUtm(lat, lng, zone, north = true) {   // Krüger series, sub-millimetre inside a zone
+  const { n, A, alpha } = WGS, k0 = 0.9996, c = 2 * Math.sqrt(n) / (1 + n);
+  const lam = lng * rad - ((zone - 1) * 6 - 180 + 3) * rad, sp = Math.sin(lat * rad);
+  const t = Math.sinh(Math.atanh(sp) - c * Math.atanh(c * sp));
+  const xi0 = Math.atan2(t, Math.cos(lam)), eta0 = Math.asinh(Math.sin(lam) / Math.hypot(t, Math.cos(lam)));
+  let xi = xi0, eta = eta0;
+  for (let j = 1; j <= 4; j++) { xi += alpha[j - 1] * Math.sin(2 * j * xi0) * Math.cosh(2 * j * eta0); eta += alpha[j - 1] * Math.cos(2 * j * xi0) * Math.sinh(2 * j * eta0); }
+  return [500000 + k0 * A * eta, (north ? 0 : 10000000) + k0 * A * xi];
+}
+function utmToLatLng(zone, north, E, N) {
+  const { A, beta } = WGS, k0 = 0.9996, n = WGS.n, n2 = n * n, n3 = n2 * n, n4 = n3 * n;
+  const delta = [2 * n - 2 * n2 / 3 - 2 * n3 + 116 * n4 / 45, 7 * n2 / 3 - 8 * n3 / 5 - 227 * n4 / 45, 56 * n3 / 15 - 136 * n4 / 35, 4279 * n4 / 630];
+  const xi0 = (N - (north ? 0 : 10000000)) / (k0 * A), eta0 = (E - 500000) / (k0 * A);
+  let xi = xi0, eta = eta0;
+  for (let j = 1; j <= 4; j++) { xi -= beta[j - 1] * Math.sin(2 * j * xi0) * Math.cosh(2 * j * eta0); eta -= beta[j - 1] * Math.cos(2 * j * xi0) * Math.sinh(2 * j * eta0); }
+  const chi = Math.asin(Math.sin(xi) / Math.cosh(eta));
+  let phi = chi; for (let j = 1; j <= 4; j++) phi += delta[j - 1] * Math.sin(2 * j * chi);
+  return [phi * deg, ((zone - 1) * 6 - 180 + 3) + Math.atan2(Math.sinh(eta), Math.cos(xi)) * deg];
+}
+const polyArea = (P) => { let a = 0; for (let i = 0; i < P.length; i++) { const q = P[(i + 1) % P.length]; a += P[i][0] * q[1] - q[0] * P[i][1]; } return Math.abs(a) / 2; };
+function inPoly(x, y, P) {
+  let c = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > y) !== (P[j][1] > y) && x < (P[j][0] - P[i][0]) * (y - P[i][1]) / (P[j][1] - P[i][1]) + P[i][0]) c = !c;
+  return c;
+}
+// P = [[E,N],...] polygon in metres; grid lines at multiples of s so coordinates are round numbers
+function gridInPoly(P, s, withBoundary) {
+  const out = [], Es = P.map((p) => p[0]), Ns = P.map((p) => p[1]);
+  const e0 = Math.min(...Es), e1 = Math.max(...Es), n0 = Math.min(...Ns), n1 = Math.max(...Ns);
+  for (let n = Math.ceil(n0 / s) * s; n <= n1; n += s) for (let e = Math.ceil(e0 / s) * s; e <= e1; e += s) if (inPoly(e, n, P)) out.push([e, n]);
+  if (withBoundary) for (let i = 0; i < P.length; i++) {
+    const a = P[i], b = P[(i + 1) % P.length], len = Math.hypot(b[0] - a[0], b[1] - a[1]), k = Math.max(1, Math.round(len / s));
+    for (let j = 0; j < k; j++) out.push([a[0] + (b[0] - a[0]) * j / k, a[1] + (b[1] - a[1]) * j / k]);
+  }
+  return out;
+}
+// polyline L = [[E,N],...]; points every s along it and across +-width/2 (width 0 = centre line only)
+function corridorPts(L, width, s) {
+  const out = [], half = width / 2, across = [0];
+  for (let d = s; d <= half + 1e-9; d += s) { across.push(d, -d); }
+  for (let i = 0; i < L.length - 1; i++) {
+    const a = L[i], b = L[i + 1], len = Math.hypot(b[0] - a[0], b[1] - a[1]); if (len < 1e-6) continue;
+    const ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len, k = Math.max(1, Math.round(len / s)), last = i === L.length - 2;
+    for (let j = 0; j <= (last ? k : k - 1); j++) {
+      const cx = a[0] + ux * len * j / k, cy = a[1] + uy * len * j / k;
+      for (const o of across) out.push([cx - uy * o, cy + ux * o]);
+    }
+  }
+  return out;
+}
+const fmt = (v, d) => v.toFixed(d);
+function toCsv(rows, named) {
+  const h = named ? 'Name,Easting,Northing,Elevation,Latitude,Longitude' : 'Easting,Northing,Elevation';
+  return h + '\n' + rows.map((r) => named ? `${r.name},${fmt(r.E, 3)},${fmt(r.N, 3)},${fmt(r.Z, 3)},${fmt(r.lat, 7)},${fmt(r.lng, 7)}` : `${fmt(r.E, 3)},${fmt(r.N, 3)},${fmt(r.Z, 3)}`).join('\n') + '\n';
+}
+const toXyz = (rows) => rows.map((r) => `${fmt(r.E, 3)} ${fmt(r.N, 3)} ${fmt(r.Z, 3)}`).join('\n') + '\n';
+function toDxf(rows) {
+  const o = ['0', 'SECTION', '2', 'ENTITIES'];
+  for (const r of rows) o.push('0', 'POINT', '8', 'NOKTA', '10', fmt(r.E, 3), '20', fmt(r.N, 3), '30', fmt(r.Z, 3));
+  o.push('0', 'ENDSEC', '0', 'EOF'); return o.join('\n') + '\n';
+}
+function toKml(rows, name) {
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${name}</name>\n` +
+    rows.map((r, i) => `<Placemark><name>${r.name || i + 1}</name><Point><altitudeMode>absolute</altitudeMode><coordinates>${fmt(r.lng, 8)},${fmt(r.lat, 8)},${fmt(r.Z, 3)}</coordinates></Point></Placemark>`).join('\n') + '\n</Document></kml>\n';
+}
+function toLas(rows) {   // LAS 1.2, point format 3 (34 B), all points class 2 (ground) — same flavour the cut/fill tool already reads
+  const n = rows.length, HS = 227, RL = 34, buf = new ArrayBuffer(HS + n * RL), dv = new DataView(buf), u8 = new Uint8Array(buf);
+  const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+  for (const r of rows) { const v = [r.E, r.N, r.Z]; for (let k = 0; k < 3; k++) { if (v[k] < mn[k]) mn[k] = v[k]; if (v[k] > mx[k]) mx[k] = v[k]; } }
+  const off = mn.map(Math.floor), sc = 0.001, now = new Date();
+  [...'LASF'].forEach((c, i) => { u8[i] = c.charCodeAt(0); });
+  dv.setUint8(24, 1); dv.setUint8(25, 2);
+  [...'nokta-bulutu'].forEach((c, i) => { u8[58 + i] = c.charCodeAt(0); });
+  dv.setUint16(90, Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 864e5), true); dv.setUint16(92, now.getFullYear(), true);
+  dv.setUint16(94, HS, true); dv.setUint32(96, HS, true); dv.setUint32(100, 0, true); dv.setUint8(104, 3); dv.setUint16(105, RL, true);
+  dv.setUint32(107, n, true); dv.setUint32(111, n, true);
+  for (let k = 0; k < 3; k++) { dv.setFloat64(131 + 8 * k, sc, true); dv.setFloat64(155 + 8 * k, off[k], true); }
+  [mx[0], mn[0], mx[1], mn[1], mx[2], mn[2]].forEach((v, i) => dv.setFloat64(179 + 8 * i, v, true));
+  rows.forEach((r, i) => {
+    const p = HS + i * RL;
+    dv.setInt32(p, Math.round((r.E - off[0]) / sc), true); dv.setInt32(p + 4, Math.round((r.N - off[1]) / sc), true); dv.setInt32(p + 8, Math.round((r.Z - off[2]) / sc), true);
+    dv.setUint8(p + 14, 9); dv.setUint8(p + 15, 2);
+  });
+  return buf;
+}
+// </core>
+
+// ================= map + interaction =================
+if (typeof document !== 'undefined') (() => {
+  const $ = (id) => document.getElementById(id);
+  const map = L.map('map', { zoomControl: true, preferCanvas: true }).setView([39.905, 32.638], 16);
+  const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri' }).addTo(map);
+  const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+  L.control.layers({ 'Uydu': sat, 'Harita': osm }, null, { position: 'topright' }).addTo(map);
+
+  let mode = 'poly', V = [], rectA = null, result = null;
+  const shapeLayer = L.layerGroup().addTo(map), cloudLayer = L.layerGroup().addTo(map);
+  const HINTS = {
+    poly: 'Alan: köşelere sırayla dokun (en az 3). Köşeyi sürükleyerek düzeltebilirsin.',
+    rect: 'Dikdörtgen: iki karşılıklı köşeye dokun (UTM eksenlerine paralel).',
+    line: 'Koridor: hat/yol eksenini noktalarla çiz; nokta bulutu eksen boyunca ve iki yana genişlik kadar üretilir (genişlik 0 = sadece eksen).',
+    pts: 'Noktalar: yükseklik istediğin noktalara dokun; her biri P1, P2… adıyla listelenir.',
+  };
+  const setMsg = (t) => { $('msg').textContent = t || ''; };
+  const save = () => { try { localStorage.setItem('nbState', JSON.stringify({ mode, V, c: map.getCenter(), z: map.getZoom() })); } catch (e) {} };
+  const zoneNow = () => { const z = parseInt($('zone').value, 10); if (z >= 1 && z <= 60) return z; const c = V.length ? V[0] : map.getCenter(); return utmZoneOf(V.length ? V.reduce((a, p) => a + p[1], 0) / V.length : c.lng); };
+  const north = () => (V.length ? V[0][0] : map.getCenter().lat) >= 0;
+  const toUtm = (p) => latLngToUtm(p[0], p[1], zoneNow(), north());
+
+  function redraw() {
+    shapeLayer.clearLayers(); const minV = mode === 'pts' ? 1 : mode === 'line' ? 2 : mode === 'rect' ? 2 : 3;
+    const style = { color: '#ff5a5a', weight: 2, fillColor: '#ff5a5a', fillOpacity: 0.12 };
+    if (mode === 'poly' || mode === 'rect') { if (V.length >= 2) (V.length >= 3 ? L.polygon : L.polyline)(V, style).addTo(shapeLayer); }
+    else if (mode === 'line') { if (V.length >= 2) L.polyline(V, { color: '#ffd23f', weight: 3 }).addTo(shapeLayer); }
+    V.forEach((p, i) => {
+      const m = L.marker(p, { draggable: true, icon: L.divIcon({ className: '', html: `<div class="vtx ${i === 0 ? 'first' : ''}"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] }) }).addTo(shapeLayer);
+      if (mode === 'pts') m.bindTooltip('P' + (i + 1), { permanent: true, direction: 'right', className: 'lbl', offset: [8, 0] });
+      m.on('drag', (e) => { V[i] = [e.latlng.lat, e.latlng.lng]; }); m.on('dragend', () => { save(); redraw(); updateInfo(); });
+    });
+    updateInfo(); save();
+  }
+  function updateInfo() {
+    let s = `${V.length} nokta`;
+    if ((mode === 'poly' || mode === 'rect') && V.length >= 3) s = `Alan: ${polyArea(V.map(toUtm)).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m² · ${V.length} köşe`;
+    if (mode === 'line' && V.length >= 2) { const U = V.map(toUtm); let l = 0; for (let i = 0; i < U.length - 1; i++) l += Math.hypot(U[i + 1][0] - U[i][0], U[i + 1][1] - U[i][1]); s = `Eksen uzunluğu: ${l.toFixed(0)} m · ${V.length} nokta`; }
+    if (!V.length) s = 'Haritaya dokunarak işaretle.';
+    $('info').textContent = s; $('modeHint').textContent = HINTS[mode]; $('lbW').style.display = mode === 'line' ? '' : 'none';
+  }
+  map.on('click', (e) => {
+    const p = [e.latlng.lat, e.latlng.lng];
+    if (mode === 'rect') {
+      if (V.length !== 1) { V = [p]; }
+      else { const a = toUtm(V[0]), b = toUtm(p), z = zoneNow(), nz = north(); V = [[a[0], a[1]], [b[0], a[1]], [b[0], b[1]], [a[0], b[1]]].map((q) => utmToLatLng(z, nz, q[0], q[1])); }
+    } else V.push(p);
+    redraw();
+  });
+  document.querySelectorAll('#top [data-mode]').forEach((b) => b.addEventListener('click', () => {
+    mode = b.dataset.mode; document.querySelectorAll('#top [data-mode]').forEach((x) => x.classList.toggle('on', x === b));
+    V = []; rectA = null; cloudLayer.clearLayers(); $('res').style.display = 'none'; result = null; setMsg(''); redraw();   // a shape belongs to one mode
+  }));
+  $('btnUndo').addEventListener('click', () => { if (mode === 'rect') V = []; else V.pop(); redraw(); });
+  $('btnClear').addEventListener('click', () => { V = []; cloudLayer.clearLayers(); $('res').style.display = 'none'; result = null; setMsg(''); redraw(); });
+  $('btnLoc').addEventListener('click', () => {
+    if (!navigator.geolocation) return setMsg('Bu tarayıcıda konum yok.');
+    navigator.geolocation.getCurrentPosition((p) => { map.setView([p.coords.latitude, p.coords.longitude], 18); }, () => setMsg('Konum alınamadı (izin ver ve tekrar dene).'), { enableHighAccuracy: true, timeout: 15000 });
+  });
+  $('zone').addEventListener('change', () => { updateInfo(); });
+
+  // ---- import a polygon / line / points from a Google Earth KML or KMZ ----
+  $('btnOpen').addEventListener('click', () => $('fileKml').click());
+  $('fileKml').addEventListener('change', async () => {
+    const f = $('fileKml').files[0]; $('fileKml').value = ''; if (!f) return;
+    try {
+      let text; if (/\.kmz$/i.test(f.name)) { const zip = await JSZip.loadAsync(await f.arrayBuffer()), k = zip.file(/\.kml$/i)[0]; text = await k.async('string'); } else text = await f.text();
+      const ring = /<outerBoundaryIs>[\s\S]*?<coordinates>([\s\S]*?)<\/coordinates>/.exec(text), lin = /<LineString>[\s\S]*?<coordinates>([\s\S]*?)<\/coordinates>/.exec(text);
+      const parse = (s) => s.trim().split(/\s+/).map((t) => t.split(',').map(Number)).filter((a) => a.length >= 2 && a.every(Number.isFinite)).map((a) => [a[1], a[0]]);
+      let pts, m;
+      if (ring) { pts = parse(ring[1]); if (pts.length > 1 && pts[0][0] === pts[pts.length - 1][0] && pts[0][1] === pts[pts.length - 1][1]) pts.pop(); m = 'poly'; }
+      else if (lin) { pts = parse(lin[1]); m = 'line'; }
+      else { pts = [...text.matchAll(/<Point>[\s\S]*?<coordinates>([\s\S]*?)<\/coordinates>/g)].flatMap((x) => parse(x[1])); m = 'pts'; }
+      if (!pts.length) throw new Error('Dosyada alan, çizgi ya da nokta bulunamadı.');
+      V = pts; mode = m; document.querySelectorAll('#top [data-mode]').forEach((x) => x.classList.toggle('on', x.dataset.mode === m));
+      redraw(); map.fitBounds(L.latLngBounds(V).pad(0.2)); setMsg(`${f.name}: ${V.length} nokta okundu.`);
+    } catch (e) { setMsg('⚠ ' + e.message); }
+  });
+
+  // ---- elevation samplers: each returns (E, N, lat, lng) -> metres ----
+  const tileF = (lat, lng, z) => { const n = 2 ** z * 256; return [(lng + 180) / 360 * n, (1 - Math.asinh(Math.tan(lat * rad)) / Math.PI) / 2 * n]; };
+  async function terrariumSampler(b) {
+    let z = 14, tx0, tx1, ty0, ty1;
+    for (; z >= 8; z--) {
+      const a = tileF(b.maxLat, b.minLng, z), c = tileF(b.minLat, b.maxLng, z);
+      tx0 = Math.floor((a[0] - 2) / 256); tx1 = Math.floor((c[0] + 2) / 256); ty0 = Math.floor((a[1] - 2) / 256); ty1 = Math.floor((c[1] + 2) / 256);
+      if ((tx1 - tx0 + 1) * (ty1 - ty0 + 1) <= 36) break;
+    }
+    const tiles = new Map(), jobs = [];
+    for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) jobs.push((async () => {
+      const img = new Image(); img.crossOrigin = 'anonymous';
+      await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error('Yükseklik karosu alınamadı (internet?)')); img.src = `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${tx}/${ty}.png`; });
+      const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0);
+      const d = g.getImageData(0, 0, 256, 256).data, e = new Float32Array(65536);
+      for (let i = 0; i < 65536; i++) e[i] = d[4 * i] * 256 + d[4 * i + 1] + d[4 * i + 2] / 256 - 32768;
+      tiles.set(tx + '_' + ty, e);
+    })());
+    await Promise.all(jobs);
+    const px = (i, j) => { const t = tiles.get(Math.floor(i / 256) + '_' + Math.floor(j / 256)); return t ? t[(j % 256) * 256 + (i % 256)] : NaN; };
+    const fn = (E, N, lat, lng) => {
+      const p = tileF(lat, lng, z), fx = p[0] - 0.5, fy = p[1] - 0.5, i = Math.floor(fx), j = Math.floor(fy), u = fx - i, v = fy - j;
+      const z00 = px(i, j), z10 = px(i + 1, j), z01 = px(i, j + 1), z11 = px(i + 1, j + 1);
+      return z00 * (1 - u) * (1 - v) + z10 * u * (1 - v) + z01 * (1 - u) * v + z11 * u * v;
+    };
+    fn.info = `Terrarium z${z}, ${tiles.size} karo`; return fn;
+  }
+  async function openMeteoSampler(b, zone, nrth, gb) {   // coarse 60 m grid in UTM + bilinear, like the earlier KMZ -> point-cloud runs
+    const S = 60, e0 = Math.floor(gb.e0 / S) * S - S, e1 = Math.ceil(gb.e1 / S) * S + S, n0 = Math.floor(gb.n0 / S) * S - S, n1 = Math.ceil(gb.n1 / S) * S + S;
+    const nx = Math.round((e1 - e0) / S) + 1, ny = Math.round((n1 - n0) / S) + 1;
+    if (nx * ny > 3000) throw new Error('Alan Open-Meteo için çok büyük; Terrarium kaynağını seç.');
+    const pts = []; for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) pts.push(utmToLatLng(zone, nrth, e0 + i * S, n0 + j * S));
+    const zs = [];
+    for (let k = 0; k < pts.length; k += 100) {
+      const sl = pts.slice(k, k + 100);
+      const r = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${sl.map((p) => p[0].toFixed(6)).join(',')}&longitude=${sl.map((p) => p[1].toFixed(6)).join(',')}`);
+      if (!r.ok) throw new Error('Open-Meteo yanıt vermedi (' + r.status + ')'); zs.push(...(await r.json()).elevation);
+    }
+    const fn = (E, N) => {
+      const fx = (E - e0) / S, fy = (N - n0) / S, i = Math.min(nx - 2, Math.max(0, Math.floor(fx))), j = Math.min(ny - 2, Math.max(0, Math.floor(fy))), u = fx - i, v = fy - j, g = (a, c) => zs[c * nx + a];
+      return g(i, j) * (1 - u) * (1 - v) + g(i + 1, j) * u * (1 - v) + g(i, j + 1) * (1 - u) * v + g(i + 1, j + 1) * u * v;
+    };
+    fn.info = `Open-Meteo ${pts.length} sorgu noktası (60 m ağ)`; return fn;
+  }
+
+  // ---- generate ----
+  const RAMP = ['#2c7bb6', '#abd9e9', '#ffffbf', '#fdae61', '#d7191c'];
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.substr(i, 2), 16));
+  const rampAt = (t) => { const x = Math.min(0.9999, Math.max(0, t)) * (RAMP.length - 1), i = Math.floor(x), a = hex(RAMP[i]), b = hex(RAMP[i + 1]); return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * (x - i))).join(',')})`; };
+  const num = (id, d) => { const v = parseFloat(String($(id).value).replace(',', '.')); return Number.isFinite(v) ? v : d; };
+
+  $('btnGo').addEventListener('click', async () => {
+    const need = mode === 'pts' ? 1 : mode === 'line' ? 2 : mode === 'rect' ? 3 : 3;
+    if (V.length < need) return setMsg(mode === 'pts' ? 'En az bir nokta işaretle.' : mode === 'line' ? 'Koridor için en az 2 nokta işaretle.' : 'Alan için en az 3 köşe işaretle.');
+    const s = Math.max(0.5, num('sp', 5)), off = num('off', 0), zone = zoneNow(), nrth = north();
+    const U = V.map(toUtm); let xy;
+    if (mode === 'pts') xy = U;
+    else if (mode === 'line') xy = corridorPts(U, Math.max(0, num('cw', 0)), s);
+    else xy = gridInPoly(U, s, $('bnd').value === '1');
+    if (!xy.length) return setMsg('Bu aralıkta nokta üretilemedi; aralığı küçült.');
+    if (xy.length > 300000) return setMsg(`⚠ ${xy.length.toLocaleString('tr-TR')} nokta çok fazla (üst sınır 300 000). Aralığı büyüt veya alanı küçült.`);
+    $('btnGo').disabled = true; setMsg('Yükseklik verisi alınıyor…');
+    try {
+      const ll = xy.map((p) => utmToLatLng(zone, nrth, p[0], p[1])), la = ll.map((p) => p[0]), lo = ll.map((p) => p[1]);
+      const pad = 0.0006, b = { minLat: Math.min(...la) - pad, maxLat: Math.max(...la) + pad, minLng: Math.min(...lo) - pad, maxLng: Math.max(...lo) + pad };
+      const gb = { e0: Math.min(...xy.map((p) => p[0])), e1: Math.max(...xy.map((p) => p[0])), n0: Math.min(...xy.map((p) => p[1])), n1: Math.max(...xy.map((p) => p[1])) };
+      const fn = $('src').value === 'om' ? await openMeteoSampler(b, zone, nrth, gb) : await terrariumSampler(b);
+      const rows = xy.map((p, i) => { const r = { E: p[0], N: p[1], lat: la[i], lng: lo[i], Z: fn(p[0], p[1], la[i], lo[i]) + off }; if (mode === 'pts') r.name = 'P' + (i + 1); return r; });
+      if (rows.some((r) => !Number.isFinite(r.Z))) throw new Error('Bazı noktalar için yükseklik alınamadı (veri boşluğu).');
+      result = { rows, zone, nrth, src: fn.info, s };
+      showResult(); setMsg('');
+    } catch (e) { setMsg('⚠ ' + e.message); console.error(e); }
+    $('btnGo').disabled = false;
+  });
+  function showResult() {
+    const { rows, zone, nrth, src, s } = result; let zmin = Infinity, zmax = -Infinity;
+    for (const r of rows) { if (r.Z < zmin) zmin = r.Z; if (r.Z > zmax) zmax = r.Z; }
+    cloudLayer.clearLayers();
+    const rr = Math.max(2, Math.min(7, rows.length > 20000 ? 2 : rows.length > 4000 ? 3 : 5));
+    for (const r of rows) L.circleMarker([r.lat, r.lng], { radius: rr, weight: 0, fillOpacity: 0.9, fillColor: rampAt((r.Z - zmin) / ((zmax - zmin) || 1)), interactive: mode === 'pts' }).addTo(cloudLayer).bindTooltip(`${r.name ? r.name + ' · ' : ''}${r.Z.toFixed(1)} m`);
+    $('stats').innerHTML = `<b>${rows.length.toLocaleString('tr-TR')}</b> nokta · aralık ${s} m · UTM ${zone}${nrth ? 'N' : 'S'} · kot ${zmin.toFixed(1)} … ${zmax.toFixed(1)} m<br><span style="color:var(--dim)">${src}</span>`;
+    $('zmin').textContent = zmin.toFixed(1) + ' m'; $('zmax').textContent = zmax.toFixed(1) + ' m'; $('res').style.display = 'block';
+    $('res').scrollIntoView({ block: 'nearest' });
+  }
+  // ---- downloads ----
+  const baseName = () => 'nokta-bulutu-' + new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '').replace(/^(\d{8})(\d{4})$/, '$1-$2');
+  function fileOf(fmtName) {
+    const named = mode === 'pts', n = baseName(), rows = result.rows;
+    if (fmtName === 'csv') return new File([toCsv(rows, named)], n + '.csv', { type: 'text/csv' });
+    if (fmtName === 'xyz') return new File([toXyz(rows)], n + '.xyz', { type: 'text/plain' });
+    if (fmtName === 'dxf') return new File([toDxf(rows)], n + '.dxf', { type: 'application/dxf' });
+    if (fmtName === 'kml') return new File([toKml(rows, n)], n + '.kml', { type: 'application/vnd.google-earth.kml+xml' });
+    return new File([toLas(rows)], n + '.las', { type: 'application/octet-stream' });
+  }
+  function download(file) { const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+  document.querySelectorAll('[data-fmt]').forEach((b) => b.addEventListener('click', () => { if (result) download(fileOf(b.dataset.fmt)); }));
+  $('btnShare').addEventListener('click', async () => {
+    if (!result) return; const files = ['csv', 'xyz', 'las'].map(fileOf);
+    if (navigator.canShare && navigator.canShare({ files })) { try { await navigator.share({ files, title: 'Nokta bulutu' }); } catch (e) { /* cancelled */ } }
+    else { files.forEach(download); setMsg('Bu tarayıcı paylaşımı desteklemiyor; dosyalar indirildi.'); }
+  });
+
+  // ---- restore ----
+  try { const st = JSON.parse(localStorage.getItem('nbState') || 'null'); if (st) { mode = st.mode || 'poly'; V = st.V || []; map.setView(st.c, st.z); document.querySelectorAll('#top [data-mode]').forEach((x) => x.classList.toggle('on', x.dataset.mode === mode)); } } catch (e) {}
+  redraw();
+  window.__nb = { get V() { return V; }, set V(v) { V = v; redraw(); }, setMode: (m) => document.querySelector(`[data-mode="${m}"]`).click(), map, get result() { return result; } };
+})();
+if (typeof module !== 'undefined') module.exports = { latLngToUtm, utmToLatLng, gridInPoly, corridorPts, polyArea, toCsv, toXyz, toDxf, toKml, toLas };
+</script>
+</body>
+</html>
