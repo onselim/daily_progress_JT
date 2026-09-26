@@ -180,6 +180,8 @@
     </div>
     <div id="pAlign" class="apanel">
       <button class="full" id="btnRecal">GPS / pusulayı yeniden kalibre et</button>
+      <button class="full" id="btnWalk">🚶 Yürüyerek hizala (GPS/RTK izi)</button>
+      <div class="note" id="walkNote"><b>Yürüyerek hizala:</b> düz bir hatta yavaşça yürü: telefon GPS'iyle <b>50 m ve üstü</b> (simülasyonda yön ±3-5°, pusula genelde 10-30° şaşar), RTK varsa 10-15 m yeter. Telefonu sabit tut. Telefonun AR izini GPS (RTK varsa RTK) izine oturtur; <b>yönü pusuladan çok daha doğru</b> bulur. Konum ancak GPS kadar doğru olur (RTK yoksa ±3-10 m). Bittiğinde tekrar bas.</div>
       <div class="note"><b>Yönü nişanla:</b> ortadaki daireyi seçili nesnenin <b>gerçekte olması gereken yerine</b> (araziye) tut ve bas. Pusula hatasını tek dokunuşta düzeltir.<br><b>Dünyayı döndür</b> tüm nesneleri <b>senin etrafında</b> çevirir (pusula düzeltmesi). Yapıyı <b>kendi ekseninde</b> döndürmek için <b>Nesne</b> panelindeki <b>Yön</b> düğmelerini kullan.</div>
       <button class="full" id="btnAim">🎯 Yönü nişanla</button>
       <div class="r"><span>Dünyayı döndür (°)</span><button data-k="rot" data-v="-5">-5</button><button data-k="rot" data-v="-1">-1</button><button data-k="rot" data-v="1">+1</button><button data-k="rot" data-v="5">+5</button></div>
@@ -784,8 +786,39 @@ function initThree() {
   const sun = new THREE.DirectionalLight(0xfff4e0, 2.0); sun.position.set(40, 80, 30); scene.add(sun);
 }
 
+// ----- walking alignment: fit the AR track to the GPS/RTK track -----
+// Weighted 2D Procrustes (same maths as solveRefs) over pairs (AR position, GPS fix). GPS bias that is common to the whole walk cancels in the rotation,
+// so heading is far better than the compass; position is the weighted mean of the fixes (RTK: cm, phone GPS: metres).
+let walk = null, walkInfo = null;
+function walkFit(pts) {
+  const lat0 = pts[0].lat, lng0 = pts[0].lng; let W = 0, ce = 0, cn = 0, cx = 0, cz = 0;
+  const q = pts.map((p) => { const en = enuFrom(lat0, lng0, p.lat, p.lng); return { e: en.e, n: en.n, x: p.x, z: p.z, w: 1 / Math.max(p.acc, 0.05) ** 2 }; });
+  for (const p of q) { W += p.w; ce += p.w * p.e; cn += p.w * p.n; cx += p.w * p.x; cz += p.w * p.z; }
+  ce /= W; cn /= W; cx /= W; cz /= W;
+  let A = 0, B = 0, S2 = 0, far = 0;
+  for (const p of q) { const e2 = p.e - ce, n2 = p.n - cn, x2 = p.x - cx, z2 = p.z - cz; A += p.w * (x2 * e2 - z2 * n2); B += p.w * (x2 * n2 + z2 * e2); S2 += x2 * x2 + z2 * z2; far = Math.max(far, Math.hypot(x2, z2)); }
+  const th = Math.atan2(B, A), c = Math.cos(th), sn = Math.sin(th); let r2 = 0;
+  for (const p of q) { const e2 = p.e - ce, n2 = p.n - cn, x2 = p.x - cx, z2 = p.z - cz, ex = c * e2 + sn * n2 - x2, ez = sn * e2 - c * n2 - z2; r2 += ex * ex + ez * ez; }
+  const rms = Math.sqrt(r2 / q.length), [lat, lng] = offsetLatLng(lat0, lng0, ce, cn);
+  return { theta: th, lat, lng, x: cx, z: cz, rms, sd: Math.atan((rms / Math.SQRT2) / Math.sqrt(S2)) * deg, span: 2 * far, n: q.length };
+}
+function walkApply() {
+  if (walk.pts.length < 6) return;
+  const f = walkFit(walk.pts); if (f.span < 8) return;
+  thetaN = f.theta; noCompass = false; calQuality = null;
+  if (S.origin.mode === 'gps') origin = { lat: f.lat, lng: f.lng, x: f.x, z: f.z };   // map mode keeps the marked standing point; only the heading comes from the walk
+  const acc = walk.pts.reduce((a, p) => a + p.acc, 0) / walk.pts.length;
+  walkInfo = { n: f.n, span: f.span, sd: f.sd * (acc > 0.5 ? 1.8 : 1), rms: f.rms, acc };   // phone-GPS errors are correlated: the plain formula is ~1.8x too optimistic (simulated)
+}
+function walkHud() {
+  const n = walk.pts.length, i = walkInfo;
+  if (!i) return `<br>🚶 Yürüyerek hizalama: ${n} örnek. Yavaşça düz yürümeye devam et (en az ~10 m)…`;
+  const need = i.acc > 0.5 ? 50 : 10, q = i.span < need ? ` · <b style="color:#ffd166">daha uzun yürü (${need}+ m)</b>` : i.sd > 3 ? ' · <b style="color:#ffd166">yön belirsiz, biraz daha yürü</b>' : ' · <b style="color:#7dff8a">iyi</b>';
+  return `<br>🚶 Yürüyerek hizalama: ${i.n} örnek, ${i.span.toFixed(0)} m, yön ±${i.sd.toFixed(1)}°, iz sapması ${i.rms.toFixed(1)} m${q}`;
+}
 // ----- calibration -----
 function startCal() {
+  walk = null; walkInfo = null; if ($('btnWalk')) $('btnWalk').textContent = '🚶 Yürüyerek hizala (GPS/RTK izi)';
   cal = { t0: performance.now(), tDate: Date.now(), n: 0, sx: 0, sy: 0, gw: 0, glat: 0, glng: 0, lastFix: 0, pts: [] };
   origin = null; calQuality = null; noCompass = false; calSpread = null;
 }
@@ -831,6 +864,10 @@ function frame(t, xrFrame) {
     if (gpsOk && (el >= 8 && cal.n >= 15 || el >= 12)) finishCal();
   }
 
+  if (walk && origin && pose && fix && fix.t !== walk.lastFix && fix.acc <= 30) {
+    walk.lastFix = fix.t; const l = walk.pts[walk.pts.length - 1];
+    if (!l || Math.hypot(camPos.x - l.x, camPos.z - l.z) >= 0.7) { walk.pts.push({ x: camPos.x, z: camPos.z, lat: fix.lat, lng: fix.lng, acc: fix.acc }); walkApply(); }
+  }
   placeAll();
   renderer.render(scene, camera);
   if (now - lastHud > 250) { lastHud = now; $('hud').innerHTML = hudText(now) + `<br><span style="opacity:.6;font-size:11px">sürüm ${BUILD}</span>`; }
@@ -867,6 +904,7 @@ function hudText(now) {
   const { o, dist, rel, dz } = selInfo;
   const dir = Math.abs(rel) < 0.35 ? 'önünde' : (rel > 0 ? `sağında ${(rel * deg).toFixed(0)}°` : `solunda ${(-rel * deg).toFixed(0)}°`);
   let s = `<b>${o.name}</b>: ${dist.toFixed(0)} m uzakta, ${dir}<br>`;
+  if (walk) s += walkHud().slice(4) + '<br>';
   if (originSrc === 'georeferans' && refInfo) {
     s += `Georeferans ✓ (${refInfo.n} nokta) ortalama sapma ${refInfo.meanResidual.toFixed(2)} m, en kötü ${refInfo.maxResidual.toFixed(2)} m` +
       (refInfo.maxResidual > Math.max(0.5, refInfo.trueSpan * 0.02) ? ' <b style="color:#ffd166">⚠ büyük, noktaları yeniden işaretle</b>' : '') +
@@ -874,7 +912,7 @@ function hudText(now) {
   } else {
     s += `Konum: ${originSrc}` +
       (originSrc === 'GPS' ? ` ±${fix ? fix.acc.toFixed(0) : '?'} m${calSpread != null && calSpread > 12 ? ' <b style="color:#ffd166">⚠ GPS oynak (' + calSpread.toFixed(0) + ' m)</b>' : ''}` : '') + ' · ' +
-      (noCompass ? '⚠ Pusula yok: "Şu an tam kuzeye bakıyorum"' : `Pusula %${(calQuality * 100).toFixed(0)}`);
+      (walkInfo ? `Yön: yürüyüş izinden ±${walkInfo.sd.toFixed(1)}°` : noCompass ? '⚠ Pusula yok: "Şu an tam kuzeye bakıyorum"' : `Pusula %${(calQuality * 100).toFixed(0)}`);
   }
   if (o.zGround !== 0 || o.zBase !== 0 || S.zUser !== 0) {
     s += '<br>' + (Math.abs(dz) < 0.05 ? '⬛ Taban arazi seviyesinde'
@@ -947,7 +985,7 @@ function solveRefs() {
   const c = Math.cos(thetaN), sn = Math.sin(thetaN), Tx = cx - (c * ce + sn * cn), Tz = cz - (sn * ce - c * cn);
   origin = { lat: anchor.lat, lng: anchor.lng, x: Tx, z: Tz }; groundY = refMarks[idx[0]].y; originSrc = 'georeferans';
   if (anchor.z !== undefined) S.zUser = anchor.z;
-  adj.e = adj.n = adj.up = adj.rot = 0; noCompass = false; calQuality = null;
+  adj.e = adj.n = adj.up = adj.rot = 0; noCompass = false; calQuality = null; walk = null; walkInfo = null;
   let sumR = 0, maxR = 0;
   for (const p of pts) { const px = Tx + (c * p.e + sn * p.n), pz = Tz + (sn * p.e - c * p.n), r = Math.hypot(px - p.x, pz - p.z); sumR += r; if (r > maxR) maxR = r; }
   refInfo = { n: pts.length, meanResidual: sumR / pts.length, maxResidual: maxR, approx: pts.some((p) => p.approx), trueSpan };
@@ -1456,6 +1494,15 @@ function showPanel(id) {
 const togglePanel = (id) => showPanel($(id).style.display === 'block' ? null : id);
 $('btnAR').addEventListener('click', startAR);
 $('btnExit').addEventListener('click', () => { if (session) session.end(); });
+$('btnWalk').addEventListener('click', () => {
+  const now = performance.now();
+  if (S.origin.mode === 'ref') { groundMsg = { t: now, s: 'Georeferans modunda GPS izi kullanılmaz.' }; return; }
+  if (!origin) { groundMsg = { t: now, s: '⚠ Önce kalibrasyonun bitmesini bekle' }; return; }
+  if (walk) { walk = null; $('btnWalk').textContent = '🚶 Yürüyerek hizala (GPS/RTK izi)'; groundMsg = { t: now, s: walkInfo ? `Yön yürüyüşten alındı ✓ (±${walkInfo.sd.toFixed(1)}°)` : 'Yürüyerek hizalama iptal (yeterli iz yok)' }; return; }
+  if (!fix) { groundMsg = { t: now, s: '⚠ GPS konumu yok' }; return; }
+  adj.e = adj.n = adj.rot = 0; walk = { pts: [], lastFix: 0 }; walkInfo = null; $('btnWalk').textContent = '⏹ Yürümeyi bitir';
+  groundMsg = { t: now, s: 'Başla: düz, yavaş yürü (telefon GPS ile 50 m+)' };
+});
 $('btnRecal').addEventListener('click', () => {
   if (S.origin.mode === 'ref') { groundMsg = { t: performance.now(), s: 'Georeferans modunda GPS kullanılmaz. Referans panelinden sıfırla.' }; return; }
   startCal();
@@ -1556,6 +1603,14 @@ window.__geo = {
     return { centre: V(0, 0, 0), corner: V(o.w / 2, 0, o.d / 2), rotY_deg: +(rt.group.rotation.y * deg).toFixed(2) };
   },
   // test hook: pretend the user stands at (lat,lng) with the given north-yaw and run the KMZ culling/placement once
+  walkFit,
+  // test hook: feed a synthetic walk through walkApply and report where a GPS point lands in AR space with the resulting alignment
+  walkSim: (pts, mode, probe) => {
+    S.origin = { mode }; origin = { lat: pts[0].lat, lng: pts[0].lng, x: pts[0].x, z: pts[0].z }; thetaN = 0; adj.e = adj.n = adj.rot = 0;
+    walk = { pts, lastFix: 0 }; walkApply();
+    const en = enuFrom(origin.lat, origin.lng, probe.lat, probe.lng), dist = Math.hypot(en.e, en.n), yaw = thetaN + Math.atan2(en.e, en.n);
+    return { theta: thetaN, walkInfo, origin, pos: [origin.x + dist * Math.sin(yaw), origin.z - dist * Math.cos(yaw)], hud: walkHud() };
+  },
   kmzSim: (lat, lng, thDeg) => {
     origin = { lat, lng, x: 0, z: 0 }; thetaN = thDeg * rad; camPos = { x: 0, y: 1.6, z: 0 }; adj.e = adj.n = adj.up = adj.rot = 0; groundY = 0;
     for (let i = 0; i < 40; i++) kmzUpdate(thetaN);
