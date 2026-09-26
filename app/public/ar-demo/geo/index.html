@@ -118,6 +118,10 @@
       <button id="btnKmzClear" class="small" style="align-self:flex-end">Hattı sil</button>
     </div>
     <div class="hint" id="kmzInfo" style="display:none"></div>
+    <div class="row" id="projRow" style="display:none">
+      <div class="hint" id="projInfo" style="flex:1;margin:0"></div>
+      <button id="btnProjClear" class="small">Sil</button>
+    </div>
     <div class="row">
       <button id="btnHere">📍 Seçili nesneyi konumuma koy</button>
       <button id="btnAR" class="primary">▶ AR'ı başlat</button>
@@ -142,6 +146,8 @@
       <div class="note" id="kmzNote">KMZ yüklenmemiş. Ana ekrandan "KMZ / KML yükle" ile PLS-CADD hattını yükle.</div>
       <button class="full" id="btnKmzOn">Hat: Açık</button>
       <div class="r"><span id="lblKr">Görüş 1000 m</span><button data-kr="-500">-500</button><button data-kr="-100">-100</button><button data-kr="100">+100</button><button data-kr="500">+500</button></div>
+      <button class="full" id="btnProjOn" style="display:none">Proje durumları: Açık</button>
+      <div class="note" id="projLegend" style="display:none">Renkler: <b style="color:#9aa3c7">gri</b> başlamadı · <b style="color:#00d4aa">yeşil</b> devam ediyor · <b style="color:#3b82f6">mavi</b> tamamlandı · <b style="color:#ef4444">kırmızı</b> beklemede. <b style="color:#ffb020">Turuncu halka</b>: bugün/yarın iş var. <b style="color:#ff3b30">Kırmızı halka</b>: saha bugün kısıtlı.</div>
       <button class="full" id="btnKmzLabels">Direk etiketleri: Açık</button>
       <button class="full" id="btnKmzZ">Bulunduğum kotu en yakın direğin arazi kotundan al</button>
     </div>
@@ -590,7 +596,7 @@ function refreshInputs() {
   $('lbRef3').firstChild.textContent = `Georeferans 3, isteğe bağlı (${sys}${u ? '' : ', kot'})`;
   $('ref1').placeholder = $('ref2').placeholder = $('ref3').placeholder = $('ref1b').placeholder = $('ref2b').placeholder = u ? 'E, N, Z' : 'enlem, boylam, Z';
   put('ref1', refText(0)); put('ref2', refText(1)); put('ref3', refText(2)); put('ref1b', refText(0)); put('ref2b', refText(1)); put('ref3b', refText(2));
-  for (const i of [0, 1, 2]) $(`lbRef${i + 1}kmz`).style.display = KMZ ? '' : 'none';
+  for (const i of [0, 1, 2]) $(`lbRef${i + 1}kmz`).style.display = refSource().length ? '' : 'none';
   const mode = S.origin.mode;
   for (const [b, m] of [['btnPick', 'map'], ['btnRefMode', 'ref'], ['btnGps', 'gps']]) $(b).classList.toggle('on', mode === m);
   $('pickHint').textContent = mode === 'gps' ? 'Konum kaynağı GPS: telefonun GPS konumu kullanılır, yüzlerce metre sapabilir.'
@@ -646,8 +652,8 @@ $('utmHemi').addEventListener('change', () => { S.crs.north = $('utmHemi').value
 [0, 1, 2].forEach((k) => $(`ref${k + 1}Kmz`).addEventListener('change', () => {
   const sel = $(`ref${k + 1}Kmz`);
   if (sel.value === '') { S.refs[k] = null; refMarks[k] = null; if (S.origin.mode === 'ref') origin = null; refreshAll(); return; }
-  const s = KMZ && KMZ.structs[+sel.value]; if (!s) return;
-  S.refs[k] = { lat: s.lat, lng: s.lng, z: s.ele };   // structure base coordinate + its ground elevation, straight from the PLS-CADD export
+  const s = refSource()[+sel.value]; if (!s) return;
+  S.refs[k] = { lat: s.lat, lng: s.lng, z: s.ele == null ? undefined : s.ele };   // structure base coordinate + its ground elevation, straight from the PLS-CADD export
   refMarks[k] = null; if (S.origin.mode === 'ref') origin = null;
   refreshAll();
 }));
@@ -767,7 +773,7 @@ function initThree() {
   renderer.xr.enabled = true; renderer.localClippingEnabled = true; renderer.xr.setReferenceSpaceType('local-floor');
   Object.assign(renderer.domElement.style, { position: 'fixed', left: '0', top: '0', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none' });
   document.body.appendChild(renderer.domElement);
-  scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(70, 1, 0.1, 6000); scene.add(kmzGroup);
+  scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(70, 1, 0.1, 6000); scene.add(kmzGroup); scene.add(projGroup);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x8fa0b3, 1.5));
   const sun = new THREE.DirectionalLight(0xfff4e0, 2.0); sun.position.set(40, 80, 30); scene.add(sun);
 }
@@ -823,7 +829,7 @@ function frame(t, xrFrame) {
 // Place every library object (position depends only on its lat/lng; rotation is about its own vertical axis) and the KMZ line.
 function placeAll() {
   selInfo = null;
-  if (!origin) { for (const rt of rts.values()) rt.group.visible = false; kmzGroup.visible = false; return; }
+  if (!origin) { for (const rt of rts.values()) rt.group.visible = false; kmzGroup.visible = false; projGroup.visible = false; return; }
   const tn = thetaN + adj.rot * rad, sel = cur();
   for (const o of S.objs) {
     const rt = rts.get(o.id); if (!rt) continue;
@@ -834,7 +840,7 @@ function placeAll() {
     const yT = rt.group.position.y + (o.zGround - o.zBase); rt.clipAbove.constant = -yT; rt.clipBelow.constant = yT;
     if (o === sel) selInfo = { o, dist, yaw, rel: wrapPi(yaw - camYaw), dz: o.zGround - o.zBase };
   }
-  kmzUpdate(tn);
+  kmzUpdate(tn); projUpdate(tn);
 }
 function hudText(now) {
   if (cal) {
@@ -865,6 +871,7 @@ function hudText(now) {
     s += '<br>' + (Math.abs(dz) < 0.05 ? '⬛ Taban arazi seviyesinde'
       : dz > 0 ? `<b style="color:#ff8a70">GÖMÜLÜ: taban arazinin ${dz.toFixed(1)} m altında</b>` : `<b style="color:#ffd166">HAVADA: taban arazinin ${(-dz).toFixed(1)} m üstünde</b>`);
   }
+  if (PROJ && projOpt.on) { const n = nearestProject(); if (n) s += `<br>Proje: en yakın direk <b>${n.a.c}</b> (${n.d.toFixed(0)} m): <b>${projStatus(n.a).t}</b>${n.a.a ? ' · bugün/yarın iş var' : ''}${n.a.r ? ' · <b style="color:#ff8a70">saha kısıtlı</b>' : ''}`; }
   if (KMZ && kmzOpt.on) { const n = nearestStruct(); if (n) s += `<br>Hat: en yakın direk <b>${n.s.name}</b> (${n.d.toFixed(0)} m), arazi kotu ${n.s.ele} m`; }
   if (groundMsg && now - groundMsg.t < 3500) s += '<br>' + groundMsg.s;
   return s;
@@ -1062,12 +1069,10 @@ function kmzRefreshUi() {
   if (has) {
     const nT = KMZ.chunks.filter((c) => c.kind === 'tower').length, nS = KMZ.chunks.filter((c) => c.kind === 'span').length;
     $('kmzInfo').textContent = `📂 ${KMZ.name}: ${KMZ.structs.length} direk noktası, ${nT} direk modeli, ${nS} tel açıklığı. Kot düzeltmesi: KML kotlarına +${KMZ.shift.toFixed(2)} m eklendi (PLS proje kotu). Hat AR'da "Hat" panelinden açılır.`;
-    const opts = '<option value="">— seç —</option>' + KMZ.structs.map((s, i) => `<option value="${i}">${s.name}${s.ht != null ? '  (' + s.ht + ' m)' : ''}</option>`).join('');
-    $('kmzStr').innerHTML = opts;
-    for (const i of [0, 1, 2]) $(`ref${i + 1}Kmz`).innerHTML = opts;
+    $('kmzStr').innerHTML = '<option value="">— seç —</option>' + KMZ.structs.map((s, i) => `<option value="${i}">${s.name}${s.ht != null ? '  (' + s.ht + ' m)' : ''}</option>`).join('');
     $('kmzNote').textContent = `${KMZ.name}: ${KMZ.structs.length} direk. Yalnızca görüş mesafesi içindeki parçalar çizilir. Kotlar PLS proje kotunda (+${KMZ.shift.toFixed(2)} m düzeltildi).`;
-  } else { $('kmzNote').textContent = 'KMZ yüklenmemiş. Ana ekrandan "KMZ / KML yükle" ile PLS-CADD hattını yükle.'; for (const i of [0, 1, 2]) $(`ref${i + 1}Kmz`).innerHTML = ''; }
-  refreshInputs();   // show/hide the "KMZ direk" pickers next to the georeference inputs
+  } else { $('kmzNote').textContent = 'KMZ yüklenmemiş. Ana ekrandan "KMZ / KML yükle" ile PLS-CADD hattını yükle.'; }
+  refPickersRefresh();   // show/hide the "KMZ direk" pickers next to the georeference inputs
 }
 $('btnKmz').addEventListener('click', () => $('kmzFile').click());
 $('kmzFile').addEventListener('change', () => { const f = $('kmzFile').files[0]; if (f) kmzImport(f); $('kmzFile').value = ''; });
@@ -1096,7 +1101,8 @@ function kmzBeams(arr, t) {
 function kmzBuild(c) {
   const g = new THREE.Group();
   const add = (geo, mat) => { if (geo) g.add(new THREE.Mesh(geo, mat)); };
-  if (c.t.length) add(kmzBeams(c.t, 0.16), std(0xc3ccd6, 0.55, 0.6));
+  const pa = PROJ && c.sname ? PROJ.byCode.get(String(c.sname)) : null, tint = pa ? projStatus(pa).c : null;
+  if (c.t.length) add(kmzBeams(c.t, 0.16), tint != null ? std(tint, 0.6, 0.1, { emissive: tint, emissiveIntensity: 0.35 }) : std(0xc3ccd6, 0.55, 0.6));
   if (c.w.length) {
     const col = c.cable.startsWith('acsr') ? 0xffd23f : c.cable.startsWith('opgw') ? 0x6be3ff : 0x7dff8a;
     add(kmzBeams(c.w, 0.09), new THREE.MeshBasicMaterial({ color: col }));
@@ -1161,6 +1167,112 @@ $('btnKmzZ').addEventListener('click', () => {
 });
 // restore a previous import
 idb.get('kmz').then((k) => { if (k && k.chunks) kmzSet(k); }).catch(() => {});
+
+// ================= project layer: tower status from the daily-report app =================
+// The app (svkdk.com/ar/<project>) writes localStorage 'arProject' (same origin) and opens this page. Payload v1:
+// { v:1, slug, name, at, assets:[{ c: code, lat, lng, z, s: status, a: active today/tomorrow, r: restricted today, st: station, t: type }] }
+const STATUS_AR = {
+  not_started: { c: 0x9aa3c7, t: 'Başlamadı' }, in_progress: { c: 0x00d4aa, t: 'Devam ediyor' },
+  completed: { c: 0x3b82f6, t: 'Tamamlandı' }, on_hold: { c: 0xef4444, t: 'Beklemede' },
+};
+const projStatus = (a) => STATUS_AR[a.s] || STATUS_AR.not_started;
+const hex = (n) => '#' + n.toString(16).padStart(6, '0');
+let PROJ = null;
+const projRt = new Map(), projGroup = new THREE.Group(), projOpt = { on: true };
+const projMapLayer = L.layerGroup().addTo(map);
+
+function projLoad(payload) {
+  const p = payload || (() => { try { return JSON.parse(localStorage.getItem('arProject') || 'null'); } catch (e) { return null; } })();
+  if (!p || p.v !== 1 || !Array.isArray(p.assets)) return false;
+  p.assets = p.assets.filter((a) => a && isFinite(a.lat) && isFinite(a.lng));
+  if (!p.assets.length) return false;
+  p.byCode = new Map(p.assets.map((a) => [String(a.c), a]));
+  for (const rt of projRt.values()) projDispose(rt); projRt.clear();
+  for (const rt of kmzRt.values()) kmzDispose(rt); kmzRt.clear();      // KMZ towers are re-tinted by status
+  PROJ = p; projShowOnMap(); projRefreshUi(); return true;
+}
+function projClear() {
+  try { localStorage.removeItem('arProject'); } catch (e) {}
+  for (const rt of projRt.values()) projDispose(rt); projRt.clear();
+  for (const rt of kmzRt.values()) kmzDispose(rt); kmzRt.clear();
+  PROJ = null; projShowOnMap(); projRefreshUi();
+}
+const refSource = () => (PROJ ? PROJ.assets.map((a) => ({ name: String(a.c), lat: a.lat, lng: a.lng, ele: a.z, ht: null })) : (KMZ ? KMZ.structs : []));
+function refPickersRefresh() {
+  const src = refSource();
+  const opts = src.length ? '<option value="">— seç —</option>' + src.map((s, i) => `<option value="${i}">${s.name}${s.ht != null ? '  (' + s.ht + ' m)' : ''}</option>`).join('') : '';
+  for (const i of [0, 1, 2]) $(`ref${i + 1}Kmz`).innerHTML = opts;
+  for (const i of [1, 2, 3]) $(`lbRef${i}kmz`).firstChild.textContent = PROJ ? 'Proje direk' : 'KMZ direk';
+  refreshInputs();
+}
+function projShowOnMap() {
+  projMapLayer.clearLayers(); if (!PROJ) return;
+  for (const a of PROJ.assets) {
+    const st = projStatus(a), col = hex(st.c);
+    L.circleMarker([a.lat, a.lng], { radius: a.a ? 8 : 6, color: a.r ? '#ff3b30' : a.a ? '#ffb020' : '#fff', weight: a.r || a.a ? 3 : 1, fillColor: col, fillOpacity: 1 })
+      .bindTooltip(`${a.c} · ${st.t}${a.a ? ' · bugün/yarın iş var' : ''}${a.r ? ' · saha kısıtlı' : ''}${a.z != null ? ' · kot ' + a.z : ''}`).addTo(projMapLayer);
+  }
+}
+function projRefreshUi() {
+  $('projRow').style.display = PROJ ? '' : 'none';
+  for (const id of ['btnProjOn', 'projLegend']) $(id).style.display = PROJ ? '' : 'none';
+  if (PROJ) {
+    const cnt = { completed: 0, in_progress: 0, not_started: 0, on_hold: 0 };
+    for (const a of PROJ.assets) cnt[STATUS_AR[a.s] ? a.s : 'not_started']++;
+    const ageMin = PROJ.at ? Math.max(0, Math.round((Date.now() - Date.parse(PROJ.at)) / 60000)) : null;
+    const age = ageMin == null ? '' : ageMin < 2 ? 'az önce' : ageMin < 90 ? `${ageMin} dk önce` : `${Math.round(ageMin / 60)} saat önce`;
+    $('projInfo').innerHTML = `🏗 <b>${PROJ.name || PROJ.slug}</b>: ${PROJ.assets.length} direk (tamamlanan ${cnt.completed}, devam eden ${cnt.in_progress}, başlamayan ${cnt.not_started}, beklemede ${cnt.on_hold}). Veri: ${age}.${PROJ.slug ? ` Güncellemek için <a href="/ar/${PROJ.slug}" style="color:#7fb7ff">/ar/${PROJ.slug}</a> aç.` : ''}`;
+  }
+  refPickersRefresh();
+}
+function projLabelTex(a) {
+  const st = projStatus(a), c = document.createElement('canvas'); c.width = 512; c.height = 128; const g = c.getContext('2d');
+  g.fillStyle = 'rgba(15,23,32,0.85)'; g.beginPath(); g.roundRect(4, 4, 504, 120, 18); g.fill();
+  g.fillStyle = hex(st.c); g.fillRect(4, 4, 16, 120);
+  g.fillStyle = '#fff'; g.font = 'bold 54px system-ui,sans-serif'; g.textAlign = 'center'; g.fillText(`Direk ${a.c}`, 268, 60);
+  g.fillStyle = '#cfe3ff'; g.font = '32px system-ui,sans-serif'; g.fillText(st.t + (a.a ? ' · iş var' : '') + (a.r ? ' · KISITLI' : ''), 268, 104);
+  return new THREE.CanvasTexture(c);
+}
+function projBuild(a) {
+  const g = new THREE.Group(), col = projStatus(a).c;
+  const pg = new THREE.CylinderGeometry(0.28, 0.28, 30, 10); pg.translate(0, 15, 0);
+  g.add(new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.55 })));
+  const ring = (r0, r1, c) => { const rg = new THREE.RingGeometry(r0, r1, 48); rg.rotateX(-Math.PI / 2); const m = new THREE.Mesh(rg, new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })); m.position.y = 0.06; g.add(m); };
+  ring(3.4, 4.3, col);
+  if (a.a) ring(5.0, 5.7, 0xffb020);
+  if (a.r) ring(6.4, 7.1, 0xff3b30);
+  const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: projLabelTex(a), depthTest: false, transparent: true }));
+  label.scale.set(16, 4, 1); label.position.set(0, 35, 0); label.renderOrder = 10; g.add(label);
+  projGroup.add(g); return { group: g, label };
+}
+function projDispose(rt) {
+  rt.group.traverse((m) => { if (m.geometry) m.geometry.dispose(); if (m.material) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); } });
+  projGroup.remove(rt.group);
+}
+function projUpdate(tn) {
+  if (!PROJ || !projOpt.on) { projGroup.visible = false; return; }
+  projGroup.visible = true; let builds = 0;
+  // no standing elevation entered yet: use the nearest tower's ground elevation, so towers sit on the ground instead of floating at their absolute height
+  const nz = S.zUser !== 0 ? null : nearestProject(), zRef = S.zUser !== 0 ? S.zUser : (nz && nz.a.z != null ? nz.a.z : 0);
+  for (const a of PROJ.assets) {
+    const en = enuFrom(origin.lat, origin.lng, a.lat, a.lng), e = en.e + adj.e, n = en.n + adj.n, dist = Math.hypot(e, n), yaw = tn + Math.atan2(e, n);
+    const px = origin.x + dist * Math.sin(yaw), pz = origin.z - dist * Math.cos(yaw), dc = Math.hypot(px - camPos.x, pz - camPos.z);
+    const key = String(a.c); let rt = projRt.get(key);
+    if (dc > kmzOpt.radius * 1.6) { if (rt) { projDispose(rt); projRt.delete(key); } continue; }
+    if (!rt) { if (builds >= 6) continue; rt = projBuild(a); projRt.set(key, rt); builds++; }
+    rt.label.visible = kmzOpt.labels; rt.group.visible = true;
+    rt.group.position.set(px, groundY + adj.up + ((a.z == null ? zRef : a.z) - zRef), pz);
+  }
+}
+function nearestProject() {
+  const u = userLatLng(); if (!u || !PROJ) return null;
+  let best = null, bd = Infinity;
+  for (const a of PROJ.assets) { const d = distM(u, a); if (d < bd) { bd = d; best = a; } }
+  return best ? { a: best, d: bd } : null;
+}
+$('btnProjOn').addEventListener('click', () => { projOpt.on = !projOpt.on; $('btnProjOn').textContent = `Proje durumları: ${projOpt.on ? 'Açık' : 'Kapalı'}`; });
+$('btnProjClear').addEventListener('click', () => { if (confirm('Uygulamadan gelen proje verisi bu cihazdan silinsin mi?')) projClear(); });
+if (projLoad() && /[?&]proje/.test(location.search) && PROJ.assets.length) map.fitBounds(L.latLngBounds(PROJ.assets.map((a) => [a.lat, a.lng])).pad(0.08));
 
 // ----- AR controls -----
 function showPanel(id) {
@@ -1262,7 +1374,7 @@ function kmzPreview(sname) {
   return n;
 }
 window.__geo = {
-  kmz: () => KMZ, kmzPreview, kmzImport,
+  kmz: () => KMZ, proj: () => PROJ, projLoad, projClear, projSim: (lat, lng, thDeg) => { origin = { lat, lng, x: 0, z: 0 }; thetaN = thDeg * rad; camPos = { x: 0, y: 1.6, z: 0 }; adj.e = adj.n = adj.up = adj.rot = 0; groundY = 0; for (let i = 0; i < 10; i++) projUpdate(thetaN); return [...projRt.entries()].map(([k, r]) => ({ k, x: +r.group.position.x.toFixed(1), y: +r.group.position.y.toFixed(1), z: +r.group.position.z.toFixed(1) })); }, kmzPreview, kmzImport,
   // test hook: place the selected object for a given standing point / world yaw and report its base centre and one corner in AR space
   objSim: (lat, lng, thDeg, camYawDeg) => {
     initThree(); rebuildAll(); origin = { lat, lng, x: 0, z: 0 }; thetaN = thDeg * rad; camPos = { x: 0, y: 1.6, z: 0 }; camYaw = (camYawDeg || 0) * rad; adj.e = adj.n = adj.up = adj.rot = 0; groundY = 0;
