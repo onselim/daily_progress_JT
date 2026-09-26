@@ -112,12 +112,13 @@
     </div>
     <div class="hint" id="pickHint"></div>
     <div class="row">
-      <button id="btnKmz">📂 KMZ / KML yükle (PLS-CADD hattı)</button>
+      <button id="btnKmz">📂 KMZ / KML ekle (PLS-CADD hattı, birden fazla eklenebilir)</button>
       <input type="file" id="kmzFile" accept=".kmz,.kml,application/vnd.google-earth.kmz,application/vnd.google-earth.kml+xml" style="display:none">
     </div>
+    <div id="kmzList" style="display:none"></div>
     <div class="row" id="kmzRow" style="display:none">
       <label>Hattaki direğe git<select id="kmzStr"></select></label>
-      <button id="btnKmzClear" class="small" style="align-self:flex-end">Hattı sil</button>
+      <button id="btnKmzClear" class="small" style="align-self:flex-end">Hepsini sil</button>
     </div>
     <div class="hint" id="kmzInfo" style="display:none"></div>
     <div class="row" id="projRow" style="display:none">
@@ -1102,39 +1103,64 @@ async function kmzImport(file) {
   await new Promise((r) => setTimeout(r, 30));
   try {
     const text = await kmzReadFile(file); info.textContent = 'Direkler ve teller ayrıştırılıyor…'; await new Promise((r) => setTimeout(r, 30));
-    const parsed = parseKml(text, file.name); kmzSet(parsed); try { await idb.set('kmz', KMZ); } catch (e) { console.warn('IndexedDB kaydı yapılamadı', e); }
+    const parsed = parseKml(text, file.name);
+    const same = LINES.findIndex((L) => L.fname === parsed.fname);   // loading the same file again replaces it
+    if (same >= 0) LINES[same] = { ...parsed, on: true }; else LINES.push({ ...parsed, on: true });
+    kmzMerge(); await kmzPersist();
     if (parsed.crs) { S.crs = { ...S.crs, zone: parsed.crs.zone, north: parsed.crs.north, zoneSet: true }; refreshAll(); }   // UTM zone from the file, not a guess
     kmzFit(); autoPickRefs(false);
   } catch (e) { info.textContent = '⚠ ' + e.message; console.error(e); }
 }
-function kmzSet(k) {
-  for (const rt of kmzRt.values()) kmzDispose(rt); kmzRt.clear(); KMZ = k; kmzShowOnMap(); kmzRefreshUi();
+// Several PLS-CADD exports can be loaded at once (LINES). Everything else in the page keeps working on ONE merged view (KMZ):
+// visible lines only, chunk ids renumbered, and with >1 line the structure names get a "<line no>·" prefix so "#1" of two lines never collides.
+const LINES = [], LINE_COLORS = ['#ff5a5a', '#ffd23f', '#6be3ff', '#7dff8a', '#c58bff', '#ff9f43'];
+function kmzMerge() {
+  for (const rt of kmzRt.values()) kmzDispose(rt); kmzRt.clear();
+  const multi = LINES.length > 1, structs = [], chunks = [], act = [];
+  LINES.forEach((L, li) => {
+    if (L.on === false) return;
+    act.push(L); const tag = multi ? `${li + 1}·` : '';
+    L.structs.forEach((st) => structs.push({ ...st, name: tag + st.name, code: st.name, line: li }));
+    L.chunks.forEach((c) => chunks.push({ ...c, id: chunks.length, sname: c.sname ? tag + c.sname : c.sname, scode: c.sname, line: li }));
+  });
+  KMZ = act.length ? { name: act.map((L) => L.name).join(' + '), shift: act[0].shift, crs: act[0].crs, structs, chunks, lines: act } : null;
+  kmzShowOnMap(); kmzRefreshUi();
   if (typeof updateStatus === 'function') updateStatus();
 }
-async function kmzClear() { for (const rt of kmzRt.values()) kmzDispose(rt); kmzRt.clear(); KMZ = null; try { await idb.del('kmz'); } catch (e) {} kmzShowOnMap(); kmzRefreshUi(); }
+function kmzSet(k) { LINES.length = 0; LINES.push({ ...k, on: true }); kmzMerge(); }   // single-line entry point (also used by the test hooks)
+async function kmzPersist() { try { if (LINES.length) await idb.set('kmzLines', LINES); else await idb.del('kmzLines'); await idb.del('kmz'); } catch (e) { console.warn('IndexedDB kaydı yapılamadı', e); } }
+async function kmzClear() { LINES.length = 0; kmzMerge(); await kmzPersist(); }
 
 const kmzMapLayer = L.layerGroup().addTo(map);
 function kmzShowOnMap() {
   kmzMapLayer.clearLayers(); if (!KMZ) return;
-  const pts = KMZ.structs.map((s) => [s.lat, s.lng]);
-  L.polyline(pts, { color: '#ff5a5a', weight: 2, opacity: 0.9, interactive: false }).addTo(kmzMapLayer);
-  KMZ.structs.forEach((s) => L.circleMarker([s.lat, s.lng], { radius: 3, color: '#fff', weight: 1, fillColor: '#ff5a5a', fillOpacity: 1 })
+  const byLine = new Map(); KMZ.structs.forEach((s) => { if (!byLine.has(s.line)) byLine.set(s.line, []); byLine.get(s.line).push(s); });
+  for (const [li, arr] of byLine) L.polyline(arr.map((s) => [s.lat, s.lng]), { color: LINE_COLORS[li % LINE_COLORS.length], weight: 2, opacity: 0.9, interactive: false }).addTo(kmzMapLayer);
+  KMZ.structs.forEach((s) => L.circleMarker([s.lat, s.lng], { radius: 3, color: '#fff', weight: 1, fillColor: LINE_COLORS[s.line % LINE_COLORS.length], fillOpacity: 1 })
     .bindTooltip(`${s.name}${s.ht != null ? ' · ' + s.ht + ' m' : ''}${s.ele != null ? ' · kot ' + s.ele : ''}`).addTo(kmzMapLayer));
 }
 function kmzFit() { if (KMZ && KMZ.structs.length) map.fitBounds(L.latLngBounds(KMZ.structs.map((s) => [s.lat, s.lng])).pad(0.05)); }
 function kmzRefreshUi() {
   const has = !!KMZ; $('kmzRow').style.display = has ? '' : 'none'; $('kmzInfo').style.display = has ? '' : 'none';
+  const lst = $('kmzList'); lst.style.display = LINES.length ? '' : 'none';
+  lst.innerHTML = LINES.map((L, i) => `<div class="row" style="align-items:center;margin-bottom:4px"><label style="flex:1;display:flex;flex-direction:row;gap:8px;align-items:center"><input type="checkbox" data-lon="${i}" ${L.on === false ? '' : 'checked'} style="width:auto"><span style="color:${LINE_COLORS[i % LINE_COLORS.length]}">●</span> <span>${LINES.length > 1 ? (i + 1) + '· ' : ''}${L.name} <span style="color:var(--dim)">(${L.structs.length} direk)</span></span></label><button class="small" data-ldel="${i}">✕</button></div>`).join('');
   if (has) {
     const nT = KMZ.chunks.filter((c) => c.kind === 'tower').length, nS = KMZ.chunks.filter((c) => c.kind === 'span').length;
-    $('kmzInfo').textContent = `📂 ${KMZ.name}: ${KMZ.structs.length} direk noktası, ${nT} direk modeli, ${nS} tel açıklığı. Kot düzeltmesi: KML kotlarına +${KMZ.shift.toFixed(2)} m eklendi (PLS proje kotu).${KMZ.crs ? ` Koordinat sistemi: UTM ${KMZ.crs.zone}${KMZ.crs.north ? 'N' : 'S'} (${KMZ.crs.src}).` : ''} Hat AR'da "Hat" panelinden açılır.`;
+    $('kmzInfo').textContent = `📂 ${LINES.length > 1 ? LINES.length + ' hat: ' : ''}${KMZ.name}: ${KMZ.structs.length} direk noktası, ${nT} direk modeli, ${nS} tel açıklığı. Kot düzeltmesi: KML kotlarına +${KMZ.shift.toFixed(2)} m eklendi (PLS proje kotu).${KMZ.crs ? ` Koordinat sistemi: UTM ${KMZ.crs.zone}${KMZ.crs.north ? 'N' : 'S'} (${KMZ.crs.src}).` : ''} Hat AR'da "Hat" panelinden açılır.`;
     $('kmzStr').innerHTML = '<option value="">— seç —</option>' + KMZ.structs.map((s, i) => `<option value="${i}">${s.name}${s.ht != null ? '  (' + s.ht + ' m)' : ''}</option>`).join('');
     $('kmzNote').textContent = `${KMZ.name}: ${KMZ.structs.length} direk. Yalnızca görüş mesafesi içindeki parçalar çizilir. Kotlar PLS proje kotunda (+${KMZ.shift.toFixed(2)} m düzeltildi).`;
   } else { $('kmzNote').textContent = 'KMZ yüklenmemiş. Ana ekrandan "KMZ / KML yükle" ile PLS-CADD hattını yükle.'; }
   refPickersRefresh();   // show/hide the "KMZ direk" pickers next to the georeference inputs
 }
+$('kmzList').addEventListener('click', async (ev) => {
+  const d = ev.target.closest('[data-ldel]');
+  if (d) { const i = +d.dataset.ldel; if (confirm(`"${LINES[i].name}" hattı silinsin mi?`)) { LINES.splice(i, 1); kmzMerge(); await kmzPersist(); } return; }
+  const c = ev.target.closest('[data-lon]');
+  if (c) { LINES[+c.dataset.lon].on = c.checked; kmzMerge(); await kmzPersist(); }
+});
 $('btnKmz').addEventListener('click', () => $('kmzFile').click());
 $('kmzFile').addEventListener('change', () => { const f = $('kmzFile').files[0]; if (f) kmzImport(f); $('kmzFile').value = ''; });
-$('btnKmzClear').addEventListener('click', () => { if (confirm('Yüklü hat silinsin mi? (Cihazdaki kopya da silinir)')) kmzClear(); });
+$('btnKmzClear').addEventListener('click', () => { if (confirm('Yüklü tüm hatlar silinsin mi? (Cihazdaki kopyalar da silinir)')) kmzClear(); });
 $('kmzStr').addEventListener('change', () => {
   const s = KMZ && KMZ.structs[+$('kmzStr').value]; if (!s) return;
   map.setView([s.lat, s.lng], 18);
@@ -1159,7 +1185,7 @@ function kmzBeams(arr, t) {
 function kmzBuild(c) {
   const g = new THREE.Group();
   const add = (geo, mat) => { if (geo) g.add(new THREE.Mesh(geo, mat)); };
-  const pa = PROJ && c.sname ? PROJ.byCode.get(String(c.sname)) : null, tint = pa ? projStatus(pa).c : null;
+  const pa = PROJ && c.sname ? PROJ.byCode.get(String(c.scode == null ? c.sname : c.scode)) : null, tint = pa ? projStatus(pa).c : null;
   if (c.f && c.f.length) {   // solid faces from PLS-CADD 13+ exports
     const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.BufferAttribute(c.f.slice(), 3)); fg.computeVertexNormals();
     const fc = tint != null ? tint : 0xc3ccd6;
@@ -1237,7 +1263,10 @@ $('btnKmzZ').addEventListener('click', () => {
   S.zUser = n.s.ele; refreshAll(); groundMsg = { t: performance.now(), s: `Bulunduğum kot = direk ${n.s.name} arazi kotu (${n.s.ele} m, ${n.d.toFixed(0)} m uzakta)` };
 });
 // restore a previous import
-idb.get('kmz').then((k) => { if (k && k.chunks) kmzSet(k); }).catch(() => {});
+idb.get('kmzLines').then(async (arr) => {
+  if (Array.isArray(arr) && arr.length) { LINES.length = 0; arr.forEach((L) => { if (L && L.chunks) LINES.push(L); }); kmzMerge(); return; }
+  const k = await idb.get('kmz'); if (k && k.chunks) { kmzSet(k); kmzPersist(); }   // migrate the older single-line save
+}).catch(() => {});
 
 // ================= project layer: tower status from the daily-report app =================
 // The app (svkdk.com/ar/<project>) writes localStorage 'arProject' (same origin) and opens this page. Payload v1:
