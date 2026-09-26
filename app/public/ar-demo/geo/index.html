@@ -151,6 +151,7 @@
       <button class="full" id="btnProjOn" style="display:none">Proje durumları: Açık</button>
       <div class="note" id="projLegend" style="display:none">Renkler: <b style="color:#9aa3c7">gri</b> başlamadı · <b style="color:#00d4aa">yeşil</b> devam ediyor · <b style="color:#3b82f6">mavi</b> tamamlandı · <b style="color:#ef4444">kırmızı</b> beklemede. <b style="color:#ffb020">Turuncu halka</b>: bugün/yarın iş var. <b style="color:#ff3b30">Kırmızı halka</b>: saha bugün kısıtlı.</div>
       <button class="full" id="btnKmzLabels">Direk etiketleri: Açık</button>
+      <button class="full" id="btnKmzSnap">⬇ Hattı zemine oturt (daireyi ayağının yakınındaki zemine tut, bas)</button>
       <button class="full" id="btnKmzZ">Bulunduğum kotu en yakın direğin arazi kotundan al</button>
     </div>
     <div id="pObj" class="apanel">
@@ -706,7 +707,7 @@ $('btnDel').addEventListener('click', () => {
 let renderer, scene, camera, session = null, hitSource = null, ghost = false;
 const rts = new Map();
 let cal = null, origin = null, thetaN = 0, calQuality = null, noCompass = false, calSpread = null, originSrc = '';
-let groundY = 0, wantGround = false, wantGroundT = 0, lastHit = null, groundMsg = null;
+let groundY = 0, wantGround = false, wantGroundT = 0, lastHit = null, groundMsg = null, pendingZ = null;
 let refMarks = [null, null, null], refInfo = null;   // AR-space positions of the (2 or 3) georeference points
 const adj = { e: 0, n: 0, up: 0, rot: 0 };
 const q = new THREE.Quaternion(), fwd = new THREE.Vector3();
@@ -812,8 +813,11 @@ function frame(t, xrFrame) {
     const res = xrFrame.getHitTestResults(hitSource);
     const hp = res.length ? res[0].getPose(ref).transform.position : null;
     lastHit = hp ? { x: hp.x, y: hp.y, z: hp.z } : null;
-    if (wantGround && lastHit) { groundY = lastHit.y; wantGround = false; groundMsg = { t: performance.now(), s: 'Zemin seviyesi ölçüldü ✓' }; }
-    else if (wantGround && performance.now() - wantGroundT > 2500) { wantGround = false; groundMsg = { t: performance.now(), s: '⚠ Zemin bulunamadı. Daireyi yakındaki zemine tut, yavaşça gezdir, tekrar bas.' }; }
+    if (wantGround && lastHit) {
+      groundY = lastHit.y; wantGround = false; groundMsg = { t: performance.now(), s: 'Zemin seviyesi ölçüldü ✓' };
+      if (pendingZ) { S.zUser = pendingZ.ele; groundMsg.s = `Hat zemine oturtuldu ✓ (direk ${pendingZ.name} tabanı bu zeminde, kot ${pendingZ.ele})`; pendingZ = null; refreshAll(); }
+    }
+    else if (wantGround && performance.now() - wantGroundT > 2500) { wantGround = false; pendingZ = null; groundMsg = { t: performance.now(), s: '⚠ Zemin bulunamadı. Daireyi yakındaki zemine tut, yavaşça gezdir, tekrar bas.' }; }
   }
   const now = performance.now();
   if (cal && pose) {
@@ -875,7 +879,7 @@ function hudText(now) {
       : dz > 0 ? `<b style="color:#ff8a70">GÖMÜLÜ: taban arazinin ${dz.toFixed(1)} m altında</b>` : `<b style="color:#ffd166">HAVADA: taban arazinin ${(-dz).toFixed(1)} m üstünde</b>`);
   }
   if (PROJ && projOpt.on) { const n = nearestProject(); if (n) s += `<br>Proje: en yakın direk <b>${n.a.c}</b> (${n.d.toFixed(0)} m): <b>${projStatus(n.a).t}</b>${n.a.a ? ' · bugün/yarın iş var' : ''}${n.a.r ? ' · <b style="color:#ff8a70">saha kısıtlı</b>' : ''}`; }
-  if (KMZ && kmzOpt.on) { const n = nearestStruct(); if (n) s += `<br>Hat: en yakın direk <b>${n.s.name}</b> (${n.d.toFixed(0)} m), arazi kotu ${n.s.ele} m`; }
+  if (KMZ && kmzOpt.on) { const n = nearestStruct(); if (n) s += `<br>Hat: en yakın direk <b>${n.s.name}</b> (${n.d.toFixed(0)} m), arazi kotu ${n.s.ele} m${S.zUser === 0 ? ' · zemin referansı: bu direğin tabanı (otomatik)' : ''}`; }
   if (groundMsg && now - groundMsg.t < 3500) s += '<br>' + groundMsg.s;
   return s;
 }
@@ -1187,6 +1191,8 @@ function kmzDispose(rt) {
 function kmzUpdate(tn) {
   if (!KMZ || !kmzOpt.on) { kmzGroup.visible = false; return; }
   kmzGroup.visible = true; let builds = 0;
+  // no standing elevation known: the nearest tower's base is taken as ground level, so the line sits on the ground instead of floating at its absolute height (e.g. 1064 m)
+  const nk = S.zUser !== 0 ? null : nearestStruct(), zRef = S.zUser !== 0 ? S.zUser : (nk && nk.s.ele != null ? nk.s.ele : 0);
   for (const c of KMZ.chunks) {
     const en = enuFrom(origin.lat, origin.lng, c.lat, c.lng), e = en.e + adj.e, n = en.n + adj.n, dist = Math.hypot(e, n), yaw = tn + Math.atan2(e, n);
     const px = origin.x + dist * Math.sin(yaw), pz = origin.z - dist * Math.cos(yaw), dc = Math.hypot(px - camPos.x, pz - camPos.z) - c.rad;
@@ -1194,7 +1200,7 @@ function kmzUpdate(tn) {
     if (dc > kmzOpt.radius * 1.3) { if (rt) { kmzDispose(rt); kmzRt.delete(c.id); } continue; }
     if (dc > kmzOpt.radius) { if (rt) rt.group.visible = false; continue; }
     if (!rt) { if (builds >= 2) continue; rt = kmzBuild(c); kmzRt.set(c.id, rt); builds++; }
-    rt.group.visible = true; rt.group.position.set(px, groundY + adj.up - S.zUser, pz); rt.group.rotation.y = -tn;
+    rt.group.visible = true; rt.group.position.set(px, groundY + adj.up - zRef, pz); rt.group.rotation.y = -tn;
   }
 }
 // where the user stands, from the AR camera position and the current alignment
@@ -1219,6 +1225,12 @@ $('btnKmzLabels').addEventListener('click', () => {
 $('pKmz').addEventListener('click', (ev) => {
   const b = ev.target.closest('button[data-kr]'); if (!b) return;
   kmzOpt.radius = Math.min(5000, Math.max(200, kmzOpt.radius + +b.dataset.kr)); $('lblKr').textContent = `Görüş ${kmzOpt.radius} m`;
+});
+$('btnKmzSnap').addEventListener('click', () => {
+  const n = nearestStruct(); if (!n || n.s.ele == null) { groundMsg = { t: performance.now(), s: '⚠ Önce hizalama tamamlanmalı ve hat yüklü olmalı' }; return; }
+  if (!hitSource) { S.zUser = n.s.ele; refreshAll(); groundMsg = { t: performance.now(), s: `Hat, direk ${n.s.name} tabanını zemin kabul etti (bu telefonda zemin ölçümü yok, yükseklik düğmelerini kullan)` }; return; }
+  pendingZ = { name: n.s.name, ele: n.s.ele }; wantGround = true; wantGroundT = performance.now();
+  groundMsg = { t: performance.now(), s: 'Zemin ölçülüyor… daireyi yakındaki zemine tut' };
 });
 $('btnKmzZ').addEventListener('click', () => {
   const n = nearestStruct(); if (!n || n.s.ele == null) { groundMsg = { t: performance.now(), s: '⚠ Önce hizalama tamamlanmalı ve hat yüklü olmalı' }; return; }
