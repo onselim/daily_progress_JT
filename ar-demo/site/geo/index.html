@@ -152,7 +152,8 @@
       <button class="full" id="btnProjOn" style="display:none">Proje durumları: Açık</button>
       <div class="note" id="projLegend" style="display:none">Renkler: <b style="color:#9aa3c7">gri</b> başlamadı · <b style="color:#00d4aa">yeşil</b> devam ediyor · <b style="color:#3b82f6">mavi</b> tamamlandı · <b style="color:#ef4444">kırmızı</b> beklemede. <b style="color:#ffb020">Turuncu halka</b>: bugün/yarın iş var. <b style="color:#ff3b30">Kırmızı halka</b>: saha bugün kısıtlı.</div>
       <button class="full" id="btnKmzLabels">Direk etiketleri: Açık</button>
-      <button class="full" id="btnKmzSnap">⬇ Hattı zemine oturt (daireyi ayağının yakınındaki zemine tut, bas)</button>
+      <button class="full" id="btnDem">Uzaktayken zemin: doğal arazi (DEM) Açık</button>
+      <button class="full" id="btnKmzSnap">⬇ Hattı zemine oturt (daireyi en yakın direğin ayağına tut, bas)</button>
       <button class="full" id="btnKmzZ">Bulunduğum kotu en yakın direğin arazi kotundan al</button>
     </div>
     <div id="pObj" class="apanel">
@@ -880,7 +881,7 @@ function hudText(now) {
       : dz > 0 ? `<b style="color:#ff8a70">GÖMÜLÜ: taban arazinin ${dz.toFixed(1)} m altında</b>` : `<b style="color:#ffd166">HAVADA: taban arazinin ${(-dz).toFixed(1)} m üstünde</b>`);
   }
   if (PROJ && projOpt.on) { const n = nearestProject(); if (n) s += `<br>Proje: en yakın direk <b>${n.a.c}</b> (${n.d.toFixed(0)} m): <b>${projStatus(n.a).t}</b>${n.a.a ? ' · bugün/yarın iş var' : ''}${n.a.r ? ' · <b style="color:#ff8a70">saha kısıtlı</b>' : ''}`; }
-  if (KMZ && kmzOpt.on) { const n = nearestStruct(); if (n) s += `<br>Hat: en yakın direk <b>${n.s.name}</b> (${n.d.toFixed(0)} m), arazi kotu ${n.s.ele} m${S.zUser === 0 ? ' · zemin referansı: bu direğin tabanı (otomatik)' : ''}`; }
+  if (KMZ && kmzOpt.on) { const n = nearestStruct(); if (n) s += `<br>Hat: en yakın direk <b>${n.s.name}</b> (${n.d.toFixed(0)} m), arazi kotu ${n.s.ele} m${S.zUser === 0 ? (DEM.mode === 'dem' ? ' · zemin: ' + DEM.info : DEM.mode === 'wait' ? ' · zemin: DEM bekleniyor (şimdilik direk tabanı)' : ' · zemin referansı: bu direğin tabanı (otomatik)') : ''}`; }
   if (groundMsg && now - groundMsg.t < 3500) s += '<br>' + groundMsg.s;
   return s;
 }
@@ -1113,6 +1114,47 @@ async function kmzImport(file) {
 }
 // Several PLS-CADD exports can be loaded at once (LINES). Everything else in the page keeps working on ONE merged view (KMZ):
 // visible lines only, chunk ids renumbered, and with >1 line the structure names get a "<line no>·" prefix so "#1" of two lines never collides.
+// ---- natural ground under the user, from a public DEM (Open-Meteo / Copernicus 90 m; Google's elevation API needs a paid key) ----
+// The DEM is absolute-offset from PLS heights by several metres, so it is CALIBRATED per source: bias = median(PLS ele - DEM) over up to 40 structures.
+// The user's own ground level is then DEM(user) + bias, in the line's datum: a viewer 500 m away, on flat ground below a slope, no longer gets the
+// far tower's base put at his feet. Within 60 m of a structure its own PLS base is used instead (more exact than any DEM).
+let DEM_ON = true; try { DEM_ON = localStorage.getItem('arDemOn') !== '0'; } catch (e) {}
+const DEM = { cal: {}, busy: {}, user: null, tryT: 0, mode: 'tower', info: '' };
+const DEM_NEAR = 60;
+async function demFetch(pts) {
+  const r = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${pts.map((q) => q.lat.toFixed(5)).join(',')}&longitude=${pts.map((q) => q.lng.toFixed(5)).join(',')}`);
+  if (!r.ok) throw new Error('DEM ' + r.status); const j = await r.json(); if (!Array.isArray(j.elevation)) throw new Error('DEM yanıtı'); return j.elevation;
+}
+function demCalibrate(key, src) {
+  const pts = src.filter((q) => q.ele != null); if (pts.length < 2) return;
+  const step = Math.max(1, Math.floor(pts.length / 40)), pick = pts.filter((q, i) => i % step === 0).slice(0, 40);
+  const sig = key + pts.length + (pts[0].name || '');
+  if (DEM.busy[key] === sig || (DEM.cal[key] && DEM.cal[key].sig === sig)) return;
+  DEM.busy[key] = sig;
+  demFetch(pick).then((el) => {
+    const d = pick.map((q, i) => q.ele - el[i]).sort((a, b) => a - b), m = d[d.length >> 1], sd = Math.sqrt(d.reduce((a, x) => a + (x - m) ** 2, 0) / d.length);
+    DEM.cal[key] = { bias: m, sd, n: d.length, sig };
+  }).catch((e) => { console.warn('DEM kalibrasyonu yapılamadı', e); setTimeout(() => { if (DEM.busy[key] === sig) DEM.busy[key] = null; }, 30000); });
+}
+function demUserTick() {
+  const u = userLatLng(), now = performance.now(); if (!u) return;
+  if (DEM.user && distM(u, DEM.user) < 40) return;
+  if (DEM.pending || now - DEM.tryT < 5000) return;
+  DEM.pending = true; DEM.tryT = now;
+  demFetch([u]).then((el) => { DEM.user = { lat: u.lat, lng: u.lng, e: el[0] }; }).catch((e) => console.warn('DEM (konum) alınamadı', e)).finally(() => { DEM.pending = false; });
+}
+// near = { z, d, name } nearest structure of the layer whose datum is `key`
+function zRefFor(key, near) {
+  if (S.zUser !== 0) { DEM.mode = 'user'; return S.zUser; }
+  const nz = near && near.z != null ? near.z : 0;
+  DEM.mode = 'tower';
+  if (!DEM_ON || !near || near.z == null || near.d < DEM_NEAR) return nz;
+  const c = DEM.cal[key]; demUserTick();
+  if (!c || !DEM.user) { DEM.mode = 'wait'; return nz; }
+  DEM.mode = 'dem'; const z = DEM.user.e + c.bias;
+  DEM.info = `doğal arazi (DEM ${DEM.user.e.toFixed(0)} m ${c.bias >= 0 ? '+' : '−'} ${Math.abs(c.bias).toFixed(1)} düzeltme, ±${c.sd.toFixed(1)}) = ${z.toFixed(0)} m`;
+  return z;
+}
 const LINES = [], LINE_COLORS = ['#ff5a5a', '#ffd23f', '#6be3ff', '#7dff8a', '#c58bff', '#ff9f43'];
 function kmzMerge() {
   for (const rt of kmzRt.values()) kmzDispose(rt); kmzRt.clear();
@@ -1125,6 +1167,7 @@ function kmzMerge() {
   });
   KMZ = act.length ? { name: act.map((L) => L.name).join(' + '), shift: act[0].shift, crs: act[0].crs, structs, chunks, lines: act } : null;
   kmzShowOnMap(); kmzRefreshUi();
+  if (KMZ) demCalibrate('kmz', KMZ.structs);
   if (typeof updateStatus === 'function') updateStatus();
 }
 function kmzSet(k) { LINES.length = 0; LINES.push({ ...k, on: true }); kmzMerge(); }   // single-line entry point (also used by the test hooks)
@@ -1218,7 +1261,7 @@ function kmzUpdate(tn) {
   if (!KMZ || !kmzOpt.on) { kmzGroup.visible = false; return; }
   kmzGroup.visible = true; let builds = 0;
   // no standing elevation known: the nearest tower's base is taken as ground level, so the line sits on the ground instead of floating at its absolute height (e.g. 1064 m)
-  const nk = S.zUser !== 0 ? null : nearestStruct(), zRef = S.zUser !== 0 ? S.zUser : (nk && nk.s.ele != null ? nk.s.ele : 0);
+  const nk = S.zUser !== 0 ? null : nearestStruct(), zRef = zRefFor('kmz', nk && { z: nk.s.ele, d: nk.d, name: nk.s.name });
   for (const c of KMZ.chunks) {
     const en = enuFrom(origin.lat, origin.lng, c.lat, c.lng), e = en.e + adj.e, n = en.n + adj.n, dist = Math.hypot(e, n), yaw = tn + Math.atan2(e, n);
     const px = origin.x + dist * Math.sin(yaw), pz = origin.z - dist * Math.cos(yaw), dc = Math.hypot(px - camPos.x, pz - camPos.z) - c.rad;
@@ -1243,6 +1286,9 @@ function nearestStruct() {
   return { s: best, d: bd };
 }
 $('btnKmzP').addEventListener('click', () => togglePanel('pKmz'));
+const demBtn = () => { $('btnDem').textContent = `Uzaktayken zemin: doğal arazi (DEM) ${DEM_ON ? 'Açık' : 'Kapalı'}`; };
+demBtn();
+$('btnDem').addEventListener('click', () => { DEM_ON = !DEM_ON; try { localStorage.setItem('arDemOn', DEM_ON ? '1' : '0'); } catch (e) {} demBtn(); });
 $('btnKmzOn').addEventListener('click', () => { kmzOpt.on = !kmzOpt.on; $('btnKmzOn').textContent = `Hat: ${kmzOpt.on ? 'Açık' : 'Kapalı'}`; });
 $('btnKmzLabels').addEventListener('click', () => {
   kmzOpt.labels = !kmzOpt.labels; $('btnKmzLabels').textContent = `Direk etiketleri: ${kmzOpt.labels ? 'Açık' : 'Kapalı'}`;
@@ -1289,7 +1335,9 @@ function projLoad(payload) {
   p.byCode = new Map(p.assets.map((a) => [String(a.c), a]));
   for (const rt of projRt.values()) projDispose(rt); projRt.clear();
   for (const rt of kmzRt.values()) kmzDispose(rt); kmzRt.clear();      // KMZ towers are re-tinted by status
-  PROJ = p; projShowOnMap(); projRefreshUi(); return true;
+  PROJ = p; projShowOnMap(); projRefreshUi();
+  demCalibrate('proj', p.assets.map((q) => ({ name: String(q.c), lat: q.lat, lng: q.lng, ele: q.z })));
+  return true;
 }
 function projClear() {
   try { localStorage.removeItem('arProject'); } catch (e) {}
@@ -1377,7 +1425,7 @@ function projUpdate(tn) {
   if (!PROJ || !projOpt.on) { projGroup.visible = false; return; }
   projGroup.visible = true; let builds = 0;
   // no standing elevation entered yet: use the nearest tower's ground elevation, so towers sit on the ground instead of floating at their absolute height
-  const nz = S.zUser !== 0 ? null : nearestProject(), zRef = S.zUser !== 0 ? S.zUser : (nz && nz.a.z != null ? nz.a.z : 0);
+  const nz = S.zUser !== 0 ? null : nearestProject(), zRef = zRefFor('proj', nz && { z: nz.a.z, d: nz.d, name: nz.a.c });
   for (const a of PROJ.assets) {
     const en = enuFrom(origin.lat, origin.lng, a.lat, a.lng), e = en.e + adj.e, n = en.n + adj.n, dist = Math.hypot(e, n), yaw = tn + Math.atan2(e, n);
     const px = origin.x + dist * Math.sin(yaw), pz = origin.z - dist * Math.cos(yaw), dc = Math.hypot(px - camPos.x, pz - camPos.z);
