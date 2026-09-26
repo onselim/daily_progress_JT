@@ -101,6 +101,8 @@
         <label id="lbRef3">Georeferans 3 (isteğe bağlı)<input id="ref3" type="text" autocomplete="off" spellcheck="false"></label>
         <label id="lbRef3kmz" style="display:none;flex:0 0 128px">KMZ direk<select id="ref3Kmz"></select></label>
       </div>
+      <button id="btnAutoRef" style="display:none;width:100%;margin-bottom:8px">🔁 Otomatik referans seç (en uzak 2-3 direk)</button>
+      <div class="hint" id="autoRefHint"></div>
       <div class="hint">Sahada koordinatı bilinen (RTK vb.) en az iki, en fazla üç nokta. Aralarında en az 20-30 m olsun; ne kadar uzaksa yön o kadar hassas olur. Hat yüklüyse elle yazmak yerine <b>"KMZ direk"</b> listesinden direk seç — koordinat ve kot otomatik dolar, yazım hatası olmaz. Üçüncü nokta hassasiyeti artırır ve hata payını gösterir.</div>
     </details>
     <div class="row">
@@ -597,6 +599,7 @@ function refreshInputs() {
   $('ref1').placeholder = $('ref2').placeholder = $('ref3').placeholder = $('ref1b').placeholder = $('ref2b').placeholder = u ? 'E, N, Z' : 'enlem, boylam, Z';
   put('ref1', refText(0)); put('ref2', refText(1)); put('ref3', refText(2)); put('ref1b', refText(0)); put('ref2b', refText(1)); put('ref3b', refText(2));
   for (const i of [0, 1, 2]) $(`lbRef${i + 1}kmz`).style.display = refSource().length ? '' : 'none';
+  $('btnAutoRef').style.display = refSource().length >= 2 ? '' : 'none';
   const mode = S.origin.mode;
   for (const [b, m] of [['btnPick', 'map'], ['btnRefMode', 'ref'], ['btnGps', 'gps']]) $(b).classList.toggle('on', mode === m);
   $('pickHint').textContent = mode === 'gps' ? 'Konum kaynağı GPS: telefonun GPS konumu kullanılır, yüzlerce metre sapabilir.'
@@ -959,6 +962,7 @@ let KMZ = null;
 const kmzRt = new Map();
 const kmzGroup = new THREE.Group();
 const kmzOpt = { on: true, radius: 1000, labels: true };
+const shortStruct = (n) => n.replace(/^Undefined \(#(\d+) in line\)$/, '#$1');
 const decodeXml = (s) => s.replace(/&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 
 function parseKml(text, fname) {
@@ -973,10 +977,17 @@ function parseKml(text, fname) {
     const t = text.slice(c0 + 9, c1), g = (re) => { const x = re.exec(t); return x ? parseFloat(x[1]) : null; };
     info[id] = { name: (/<h3>([^<]*)<\/h3>/.exec(t) || [])[1] || '', sta: g(/sta=([-\d.]+)/), ht: g(/ht=([-\d.]+)/), ele: g(/ele=([-\d.]+)/), x: g(/X=([-\d.]+)/), y: g(/Y=([-\d.]+)/) };
   }
-  for (const m of seg.matchAll(/<Placemark>\s*<name>([^<]*)<\/name>[\s\S]*?<heading>([-\d.]+)<\/heading>[\s\S]*?<styleUrl>#(structInfo\d+)<\/styleUrl>[\s\S]*?<coordinates>([^<]*)<\/coordinates>/g)) {
-    const [lng, lat] = m[4].trim().split(',').map(Number), i = info[m[3]] || {};
-    structs.push({ name: decodeXml(m[1]), lat, lng, heading: parseFloat(m[2]), sta: i.sta, ht: i.ht, ele: i.ele, x: i.x, y: i.y });
+  for (const m of seg.matchAll(/<Placemark>([\s\S]*?)<\/Placemark>/g)) {
+    const bd = m[1], nm = /<name>([^<]*)<\/name>/.exec(bd), pt = /<Point>[\s\S]*?<coordinates>\s*([^<]*?)\s*<\/coordinates>/.exec(bd);
+    if (!nm || !pt) continue;
+    const [lng, lat] = pt[1].split(',').map(Number); if (!isFinite(lat) || !isFinite(lng)) continue;
+    const su = /<styleUrl>#([^<]+)<\/styleUrl>/.exec(bd), i = (su && info[su[1]]) || {}, hd = /<heading>([-\d.]+)<\/heading>/.exec(bd);
+    const desc = ((/<description>([\s\S]*?)<\/description>/.exec(bd) || [])[1] || '').replace(/<[^>]+>/g, ' ');
+    const g = (re) => { const x = re.exec(desc); return x ? parseFloat(x[1]) : null; };
+    structs.push({ name: shortStruct(decodeXml(nm[1])), lat, lng, heading: hd ? parseFloat(hd[1]) : null,
+      sta: i.sta ?? g(/sta=([-\d.]+)/), ht: i.ht ?? g(/ht=([-\d.]+)/), ele: i.ele ?? g(/ele=([-\d.]+)/), x: i.x ?? g(/X=([-\d.]+)/), y: i.y ?? g(/Y=([-\d.]+)/) });
   }
+  if (!structs.length) throw new Error('"Structure locations" içinde direk noktası bulunamadı.');
   // folders: every <Folder> owns the text up to the next <Folder> or </Folder>
   const raw = [];
   let pos = b;
@@ -994,17 +1005,41 @@ function parseKml(text, fname) {
     const sm = /Structure '([^']*)'/.exec(name), cable = (/, '([^']+)',/.exec(name) || [])[1] || '';
     raw.push({ name, kind: isSection ? 'span' : 'tower', sname: sm ? sm[1] : null, cable, pts });
   }
+  // PLS-CADD 13+ writes the whole model as ONE folder of solid faces (polygons) instead of one folder per structure:
+  // give every face to the nearest structure (grid lookup keeps this fast on 200-structure lines)
+  const isModel = (r) => r.kind === 'tower' && !r.sname && r.pts.P.length > 200;
+  if (raw.some(isModel)) {
+    const cell = (la, ln) => `${Math.round(la * 1000)},${Math.round(ln * 1000)}`, grid = new Map();
+    for (const st of structs) { const k = cell(st.lat, st.lng); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(st); }
+    const faceGroups = new Map(), lineGroups = new Map();
+    const nearest = (pt) => {
+      const [ln, la] = pt, kx = Math.cos(la * rad) * 111320; let best = null, bd = 60;
+      for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) for (const st of grid.get(`${Math.round(la * 1000) + di},${Math.round(ln * 1000) + dj}`) || []) {
+        const d = Math.hypot((la - st.lat) * 110574, (ln - st.lng) * kx); if (d < bd) { bd = d; best = st; }
+      }
+      return best;
+    };
+    const push = (map, st, item) => { if (!map.has(st.name)) map.set(st.name, []); map.get(st.name).push(item); };
+    for (const r of raw.filter(isModel)) {
+      for (const ring of r.pts.P) { const st = nearest(ring[0]); if (st) push(faceGroups, st, ring); }
+      for (const ln of r.pts.L) { const st = nearest(ln[0]); if (st) push(lineGroups, st, ln); }
+    }
+    if (faceGroups.size) {
+      for (let i = raw.length - 1; i >= 0; i--) if (isModel(raw[i])) raw.splice(i, 1);
+      for (const [name, rings] of faceGroups) raw.push({ name: `Structure '${name}'`, kind: 'tower', sname: name, cable: '', pts: { L: lineGroups.get(name) || [], P: [] }, faces: rings });
+    }
+  }
   // datum shift: PLS "ele" (project height) minus the lowest KML altitude of each structure (should be a constant)
   const byName = new Map(structs.map((s) => [s.name, s])), diffs = [];
   for (const r of raw) if (r.sname && byName.has(r.sname) && byName.get(r.sname).ele != null) {
-    let mn = Infinity; for (const l of r.pts.L) for (const p of l) if (p[2] < mn) mn = p[2];
+    let mn = Infinity; for (const set of [r.pts.L, r.pts.P, r.faces || []]) for (const l of set) for (const p of l) if (p[2] < mn) mn = p[2];
     if (isFinite(mn)) diffs.push(byName.get(r.sname).ele - mn);
   }
   diffs.sort((x, y) => x - y); const shift = diffs.length ? diffs[diffs.length >> 1] : 0;
   const chunks = [];
   raw.forEach((r, ci) => {
     let mnLat = 90, mxLat = -90, mnLng = 180, mxLng = -180;
-    for (const set of [r.pts.L, r.pts.P]) for (const l of set) for (const p of l) { if (p[1] < mnLat) mnLat = p[1]; if (p[1] > mxLat) mxLat = p[1]; if (p[0] < mnLng) mnLng = p[0]; if (p[0] > mxLng) mxLng = p[0]; }
+    for (const set of [r.pts.L, r.pts.P, r.faces || []]) for (const l of set) for (const p of l) { if (p[1] < mnLat) mnLat = p[1]; if (p[1] > mxLat) mxLat = p[1]; if (p[0] < mnLng) mnLng = p[0]; if (p[0] > mxLng) mxLng = p[0]; }
     const lat = (mnLat + mxLat) / 2, lng = (mnLng + mxLng) / 2;
     const conv = (p) => { const o = enuFrom(lat, lng, p[1], p[0]); return [o.e, p[2] + shift, -o.n]; };
     const segsOf = (set, closed) => {
@@ -1012,17 +1047,35 @@ function parseKml(text, fname) {
       for (const l of set) for (let i = 0; i + 1 < l.length; i++) out.push(...conv(l[i]), ...conv(l[i + 1]));
       return new Float32Array(out);
     };
-    const c = { id: ci, kind: r.kind, name: r.name, sname: r.sname, cable: r.cable, lat, lng, t: new Float32Array(0), w: new Float32Array(0), h: new Float32Array(0), rad: 1, top: 0 };
-    if (r.kind === 'tower') c.t = segsOf(r.pts.L); else c.w = segsOf(r.pts.L);
+    // a face ring (closing/duplicate points removed) is fan-triangulated: solid members render as real surfaces
+    const same = (a, b) => Math.abs(a[0] - b[0]) < 1e-10 && Math.abs(a[1] - b[1]) < 1e-10 && Math.abs(a[2] - b[2]) < 1e-4;
+    const trisOf = (rings) => {
+      const out = [];
+      for (const ring of rings) {
+        const pts = []; for (const q of ring) if (!pts.length || !same(pts[pts.length - 1], q)) pts.push(q);
+        if (pts.length > 1 && same(pts[0], pts[pts.length - 1])) pts.pop();
+        if (pts.length < 3) continue;
+        const c0 = conv(pts[0]); for (let i = 1; i + 1 < pts.length; i++) out.push(...c0, ...conv(pts[i]), ...conv(pts[i + 1]));
+      }
+      return new Float32Array(out);
+    };
+    const c = { id: ci, kind: r.kind, name: r.name, sname: r.sname, cable: r.cable, lat, lng, t: new Float32Array(0), w: new Float32Array(0), h: new Float32Array(0), f: r.faces ? trisOf(r.faces) : new Float32Array(0), rad: 1, top: 0 };
+    // in face-based exports the long polylines inside the model are the span wires (sag curves), not tower members
+    const isWire = (l) => { const p0 = conv(l[0]), p1 = conv(l[l.length - 1]); return Math.hypot(p0[0] - p1[0], p0[2] - p1[2]) > 25; };
+    if (r.kind === 'tower' && r.faces) { c.t = segsOf(r.pts.L.filter((l) => !isWire(l))); c.w = segsOf(r.pts.L.filter(isWire)); if (c.w.length) c.cable = 'acsr'; }
+    else if (r.kind === 'tower') c.t = segsOf(r.pts.L); else c.w = segsOf(r.pts.L);
     c.h = segsOf(r.pts.P);
     let mxr = 1, top = -Infinity;
-    for (const arr of [c.t, c.w, c.h]) for (let i = 0; i < arr.length; i += 3) { mxr = Math.max(mxr, Math.hypot(arr[i], arr[i + 2])); if (arr[i + 1] > top) top = arr[i + 1]; }
+    for (const arr of [c.t, c.w, c.h, c.f]) for (let i = 0; i < arr.length; i += 3) { mxr = Math.max(mxr, Math.hypot(arr[i], arr[i + 2])); if (arr[i + 1] > top) top = arr[i + 1]; }
     c.rad = mxr; c.top = top;
     chunks.push(c);
   });
   const doc = /<Document>\s*<name>([\s\S]*?)<\/name>/.exec(text.slice(0, 4000));
-  const title = doc ? decodeXml(decodeXml(doc[1])).replace(/<[^>]+>/g, '').trim() : fname;
-  return { name: title || fname, fname, shift, structs, chunks, ms: Math.round(performance.now() - t0) };
+  const title = doc ? decodeXml(decodeXml(doc[1])).replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, '').trim() : fname;
+  const cm = /Project coordinate system:\s*UTM Zone\s*(\d+)\s*([NS])/i.exec(text.slice(0, 4000));
+  const mlng = structs.reduce((a, x) => a + x.lng, 0) / structs.length, mlat = structs.reduce((a, x) => a + x.lat, 0) / structs.length;
+  const crs = cm ? { zone: +cm[1], north: cm[2].toUpperCase() === 'N', src: 'dosyadan' } : { zone: utmZoneOf(mlng), north: mlat >= 0, src: 'konumdan' };
+  return { name: title || fname, fname, shift, structs, chunks, crs, ms: Math.round(performance.now() - t0) };
 }
 
 // tiny IndexedDB key/value store so a large import survives reloads
@@ -1045,8 +1098,9 @@ async function kmzImport(file) {
   await new Promise((r) => setTimeout(r, 30));
   try {
     const text = await kmzReadFile(file); info.textContent = 'Direkler ve teller ayrıştırılıyor…'; await new Promise((r) => setTimeout(r, 30));
-    kmzSet(parseKml(text, file.name)); try { await idb.set('kmz', KMZ); } catch (e) { console.warn('IndexedDB kaydı yapılamadı', e); }
-    kmzFit();
+    const parsed = parseKml(text, file.name); kmzSet(parsed); try { await idb.set('kmz', KMZ); } catch (e) { console.warn('IndexedDB kaydı yapılamadı', e); }
+    if (parsed.crs) { S.crs = { ...S.crs, zone: parsed.crs.zone, north: parsed.crs.north, zoneSet: true }; refreshAll(); }   // UTM zone from the file, not a guess
+    kmzFit(); autoPickRefs(false);
   } catch (e) { info.textContent = '⚠ ' + e.message; console.error(e); }
 }
 function kmzSet(k) {
@@ -1068,7 +1122,7 @@ function kmzRefreshUi() {
   const has = !!KMZ; $('kmzRow').style.display = has ? '' : 'none'; $('kmzInfo').style.display = has ? '' : 'none';
   if (has) {
     const nT = KMZ.chunks.filter((c) => c.kind === 'tower').length, nS = KMZ.chunks.filter((c) => c.kind === 'span').length;
-    $('kmzInfo').textContent = `📂 ${KMZ.name}: ${KMZ.structs.length} direk noktası, ${nT} direk modeli, ${nS} tel açıklığı. Kot düzeltmesi: KML kotlarına +${KMZ.shift.toFixed(2)} m eklendi (PLS proje kotu). Hat AR'da "Hat" panelinden açılır.`;
+    $('kmzInfo').textContent = `📂 ${KMZ.name}: ${KMZ.structs.length} direk noktası, ${nT} direk modeli, ${nS} tel açıklığı. Kot düzeltmesi: KML kotlarına +${KMZ.shift.toFixed(2)} m eklendi (PLS proje kotu).${KMZ.crs ? ` Koordinat sistemi: UTM ${KMZ.crs.zone}${KMZ.crs.north ? 'N' : 'S'} (${KMZ.crs.src}).` : ''} Hat AR'da "Hat" panelinden açılır.`;
     $('kmzStr').innerHTML = '<option value="">— seç —</option>' + KMZ.structs.map((s, i) => `<option value="${i}">${s.name}${s.ht != null ? '  (' + s.ht + ' m)' : ''}</option>`).join('');
     $('kmzNote').textContent = `${KMZ.name}: ${KMZ.structs.length} direk. Yalnızca görüş mesafesi içindeki parçalar çizilir. Kotlar PLS proje kotunda (+${KMZ.shift.toFixed(2)} m düzeltildi).`;
   } else { $('kmzNote').textContent = 'KMZ yüklenmemiş. Ana ekrandan "KMZ / KML yükle" ile PLS-CADD hattını yükle.'; }
@@ -1102,6 +1156,11 @@ function kmzBuild(c) {
   const g = new THREE.Group();
   const add = (geo, mat) => { if (geo) g.add(new THREE.Mesh(geo, mat)); };
   const pa = PROJ && c.sname ? PROJ.byCode.get(String(c.sname)) : null, tint = pa ? projStatus(pa).c : null;
+  if (c.f && c.f.length) {   // solid faces from PLS-CADD 13+ exports
+    const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.BufferAttribute(c.f.slice(), 3)); fg.computeVertexNormals();
+    const fc = tint != null ? tint : 0xc3ccd6;
+    g.add(new THREE.Mesh(fg, std(fc, 0.55, 0.45, Object.assign({ side: THREE.DoubleSide, flatShading: true }, tint != null ? { emissive: tint, emissiveIntensity: 0.3 } : {}))));
+  }
   if (c.t.length) add(kmzBeams(c.t, 0.16), tint != null ? std(tint, 0.6, 0.1, { emissive: tint, emissiveIntensity: 0.35 }) : std(0xc3ccd6, 0.55, 0.6));
   if (c.w.length) {
     const col = c.cable.startsWith('acsr') ? 0xffd23f : c.cable.startsWith('opgw') ? 0x6be3ff : 0x7dff8a;
@@ -1197,6 +1256,30 @@ function projClear() {
   for (const rt of kmzRt.values()) kmzDispose(rt); kmzRt.clear();
   PROJ = null; projShowOnMap(); projRefreshUi();
 }
+// Pick 2-3 georeference towers automatically: among the towers near the user (GPS) / the map centre, the two farthest apart
+// (best heading accuracy while still walkable), plus a third that is well off their line - or, on a straight line, the one in the middle.
+function autoPickRefs(force) {
+  const src = refSource(); if (src.length < 2) return false;
+  if (!force && refCount() > 0) return false;
+  const c = fix ? { lat: fix.lat, lng: fix.lng } : map.getCenter();
+  let cand = src.map((s, i) => ({ s, i, d: distM({ lat: c.lat, lng: c.lng }, s) })).sort((a, b) => a.d - b.d);
+  const near = cand.filter((x) => x.d <= 1500); cand = (near.length >= 2 ? near : cand.slice(0, 6)).slice(0, 40);
+  let A = null, B = null, best = -1;
+  for (let i = 0; i < cand.length; i++) for (let j = i + 1; j < cand.length; j++) { const d = distM(cand[i].s, cand[j].s); if (d > best) { best = d; A = cand[i]; B = cand[j]; } }
+  if (!A) return false;
+  const eb = enuFrom(A.s.lat, A.s.lng, B.s.lat, B.s.lng), len = Math.hypot(eb.e, eb.n) || 1;
+  let C = null, off = 15;
+  for (const x of cand) { if (x === A || x === B) continue; const e = enuFrom(A.s.lat, A.s.lng, x.s.lat, x.s.lng), o = Math.abs(e.e * eb.n - e.n * eb.e) / len; if (o > off) { off = o; C = x; } }
+  if (!C) { let gap = Infinity; for (const x of cand) { if (x === A || x === B) continue; const dA = distM(A.s, x.s), dB = distM(B.s, x.s); if (dA < 15 || dB < 15) continue; const g = Math.abs(dA - len / 2); if (g < gap) { gap = g; C = x; } } }
+  const pick = [A, B, C].filter(Boolean);
+  S.refs = [null, null, null]; refMarks = [null, null, null]; origin = null;
+  pick.forEach((x, k) => { S.refs[k] = { lat: x.s.lat, lng: x.s.lng, z: x.s.ele == null ? undefined : x.s.ele }; });
+  S.origin = { mode: 'ref' }; $('geoDet').open = true; refPickersRefresh();
+  pick.forEach((x, k) => { $(`ref${k + 1}Kmz`).value = String(x.i); });
+  refreshAll();
+  $('autoRefHint').textContent = `Otomatik seçildi: ${pick.map((x, k) => `R${k + 1} = ${x.s.name}`).join(', ')} (en uzak ikisi ${best.toFixed(0)} m arayla). Sahada bu direklerin yanına gidip AR'daki Referans panelinden işaretle.`;
+  return true;
+}
 const refSource = () => (PROJ ? PROJ.assets.map((a) => ({ name: String(a.c), lat: a.lat, lng: a.lng, ele: a.z, ht: null })) : (KMZ ? KMZ.structs : []));
 function refPickersRefresh() {
   const src = refSource();
@@ -1270,6 +1353,7 @@ function nearestProject() {
   for (const a of PROJ.assets) { const d = distM(u, a); if (d < bd) { bd = d; best = a; } }
   return best ? { a: best, d: bd } : null;
 }
+$('btnAutoRef').addEventListener('click', () => autoPickRefs(true));
 $('btnProjOn').addEventListener('click', () => { projOpt.on = !projOpt.on; $('btnProjOn').textContent = `Proje durumları: ${projOpt.on ? 'Açık' : 'Kapalı'}`; });
 $('btnProjClear').addEventListener('click', () => { if (confirm('Uygulamadan gelen proje verisi bu cihazdan silinsin mi?')) projClear(); });
 if (projLoad() && /[?&]proje/.test(location.search) && PROJ.assets.length) map.fitBounds(L.latLngBounds(PROJ.assets.map((a) => [a.lat, a.lng])).pad(0.08));
@@ -1360,7 +1444,7 @@ function kmzPreview(sname) {
   Object.assign(renderer.domElement.style, { left: '0', top: '0', width: '100%', height: '100%', opacity: '1', pointerEvents: 'auto' });
   renderer.setClearColor(0x9db8d0, 1);
   const tw = KMZ.chunks.find((c) => c.sname === sname); kmzOpt.labels = true;
-  let ymin = Infinity; for (let i = 1; i < tw.t.length; i += 3) ymin = Math.min(ymin, tw.t[i]);
+  let ymin = Infinity; for (const arr of [tw.t, tw.f || []]) for (let i = 1; i < arr.length; i += 3) ymin = Math.min(ymin, arr[i]);
   let n = 0;
   for (const c of KMZ.chunks) {
     const en = enuFrom(tw.lat, tw.lng, c.lat, c.lng); if (Math.hypot(en.e, en.n) - c.rad > 900) continue;
