@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kazı Aplikasyonu — Demo</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<style>
+  :root { --bg:#0f1720; --panel:#16202b; --line:#2a3846; --fg:#e6edf3; --dim:#9fb0c0; --acc:#2f81f7; --warn:#ffb020; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font-family:system-ui,sans-serif; }
+  #app { display:flex; flex-direction:column; height:100dvh; overflow:auto; padding:14px 14px calc(14px + env(safe-area-inset-bottom)); }
+  h1 { font-size:18px; margin:4px 0 2px; }
+  .hint { font-size:12.5px; color:var(--dim); line-height:1.5; margin:0 0 10px; }
+  .badge { display:inline-block; background:#0d141b; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:13px; margin-bottom:12px; }
+  .badge b { color:#fff; }
+  .row { display:flex; gap:8px; margin-bottom:10px; }
+  label { flex:1; font-size:11.5px; color:var(--dim); display:flex; flex-direction:column; gap:4px; min-width:0; }
+  select { width:100%; background:#0d141b; color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:10px 8px; font-size:16px; }
+  button { font:inherit; color:#fff; background:#2a3846; border:0; border-radius:10px; padding:13px 14px; font-size:15px; width:100%; }
+  button.primary { background:var(--acc); font-weight:600; margin-top:4px; }
+  #status { font-size:12.5px; color:var(--dim); margin-top:10px; line-height:1.5; }
+  #status.err { color:#ff8a70; }
+
+  #overlay { display:none; position:fixed; inset:0; pointer-events:none; font-size:14px; color:#fff; text-shadow:0 1px 3px #000; }
+  #hud { position:absolute; top:calc(8px + env(safe-area-inset-top)); left:8px; right:8px; background:#000a; border-radius:10px; padding:8px 10px; line-height:1.45; }
+  #cross { position:absolute; left:50%; top:50%; width:26px; height:26px; margin:-13px 0 0 -13px; border:2px solid #fff8; border-radius:50%; }
+  #ctl { position:absolute; left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom)); pointer-events:auto; }
+  #ctl .panel { background:#000b; border-radius:10px; padding:8px 10px 4px; }
+  #ctl .note { font-size:11px; color:#c8d3de; line-height:1.4; margin-bottom:8px; }
+  #ctl .r { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+  #ctl .r span { flex:1; font-size:12.5px; }
+  #ctl .r button { flex:0 0 44px; padding:9px 0; font-size:15px; width:auto; }
+  #ctl .full { width:100%; margin-bottom:6px; padding:9px; font-size:13px; }
+  #ctl .bar { display:flex; gap:6px; margin-top:2px; }
+  #ctl .bar button { flex:1; background:#000b; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>🕳 Kazı Aplikasyonu — Demo</h1>
+  <p class="hint">Bu, çözümü tanıtmak için hazırlanmış <b>bağımsız bir demodur</b> — herhangi bir projeye bağlı değildir. Bulunduğun yere, örnek bir direğin kazı alanlarını AR ile yerleştirebilirsin.</p>
+  <div class="badge">Direk tipi: <b>B30+0</b> · Zemin sınıfı: <b>Good Soil</b> (foundation genişliği 3.45 m)</div>
+  <div class="row">
+    <label>Bacak 1 (Z41) LE (m)<select id="le1"></select></label>
+    <label>Bacak 2 (Z42) LE (m)<select id="le2"></select></label>
+  </div>
+  <div class="row">
+    <label>Bacak 3 (Z43) LE (m)<select id="le3"></select></label>
+    <label>Bacak 4 (Z44) LE (m)<select id="le4"></select></label>
+  </div>
+  <p class="hint">LE (Leg Extension): pozitif değer o bacağın merkeze göre <b>aşağıda</b>, negatif değer <b>yukarıda</b> olduğu anlamına gelir — AR bunu her bacağın kazı yüksekliğine otomatik yansıtır.</p>
+  <button class="primary" id="btnAR">▶ AR'ı başlat</button>
+  <div id="status">Adımlar: 1) AR'ı başlat, 2) direğin olması gerektiğini düşündüğün merkeze git ve "Merkez" işaretle, 3) isteğe bağlı olarak 1-2 aliman (hat yönü) işaretle. Sadece merkez de yeterli, o zaman kazı alanları kuzeye göre çizilir.</div>
+</div>
+
+<div id="overlay">
+  <div id="hud">Hazırlanıyor…</div>
+  <div id="cross"></div>
+  <div id="ctl">
+    <div class="panel">
+      <div class="note"><b>1) Merkez</b>: direğin fiili merkezinde dur ve 📍'e bas, ya da daireyi merkeze tutup 🎯. <b>2-3) Aliman</b> (isteğe bağlı, hat yönünü verir): geride/ilerideki referans noktaları aynı şekilde işaretle.</div>
+      <div class="r"><span>1. Merkez</span><button data-dig="center" data-m="aim">🎯</button><button data-dig="center" data-m="here">📍</button></div>
+      <div class="r"><span>2. Arka aliman</span><button data-dig="back" data-m="aim">🎯</button><button data-dig="back" data-m="here">📍</button></div>
+      <div class="r"><span>3. İleri aliman</span><button data-dig="front" data-m="aim">🎯</button><button data-dig="front" data-m="here">📍</button></div>
+      <button class="full" id="btnReset">Sıfırla</button>
+      <div class="bar"><button id="btnExit">Çık</button></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+
+const $ = (id) => document.getElementById(id);
+const deg = 180 / Math.PI;
+
+// ---- bundled B30+0 / Good-Soil data (from the same validated stub_settings/foundation_types source as the
+// live project, copied once so this demo needs no network call and never depends on a live project's data) ----
+const TOWER = {
+  base: 'B30', bodyExtM: 0, bWidthM: 3.45,
+  stub: {
+    angleFactor: { a: 3869.5, j: 1022.565, k: 151.063 },
+    table: [
+      { legExtM: -3, wMm: 9661.73, bMm: 9563.83 },
+      { legExtM: -1.5, wMm: 10114.92, bMm: 10017.02 },
+      { legExtM: 0, wMm: 10568.12, bMm: 10470.21 },
+      { legExtM: 1.5, wMm: 11021.31, bMm: 10923.4 },
+      { legExtM: 3, wMm: 11474.5, bMm: 11376.59 },
+      { legExtM: 4.5, wMm: 11927.69, bMm: 11829.78 },
+      { legExtM: 6, wMm: 12380.88, bMm: 12282.97 },
+    ],
+  },
+};
+const LE_OPTIONS = TOWER.stub.table.map((t) => t.legExtM);
+for (const id of ['le1', 'le2', 'le3', 'le4']) {
+  $(id).innerHTML = LE_OPTIONS.map((v) => `<option value="${v}" ${v === 0 ? 'selected' : ''}>${v >= 0 ? '+' : ''}${v} m</option>`).join('');
+}
+
+// ---- excavation-pit geometry: same formula as app/src/lib/stubGeometry.ts, ported to the AR-local (x,z) frame
+// (verified in the main AR page's dig_test.js) ----
+const STUB_NAMES = { 1: 'Z41', 2: 'Z42', 3: 'Z43', 4: 'Z44' };
+const LEG_SIGNS = { 1: [-1, 1], 2: [-1, -1], 3: [1, -1], 4: [1, 1] };
+function normalize(v) { const m = Math.hypot(v[0], v[1]); return [v[0] / m, v[1] / m]; }
+function bisector(prev, cur, next) {
+  let bis;
+  if (!prev) bis = normalize([next[0] - cur[0], next[1] - cur[1]]);
+  else if (!next) bis = normalize([cur[0] - prev[0], cur[1] - prev[1]]);
+  else { const v1 = normalize([cur[0] - prev[0], cur[1] - prev[1]]), v2 = normalize([next[0] - cur[0], next[1] - cur[1]]); bis = normalize([v1[0] + v2[0], v1[1] + v2[1]]); }
+  return [bis, [-bis[1], bis[0]]];
+}
+function legCorners(legIndex, legExtM, center, bis, perp) {
+  const entry = TOWER.stub.table.find((t) => t.legExtM === legExtM);
+  const dimMm = entry.wMm;   // base is B30, not BLS -> use wMm (matches stubGeometry.ts)
+  const { a, j, k } = TOWER.stub.angleFactor, offsetMm = (a / j) * k;
+  const z1Mm = offsetMm + dimMm / 2 + (TOWER.bWidthM * 1000) / 2, hM = TOWER.bWidthM / 2, legM = z1Mm / 1000 - hM;
+  const [sBis, sPerp] = LEG_SIGNS[legIndex];
+  const lc = [center[0] + sBis * legM * bis[0] + sPerp * legM * perp[0], center[1] + sBis * legM * bis[1] + sPerp * legM * perp[1]];
+  const signs = [[-1, 1], [-1, -1], [1, -1], [1, 1]];
+  return { leg: legIndex, name: STUB_NAMES[legIndex], legExtM, legCenter: lc, corners: signs.map(([cb, cp]) => [lc[0] + cb * hM * bis[0] + cp * hM * perp[0], lc[1] + cb * hM * bis[1] + cp * hM * perp[1]]) };
+}
+
+// ---- three.js / WebXR ----
+let renderer, scene, camera, session = null, hitSource = null, camPos = { x: 0, y: 1.6, z: 0 }, lastHit = null;
+const digGroup = new THREE.Group();
+function initThree() {
+  if (renderer) return;
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor');
+  Object.assign(renderer.domElement.style, { position: 'fixed', left: '0', top: '0', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none' });
+  document.body.appendChild(renderer.domElement);
+  scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(70, 1, 0.1, 200); scene.add(digGroup);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8fa0b3, 1.5));
+  const sun = new THREE.DirectionalLight(0xfff4e0, 2.0); sun.position.set(40, 80, 30); scene.add(sun);
+}
+const labelTex = (txt) => {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 96; const g = c.getContext('2d');
+  g.fillStyle = 'rgba(15,23,32,0.82)'; g.beginPath(); g.roundRect(4, 4, 248, 88, 14); g.fill();
+  g.fillStyle = '#fff'; g.font = 'bold 44px system-ui,sans-serif'; g.textAlign = 'center'; g.fillText(txt[0], 128, 46);
+  g.fillStyle = '#9fd0ff'; g.font = '26px system-ui,sans-serif'; g.fillText(txt[1] || '', 128, 80);
+  return new THREE.CanvasTexture(c);
+};
+const COLORS = { 1: 0xff5a5a, 2: 0xffd23f, 3: 0x6be3ff, 4: 0x7dff8a };
+function quad(corners, y, color) {
+  const [c0, c1, c2, c3] = corners;
+  const pos = new Float32Array([c0[0], y, c0[1], c1[0], y, c1[1], c2[0], y, c2[1], c0[0], y, c0[1], c2[0], y, c2[1], c3[0], y, c3[1]]);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.computeVertexNormals();
+  const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.42, side: THREE.DoubleSide }));
+  const lp = new Float32Array([c0[0], y + 0.01, c0[1], c1[0], y + 0.01, c1[1], c2[0], y + 0.01, c2[1], c3[0], y + 0.01, c3[1], c0[0], y + 0.01, c0[1]]);
+  const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(lp, 3));
+  const line = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0xffffff }));
+  const grp = new THREE.Group(); grp.add(mesh); grp.add(line); return grp;
+}
+
+let DIG = { pts: { center: null, back: null, front: null }, legs: null, bis: null, angleDeg: null };
+function recompute() {
+  digGroup.clear(); DIG.legs = null; DIG.bis = null; DIG.angleDeg = null;
+  const c = DIG.pts.center; if (!c) return;
+  const b = DIG.pts.back, f = DIG.pts.front;
+  const cur = [c.x, c.z], prev = b ? [b.x, b.z] : null, next = f ? [f.x, f.z] : (b ? null : [c.x, c.z - 1]);   // centre-only: default forward = due north
+  const [bis, perp] = bisector(prev, cur, next);
+  DIG.bis = bis;
+  if (b && f) {
+    const v1 = normalize([cur[0] - prev[0], cur[1] - prev[1]]), v2 = normalize([next[0] - cur[0], next[1] - cur[1]]);
+    DIG.angleDeg = 180 - Math.acos(Math.max(-1, Math.min(1, v1[0] * v2[0] + v1[1] * v2[1]))) * deg;
+  }
+  const les = [+$('le1').value, +$('le2').value, +$('le3').value, +$('le4').value];
+  DIG.legs = [1, 2, 3, 4].map((i) => legCorners(i, les[i - 1], cur, bis, perp));
+  DIG.legs.forEach((leg) => {
+    const y = c.y - leg.legExtM;
+    digGroup.add(quad(leg.corners, y, COLORS[leg.leg]));
+    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex([leg.name, `LE ${leg.legExtM >= 0 ? '+' : ''}${leg.legExtM} m`]), depthTest: false, transparent: true }));
+    label.scale.set(2.4, 0.9, 1); label.position.set(leg.legCenter[0], y + 0.6, leg.legCenter[1]); label.renderOrder = 10; digGroup.add(label);
+  });
+  const e = c.x + bis[0] * 4, n = c.z + bis[1] * 4;
+  const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([c.x, c.y + 0.02, c.z, e, c.y + 0.02, n]), 3));
+  digGroup.add(new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0x7dff8a })));
+  const mg = new THREE.RingGeometry(0.12, 0.22, 24); mg.rotateX(-Math.PI / 2);
+  const marker = new THREE.Mesh(mg, new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
+  marker.position.set(c.x, c.y + 0.02, c.z); digGroup.add(marker);
+}
+let groundMsg = null;
+function mark(which, how) {
+  const now = performance.now();
+  let pt;
+  if (how === 'aim') {
+    if (!lastHit) { groundMsg = { t: now, s: '⚠ Zemin bulunamadı: daireyi noktaya tut, telefonu yavaşça gezdir, tekrar bas' }; return; }
+    pt = { x: lastHit.x, y: lastHit.y, z: lastHit.z };
+  } else pt = { x: camPos.x, y: lastHit ? lastHit.y : camPos.y - 1.4, z: camPos.z };
+  DIG.pts[which] = pt;
+  groundMsg = { t: now, s: `${which === 'center' ? 'Merkez' : which === 'back' ? 'Arka aliman' : 'İleri aliman'} işaretlendi ✓` };
+  recompute();
+}
+function hud(now) {
+  const ok = (v) => (v ? '✓' : '–'), c = DIG.pts.center, b = DIG.pts.back, f = DIG.pts.front;
+  let s = `Demo: B30+0 · Good Soil<br>Merkez ${ok(c)}  Arka ${ok(b)}  İleri ${ok(f)}`;
+  if (DIG.legs) {
+    s += ' · 4 bacak da çizildi';
+    s += DIG.angleDeg != null ? (DIG.angleDeg > 179.5 ? ' · düz hat' : ` · açı: hat açısı ${DIG.angleDeg.toFixed(1)}° (sapma ${(180 - DIG.angleDeg).toFixed(1)}°)`) : (b || f ? ' · süspansiyon (tek aliman)' : ' · aliman yok: kuzeye göre çizildi');
+  }
+  if (groundMsg && now - groundMsg.t < 3000) s += '<br>' + groundMsg.s;
+  return s;
+}
+function frame(t, xrFrame) {
+  if (!xrFrame) return;
+  const ref = renderer.xr.getReferenceSpace(), pose = xrFrame.getViewerPose(ref);
+  if (pose) { const p = pose.transform.position; camPos = { x: p.x, y: p.y, z: p.z }; }
+  if (hitSource) {
+    const res = xrFrame.getHitTestResults(hitSource);
+    const hp = res.length ? res[0].getPose(ref).transform.position : null;
+    lastHit = hp ? { x: hp.x, y: hp.y, z: hp.z } : null;
+  }
+  $('hud').innerHTML = hud(performance.now());
+  renderer.render(scene, camera);
+}
+async function startAR() {
+  if (!navigator.xr || !(await navigator.xr.isSessionSupported('immersive-ar'))) { alert('Bu tarayıcı/telefon AR desteklemiyor. Android’de Chrome ile aç.'); return; }
+  initThree();
+  const overlay = $('overlay');
+  try {
+    session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['local-floor'], optionalFeatures: ['hit-test', 'dom-overlay'], domOverlay: { root: overlay } });
+  } catch (err) { alert('AR başlatılamadı: ' + err.message); return; }
+  overlay.style.display = 'block';
+  session.addEventListener('end', () => { renderer.setAnimationLoop(null); session = null; hitSource = null; overlay.style.display = 'none'; });
+  await renderer.xr.setSession(session);
+  try { const vs = await session.requestReferenceSpace('viewer'); hitSource = await session.requestHitTestSource({ space: vs }); } catch (e) { hitSource = null; }
+  renderer.setAnimationLoop(frame);
+}
+$('btnAR').addEventListener('click', startAR);
+$('btnExit').addEventListener('click', () => { if (session) session.end(); });
+$('btnReset').addEventListener('click', () => { DIG.pts = { center: null, back: null, front: null }; recompute(); groundMsg = { t: performance.now(), s: 'Sıfırlandı' }; });
+$('overlay').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-dig]'); if (!b) return; mark(b.dataset.dig, b.dataset.m); });
+for (const id of ['le1', 'le2', 'le3', 'le4']) $(id).addEventListener('change', () => { if (DIG.pts.center) recompute(); });
+
+// test hooks (no XR device needed): __dig.sim(center, back, front) with plain {x,y,z} objects
+window.__dig = {
+  bisector, legCorners, get: () => DIG, digGroup,
+  sim(center, back, front) { DIG.pts = { center, back, front }; recompute(); return { legs: DIG.legs, bis: DIG.bis, angleDeg: DIG.angleDeg }; },
+};
+</script>
+</body>
+</html>

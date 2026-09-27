@@ -1668,7 +1668,9 @@ function digLegCorners(d, legIndex, center, bis, perp) {
   const [sBis, sPerp] = DIG_LEG_SIGNS[legIndex];
   const lc = [center[0] + sBis * legM * bis[0] + sPerp * legM * perp[0], center[1] + sBis * legM * bis[1] + sPerp * legM * perp[1]];
   const signs = [[-1, 1], [-1, -1], [1, -1], [1, 1]];
-  return { leg: legIndex, name: DIG_STUB_NAMES[legIndex], hM, legCenter: lc, corners: signs.map(([cb, cp]) => [lc[0] + cb * hM * bis[0] + cp * hM * perp[0], lc[1] + cb * hM * bis[1] + cp * hM * perp[1]]) };
+  // LE (leg extension): +1.5 m means this leg's ground is 1.5 m BELOW the marked centre (extra steel bridges the drop);
+  // -3 m means 3 m ABOVE it. So the leg's own excavation plane sits at centre height minus its LE, not at the centre's height.
+  return { leg: legIndex, name: DIG_STUB_NAMES[legIndex], hM, legExtM: d.legExts[legIndex - 1], legCenter: lc, corners: signs.map(([cb, cp]) => [lc[0] + cb * hM * bis[0] + cp * hM * perp[0], lc[1] + cb * hM * bis[1] + cp * hM * perp[1]]) };
 }
 function digQuad(corners, y, color) {
   const [c0, c1, c2, c3] = corners;
@@ -1686,9 +1688,10 @@ function digBuild() {
   const d = DIG.data, c = DIG.pts.center; if (!d || !c || !DIG.legs) return;
   DIG.legs.forEach((leg) => {
     if (!leg) return;
-    digGroup.add(digQuad(leg.corners, c.y, DIG_COLORS[leg.leg]));
-    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: kmzLabelTex([leg.name, `Bacak ${leg.leg}`]), depthTest: false, transparent: true }));
-    label.scale.set(2.4, 0.9, 1); label.position.set(leg.legCenter[0], c.y + 0.6, leg.legCenter[1]); label.renderOrder = 10; digGroup.add(label);
+    const y = c.y - leg.legExtM;   // this leg's own ground plane (see the LE note in digLegCorners)
+    digGroup.add(digQuad(leg.corners, y, DIG_COLORS[leg.leg]));
+    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: kmzLabelTex([leg.name, `LE ${leg.legExtM >= 0 ? '+' : ''}${leg.legExtM} m`]), depthTest: false, transparent: true }));
+    label.scale.set(2.4, 0.9, 1); label.position.set(leg.legCenter[0], y + 0.6, leg.legCenter[1]); label.renderOrder = 10; digGroup.add(label);
   });
   if (DIG.bis) {
     const e = c.x + DIG.bis[0] * 4, n = c.z + DIG.bis[1] * 4;
