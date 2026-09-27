@@ -40,7 +40,8 @@
 <div id="app">
   <h1>🕳 Kazı Aplikasyonu — Demo</h1>
   <p class="hint">Bu, çözümü tanıtmak için hazırlanmış <b>bağımsız bir demodur</b> — herhangi bir projeye bağlı değildir. Bulunduğun yere, örnek bir direğin kazı alanlarını AR ile yerleştirebilirsin.</p>
-  <div class="badge">Direk tipi: <b>B30+0</b> · Zemin sınıfı: <b>Good Soil</b> (foundation genişliği 3.45 m)</div>
+  <div class="row"><label>Direk tipi<select id="twSel"></select></label></div>
+  <div class="badge" id="twBadge"></div>
   <div class="row">
     <label>Bacak 1 (Z41) LE (m)<select id="le1"></select></label>
     <label>Bacak 2 (Z42) LE (m)<select id="le2"></select></label>
@@ -50,7 +51,7 @@
     <label>Bacak 4 (Z44) LE (m)<select id="le4"></select></label>
   </div>
   <p class="hint">LE (Leg Extension): pozitif değer o bacağın merkeze göre <b>aşağıda</b>, negatif değer <b>yukarıda</b> olduğu anlamına gelir — AR bunu her bacağın kazı yüksekliğine otomatik yansıtır.</p>
-  <p class="hint">⚠ Gerçek B30 direği geniştir: 4 bacak, merkezden köşegen yönde <b>~8 m</b> uzakta (karşılıklı bacaklar arası ~16,5 m). Küçük bir odada değil, <b>açık ve geniş bir alanda</b> dene; merkezi işaretledikten sonra etrafına bak/yürü.</p>
+  <p class="hint" id="scaleHint"></p>
   <div class="row">
     <label>Telefon yüksekliği — sadece <b>zemin bulunamazsa</b> kullanılır (m)<input id="phoneH" type="number" step="0.05" min="0.5" max="2.2"></label>
   </div>
@@ -83,9 +84,16 @@ const deg = 180 / Math.PI;
 
 // ---- bundled B30+0 / Good-Soil data (from the same validated stub_settings/foundation_types source as the
 // live project, copied once so this demo needs no network call and never depends on a live project's data) ----
-const TOWER = {
-  base: 'B30', bodyExtM: 0, bWidthM: 3.45,
-  stub: {
+// Two tower families, two different source-document styles (see project notes):
+// - B30 (500kV Jvari): angleFactor {a,j,k} + a (bodyExt,legExt)->(wMm,bMm) table -- app/src/lib/stubGeometry.ts's formula.
+// - 2S (33kV Bestana/Mitas): the foundation drawing's own Z1/Z2/Z3 table -- Z1 = outer edge of the leg's footing to
+//   the tower's centre axis, Z2 = inner edge to centre axis (Z1-Z2 = the footing width B), Z3 = Z2*sqrt(2) (diagonal
+//   centre-to-nearest-corner, a field cross-check, not used here). So legM (centre-to-footing-centre) = (Z1+Z2)/2 --
+//   no angleFactor needed, read straight off the drawing. Verified against 2 rows of "T2005/2S/FSD-03" (Good Soil):
+//   Z1-Z2 = 2450mm = B from the same drawing's dimension table; Z2*sqrt(2) = Z3, both to the mm.
+const TOWERS = {
+  B30: {
+    label: 'B30+0 (500kV Jvari)', kind: 'angle', bodyExtM: 0, bWidthM: 3.45, soilLabel: 'Good Soil',
     angleFactor: { a: 3869.5, j: 1022.565, k: 151.063 },
     table: [
       { legExtM: -3, wMm: 9661.73, bMm: 9563.83 },
@@ -97,11 +105,32 @@ const TOWER = {
       { legExtM: 6, wMm: 12380.88, bMm: 12282.97 },
     ],
   },
+  '2S': {
+    label: '2S+0 (33kV Bestana/Mitas)', kind: 'z', bodyExtM: 0, bWidthM: 2.45, soilLabel: 'Good Soil',
+    table: [
+      { legExtM: -1, z1Mm: 2829, z2Mm: 379 },
+      { legExtM: 0, z1Mm: 2901, z2Mm: 451 },
+      { legExtM: 1, z1Mm: 2973, z2Mm: 523 },
+      { legExtM: 2, z1Mm: 3045, z2Mm: 595 },
+    ],
+  },
 };
-const LE_OPTIONS = TOWER.stub.table.map((t) => t.legExtM);
-for (const id of ['le1', 'le2', 'le3', 'le4']) {
-  $(id).innerHTML = LE_OPTIONS.map((v) => `<option value="${v}" ${v === 0 ? 'selected' : ''}>${v >= 0 ? '+' : ''}${v} m</option>`).join('');
+let TOWER = TOWERS.B30;
+$('twSel').innerHTML = Object.entries(TOWERS).map(([id, t]) => `<option value="${id}">${t.label}</option>`).join('');
+function refreshLeOptions() {
+  const opts = TOWER.table.map((t) => t.legExtM);
+  for (const id of ['le1', 'le2', 'le3', 'le4']) {
+    $(id).innerHTML = opts.map((v) => `<option value="${v}" ${v === 0 ? 'selected' : ''}>${v >= 0 ? '+' : ''}${v} m</option>`).join('');
+  }
+  $('twBadge').innerHTML = `Direk tipi: <b>${TOWER.label}</b> · Zemin sınıfı: <b>${TOWER.soilLabel}</b> (foundation genişliği ${TOWER.bWidthM} m)`;
+  const legM0 = legMFor(TOWER.table.find((t) => t.legExtM === 0) || TOWER.table[0]), diag = (legM0 * Math.SQRT2).toFixed(1), spread = (2 * legM0 * Math.SQRT2).toFixed(1);
+  $('scaleHint').innerHTML = `⚠ 4 bacak, merkezden köşegen yönde <b>~${diag} m</b> uzakta (karşılıklı bacaklar arası ~${spread} m). Buna göre <b>açık ve yeterince geniş bir alanda</b> dene; merkezi işaretledikten sonra etrafına bak/yürü.`;
 }
+refreshLeOptions();
+$('twSel').addEventListener('change', () => {
+  TOWER = TOWERS[$('twSel').value]; refreshLeOptions();
+  if (DIG.pts.center) { try { recompute(); errMsg = null; } catch (e) { errMsg = e.message; console.error(e); } }
+});
 // "📍" fallback height when hit-test finds no ground: person-specific (how you hold the phone), so it's a
 // live-editable field, not a hardcoded guess. Remembered per phone via localStorage.
 let phoneHVal = 1.2; try { const s = localStorage.getItem('digPhoneH'); if (s) phoneHVal = +s; } catch (e) {}
@@ -121,11 +150,18 @@ function bisector(prev, cur, next) {
   else { const v1 = normalize([cur[0] - prev[0], cur[1] - prev[1]]), v2 = normalize([next[0] - cur[0], next[1] - cur[1]]); bis = normalize([v1[0] + v2[0], v1[1] + v2[1]]); }
   return [bis, [-bis[1], bis[0]]];
 }
+function legMFor(entry) {
+  if (TOWER.kind === 'angle') {   // Jvari-style: stubGeometry.ts's formula
+    const dimMm = entry.wMm;
+    const { a, j, k } = TOWER.angleFactor, offsetMm = (a / j) * k;
+    const z1Mm = offsetMm + dimMm / 2 + (TOWER.bWidthM * 1000) / 2;
+    return z1Mm / 1000 - TOWER.bWidthM / 2;
+  }
+  return (entry.z1Mm + entry.z2Mm) / 2000;   // Bestana-style: legM read straight off the drawing's own Z1/Z2 table
+}
 function legCorners(legIndex, legExtM, center, bis, perp) {
-  const entry = TOWER.stub.table.find((t) => t.legExtM === legExtM);
-  const dimMm = entry.wMm;   // base is B30, not BLS -> use wMm (matches stubGeometry.ts)
-  const { a, j, k } = TOWER.stub.angleFactor, offsetMm = (a / j) * k;
-  const z1Mm = offsetMm + dimMm / 2 + (TOWER.bWidthM * 1000) / 2, hM = TOWER.bWidthM / 2, legM = z1Mm / 1000 - hM;
+  const entry = TOWER.table.find((t) => t.legExtM === legExtM);
+  const legM = legMFor(entry), hM = TOWER.bWidthM / 2;
   const [sBis, sPerp] = LEG_SIGNS[legIndex];
   const lc = [center[0] + sBis * legM * bis[0] + sPerp * legM * perp[0], center[1] + sBis * legM * bis[1] + sPerp * legM * perp[1]];
   const signs = [[-1, 1], [-1, -1], [1, -1], [1, 1]];
@@ -209,9 +245,9 @@ function mark(which, how) {
 }
 function hud(now) {
   const ok = (v) => (!v ? '–' : v.approx ? '⚠(tahmini)' : '✓'), c = DIG.pts.center, b = DIG.pts.back, f = DIG.pts.front;
-  let s = `Demo: B30+0 · Good Soil<br>Merkez ${ok(c)}  Arka ${ok(b)}  İleri ${ok(f)}`;
+  let s = `Demo: ${TOWER.label}<br>Merkez ${ok(c)}  Arka ${ok(b)}  İleri ${ok(f)}`;
   if (DIG.legs) {
-    s += ' · 4 bacak da çizildi (her biri merkezden ~8 m, köşegen yönde — geniş bir alanda ol, çevrene bak/yürü)';
+    s += ' · 4 bacak da çizildi (köşegen mesafesi ana ekrandaki uyarıda yazıyor — geniş bir alanda ol, çevrene bak/yürü)';
     s += DIG.angleDeg != null ? (DIG.angleDeg > 179.5 ? ' · düz hat' : ` · açı: hat açısı ${DIG.angleDeg.toFixed(1)}° (sapma ${(180 - DIG.angleDeg).toFixed(1)}°)`) : (b || f ? ' · süspansiyon (tek aliman)' : ' · aliman yok: kuzeye göre çizildi');
   }
   if (adjUp !== 0) s += ` · kot ayarı: ${adjUp >= 0 ? '+' : ''}${adjUp.toFixed(2)} m`;
