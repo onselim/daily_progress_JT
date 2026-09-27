@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sehim Kontrolü — Demo</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<style>
+  :root { --bg:#0f1720; --panel:#16202b; --line:#2a3846; --fg:#e6edf3; --dim:#9fb0c0; --acc:#2f81f7; --warn:#ffb020; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+  #app { display:flex; flex-direction:column; height:100dvh; overflow:auto; padding:14px 14px calc(14px + env(safe-area-inset-bottom)); }
+  h1 { font-size:18px; margin:4px 0 2px; }
+  .hint { font-size:12.5px; color:var(--dim); line-height:1.5; margin:0 0 10px; }
+  .badge { display:inline-block; background:#0d141b; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:13px; margin-bottom:12px; }
+  .badge b { color:#fff; }
+  table.sag-table { width:100%; border-collapse:collapse; margin-bottom:8px; }
+  table.sag-table th { text-align:left; font-size:11px; color:var(--dim); font-weight:500; padding:0 6px 4px; }
+  table.sag-table td { padding:3px 4px; }
+  table.sag-table input { width:100%; background:#0d141b; color:var(--fg); border:1px solid var(--line); border-radius:7px; padding:8px 6px; font-size:15px; }
+  table.sag-table button { background:#3a2a1a; color:#ffb454; border:0; border-radius:7px; width:32px; height:32px; font-size:15px; }
+  #btnAddRow { background:#1c2836; color:var(--acc); border:1px solid var(--line); border-radius:8px; padding:8px 12px; font-size:13px; width:100%; margin-bottom:14px; }
+  button.primary { font:inherit; color:#fff; background:var(--acc); border:0; border-radius:10px; padding:13px 14px; font-size:15px; font-weight:600; width:100%; }
+  #status { font-size:12.5px; color:var(--dim); margin-top:10px; line-height:1.5; }
+
+  #overlay { display:none; position:fixed; inset:0; pointer-events:none; font-size:14px; color:#fff; text-shadow:0 1px 3px #000; }
+  #hud { position:absolute; top:calc(8px + env(safe-area-inset-top)); left:8px; right:8px; background:#000a; border-radius:10px; padding:8px 10px; line-height:1.45; }
+  #cross { position:absolute; left:50%; top:50%; width:26px; height:26px; margin:-13px 0 0 -13px; border:2px solid #fff8; border-radius:50%; }
+  #ctl { position:absolute; left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom)); pointer-events:auto; }
+  #ctl .panel { background:#000b; border-radius:10px; padding:8px 10px 4px; }
+  #ctl .note { font-size:11px; color:#c8d3de; line-height:1.4; margin-bottom:8px; }
+  #ctl .r { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+  #ctl .r span { flex:1; font-size:12.5px; }
+  #ctl .r button { flex:0 0 44px; padding:9px 0; font-size:15px; width:auto; background:#2a3846; color:#fff; border:0; border-radius:8px; }
+  #ctl .full { width:100%; margin-bottom:6px; padding:9px; font-size:13px; background:#2a3846; color:#fff; border:0; border-radius:8px; }
+  #ctl .bar { display:flex; gap:6px; margin-top:2px; }
+  #ctl .bar button { flex:1; background:#000b; color:#fff; border:0; border-radius:8px; padding:9px 0; font-size:13px; }
+  #tempRow { flex:1; text-align:center; font-size:14px; font-weight:600; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>📉 Sehim Kontrolü — Demo</h1>
+  <p class="hint">Bu, çözümü tanıtmak için hazırlanmış <b>bağımsız bir demodur</b>. PLS-CADD'in sıcaklığa göre ürettiği sehim değerlerini aşağıya gir, AR'da iki direk arasındaki iletken bağlantı noktasını işaretle — telefon, seçtiğin sıcaklıktaki eğriyi havada çizer. Gerçek telle çakışıyorsa sehim doğru demektir.</p>
+
+  <table class="sag-table">
+    <thead><tr><th>Sıcaklık (°C)</th><th>Sehim (m)</th><th></th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <button id="btnAddRow">+ Satır ekle</button>
+
+  <p class="hint">Sehim: iki direğin iletken bağlantı noktalarını birleştiren düz çizginin (kordon), orta noktada o kadar metre altına düşen tel. Kendi PLS-CADD tablonun değerlerini yaz.</p>
+
+  <button class="primary" id="btnAR">▶ AR'ı başlat</button>
+  <div id="status">Adımlar: 1) AR'ı başlat, 2) direk A'nın iletken bağlantı noktasına git, işaretle, 3) direk B'ninkine git, işaretle, 4) alttan sıcaklık seç, eğri havada çizilir — 50 m kadar dik açıp hatta bakarak gerçek telle karşılaştır.</div>
+</div>
+
+<div id="overlay">
+  <div id="hud">Hazırlanıyor…</div>
+  <div id="cross"></div>
+  <div id="ctl">
+    <div class="panel">
+      <div class="note"><b>1) Direk A</b>, <b>2) Direk B</b>: iletken bağlantı noktasına (izolatörün tele değdiği yer) daireyi tutup 🎯, ya da tam altında/önünde durup 📍. <b>3)</b> İşaretledikten sonra sıcaklığı seç, eğri çizilir.</div>
+      <div class="r"><span>1. Direk A</span><button data-pt="a" data-m="aim">🎯</button><button data-pt="a" data-m="here">📍</button></div>
+      <div class="r"><span>2. Direk B</span><button data-pt="b" data-m="aim">🎯</button><button data-pt="b" data-m="here">📍</button></div>
+      <div class="r"><button id="btnPrevT">−</button><span id="tempRow">—</span><button id="btnNextT">+</button></div>
+      <button class="full" id="btnReset">Sıfırla</button>
+      <div class="bar"><button id="btnExit">Çık</button></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+
+const $ = (id) => document.getElementById(id);
+// declared early: renderRows() below calls recompute() at module init time (before the rest of the script runs)
+let groundMsg = null, errMsg = null;
+const sagGroup = new THREE.Group();
+let PTS = { a: null, b: null };
+let SAG = { curve: null, mid: null };
+
+// ---- editable temperature -> sag(m) table (user's own PLS-CADD values; these are just a placeholder starting point) ----
+let ROWS = [
+  { t: -20, s: 6.5 },
+  { t: 0, s: 7.2 },
+  { t: 20, s: 8.0 },
+  { t: 40, s: 8.9 },
+];
+let activeRow = 2;
+function renderRows() {
+  $('rows').innerHTML = ROWS.map((r, i) => `
+    <tr>
+      <td><input type="number" step="1" value="${r.t}" data-row="${i}" data-f="t"></td>
+      <td><input type="number" step="0.1" value="${r.s}" data-row="${i}" data-f="s"></td>
+      <td><button data-del="${i}" ${ROWS.length <= 1 ? 'disabled' : ''}>✕</button></td>
+    </tr>`).join('');
+  if (activeRow >= ROWS.length) activeRow = ROWS.length - 1;
+  updateTempRow();
+}
+$('rows').addEventListener('input', (ev) => {
+  const inp = ev.target.closest('input[data-row]'); if (!inp) return;
+  const i = +inp.dataset.row, f = inp.dataset.f, v = +inp.value;
+  if (Number.isFinite(v)) { ROWS[i][f] = v; updateTempRow(); }
+});
+$('rows').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-del]'); if (!b || ROWS.length <= 1) return;
+  ROWS.splice(+b.dataset.del, 1); renderRows();
+});
+$('btnAddRow').addEventListener('click', () => { ROWS.push({ t: 0, s: 0 }); renderRows(); });
+renderRows();
+
+function updateTempRow() {
+  const r = ROWS[activeRow];
+  const txt = r ? `${r.t}°C · sehim ${r.s.toFixed(2)} m` : '—';
+  $('tempRow').textContent = txt;
+  try { recompute(); errMsg = null; } catch (e) { errMsg = e.message; console.error(e); }
+}
+$('btnPrevT').addEventListener('click', () => { activeRow = Math.max(0, activeRow - 1); updateTempRow(); });
+$('btnNextT').addEventListener('click', () => { activeRow = Math.min(ROWS.length - 1, activeRow + 1); updateTempRow(); });
+
+// ---- "here" fallback height when hit-test finds no ground: same idea as demo-kazi, but there's no reliable
+// hit-test target up on a tower anyway -- marking a conductor point almost always needs 🎯 with a real surface
+// hint nearby, or the camera's own tracked position is used directly (no ground assumption needed here at all,
+// since we're not placing anything AT the ground -- only phoneH's absence just means "use camera position exactly"). ----
+let phoneHVal = 1.2; try { const s = localStorage.getItem('digPhoneH'); if (s) phoneHVal = +s; } catch (e) {}
+const phoneH = () => phoneHVal;
+
+// ---- three.js / WebXR ----
+let renderer, scene, camera, session = null, hitSource = null, camPos = { x: 0, y: 1.6, z: 0 }, lastHit = null;
+function initThree() {
+  if (renderer) return;
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor');
+  Object.assign(renderer.domElement.style, { position: 'fixed', left: '0', top: '0', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none' });
+  document.body.appendChild(renderer.domElement);
+  scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(70, 1, 0.1, 2000); scene.add(sagGroup);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8fa0b3, 1.5));
+  const sun = new THREE.DirectionalLight(0xfff4e0, 2.0); sun.position.set(40, 80, 30); scene.add(sun);
+}
+const labelTex = (txt) => {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 96; const g = c.getContext('2d');
+  g.fillStyle = 'rgba(15,23,32,0.82)'; g.beginPath(); g.roundRect(4, 4, 248, 88, 14); g.fill();
+  g.fillStyle = '#fff'; g.font = 'bold 40px system-ui,sans-serif'; g.textAlign = 'center'; g.fillText(txt[0], 128, 46);
+  g.fillStyle = '#9fd0ff'; g.font = '24px system-ui,sans-serif'; g.fillText(txt[1] || '', 128, 80);
+  return new THREE.CanvasTexture(c);
+};
+function endMarker(x, y, z, color) {
+  const g = new THREE.Group();
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.08, 14, 14), new THREE.MeshBasicMaterial({ color }));
+  g.add(ball); g.position.set(x, y, z); return g;
+}
+function sagMarker(x, y, z) {
+  const g = new THREE.Group();
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 16), new THREE.MeshBasicMaterial({ color: 0xff3b30 }));
+  g.add(ball);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.28, 0.36, 28), new THREE.MeshBasicMaterial({ color: 0xff3b30, side: THREE.DoubleSide }));
+  g.add(ring);
+  g.position.set(x, y, z); return g;
+}
+
+// ---- state ----
+function recompute() {
+  sagGroup.clear(); SAG = { curve: null, mid: null };
+  const a = PTS.a, b = PTS.b; if (!a || !b) return;
+  const row = ROWS[activeRow]; if (!row) return;
+  const sagM = row.s;
+  const N = 28, pts = [];
+  // Parabolic sag below the chord (A->B straight line) -- the standard close approximation to a catenary
+  // for span/sag ratios typical of transmission lines; zero at both ends, sagM at the midpoint (t=0.5).
+  for (let i = 0; i <= N; i++) {
+    const t = i / N;
+    const cx = a.x + (b.x - a.x) * t, cy = a.y + (b.y - a.y) * t, cz = a.z + (b.z - a.z) * t;
+    const drop = 4 * sagM * t * (1 - t);
+    pts.push(new THREE.Vector3(cx, cy - drop, cz));
+  }
+  const lg = new THREE.BufferGeometry().setFromPoints(pts);
+  sagGroup.add(new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0xffd23f, linewidth: 2 })));
+  // a thicker tube so it reads clearly from a distance (a 1px line is hard to see against real sky/terrain)
+  const curve = new THREE.CatmullRomCurve3(pts);
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.04, 8, false), new THREE.MeshBasicMaterial({ color: 0xffd23f }));
+  sagGroup.add(tube);
+
+  const mid = pts[Math.round(N / 2)];
+  sagGroup.add(sagMarker(mid.x, mid.y, mid.z));
+  const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex([`${row.t}°C`, `sehim ${sagM.toFixed(2)} m`]), depthTest: false, transparent: true }));
+  label.scale.set(1.6, 0.6, 1); label.position.set(mid.x, mid.y + 0.35, mid.z); label.renderOrder = 10; sagGroup.add(label);
+
+  sagGroup.add(endMarker(a.x, a.y, a.z, 0x3b82f6));
+  sagGroup.add(endMarker(b.x, b.y, b.z, 0x7dff8a));
+  SAG = { curve: pts, mid };
+}
+function mark(which, how) {
+  const now = performance.now();
+  let pt;
+  if (how === 'aim') {
+    if (!lastHit) { groundMsg = { t: now, s: '⚠ Zemin/nokta bulunamadı: daireyi noktaya tut, telefonu yavaşça gezdir, tekrar bas' }; return; }
+    pt = { x: lastHit.x, y: lastHit.y, z: lastHit.z, approx: false };
+  } else pt = { x: camPos.x, y: lastHit ? lastHit.y : camPos.y - phoneH(), z: camPos.z, approx: !lastHit };
+  PTS[which] = pt;
+  const label = which === 'a' ? 'Direk A' : 'Direk B';
+  groundMsg = { t: now, s: pt.approx ? `⚠ ${label} işaretlendi — nokta bulunamadı, tahmini konum kullanıldı` : `${label} işaretlendi ✓ (gerçek ölçüm)` };
+  try { recompute(); errMsg = null; } catch (e) { errMsg = e.message; console.error(e); }
+}
+function hud(now) {
+  const ok = (v) => (!v ? '–' : v.approx ? '⚠(tahmini)' : '✓'), a = PTS.a, b = PTS.b;
+  let s = `Sehim demo<br>Direk A ${ok(a)}  Direk B ${ok(b)}`;
+  if (SAG.curve) s += ` · eğri çizildi (${$('tempRow').textContent})`;
+  if (errMsg) s += '<br>⚠ HATA: ' + errMsg;
+  if (groundMsg && now - groundMsg.t < 3000) s += '<br>' + groundMsg.s;
+  return s;
+}
+function frame(t, xrFrame) {
+  if (!xrFrame) return;
+  try {
+    const ref = renderer.xr.getReferenceSpace(), pose = xrFrame.getViewerPose(ref);
+    if (pose) { const p = pose.transform.position; camPos = { x: p.x, y: p.y, z: p.z }; }
+    if (hitSource) {
+      const res = xrFrame.getHitTestResults(hitSource);
+      const hp = res.length ? res[0].getPose(ref).transform.position : null;
+      lastHit = hp ? { x: hp.x, y: hp.y, z: hp.z } : null;
+    }
+    $('hud').innerHTML = hud(performance.now());
+    renderer.render(scene, camera);
+  } catch (e) { errMsg = e.message; console.error(e); $('hud').innerHTML = '⚠ HATA: ' + e.message; }
+}
+async function startAR() {
+  if (!navigator.xr || !(await navigator.xr.isSessionSupported('immersive-ar'))) { alert('Bu tarayıcı/telefon AR desteklemiyor. Android’de Chrome ile aç.'); return; }
+  initThree();
+  const overlay = $('overlay');
+  try {
+    session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['local-floor'], optionalFeatures: ['hit-test', 'dom-overlay'], domOverlay: { root: overlay } });
+  } catch (err) { alert('AR başlatılamadı: ' + err.message); return; }
+  overlay.style.display = 'block';
+  session.addEventListener('end', () => { renderer.setAnimationLoop(null); session = null; hitSource = null; overlay.style.display = 'none'; });
+  await renderer.xr.setSession(session);
+  try { const vs = await session.requestReferenceSpace('viewer'); hitSource = await session.requestHitTestSource({ space: vs }); } catch (e) { hitSource = null; }
+  renderer.setAnimationLoop(frame);
+}
+$('btnAR').addEventListener('click', startAR);
+$('btnExit').addEventListener('click', () => { if (session) session.end(); });
+$('btnReset').addEventListener('click', () => { PTS = { a: null, b: null }; recompute(); groundMsg = { t: performance.now(), s: 'Sıfırlandı' }; });
+$('overlay').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-pt]'); if (!b) return; mark(b.dataset.pt, b.dataset.m); });
+
+// test hooks (no XR device needed): __sag.sim(a, b, rowIndex) with plain {x,y,z} objects
+window.__sag = {
+  get: () => ({ PTS, SAG, ROWS, activeRow }), sagGroup,
+  sim(a, b, rowIndex) { PTS = { a, b }; if (rowIndex != null) activeRow = rowIndex; recompute(); return { curve: SAG.curve, mid: SAG.mid }; },
+};
+</script>
+</body>
+</html>
