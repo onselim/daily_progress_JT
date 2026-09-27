@@ -60,6 +60,10 @@ export const de: Record<TranslationKey, string> = {
   'picker.newProject': '+ Neues Projekt',
   'picker.loadingProjects': 'Ihre Projekte werden geladen…',
   'picker.noProjects': 'Ihrem Konto sind noch keine Projekte zugewiesen. Bitten Sie einen Administrator, Sie einzuladen.',
+  'picker.viewList': "Liste",
+  'picker.viewMap': "Karte",
+  'picker.mapLoading': "Projektstandorte werden geladen…",
+  'picker.mapNoLocation': "{count} Projekt(e) haben noch keinen Standort (keine Masten importiert).",
 
   'topbar.backToProjects': '← Projekte',
   'topbar.publicLink': 'Öffentlicher Link: {path}',

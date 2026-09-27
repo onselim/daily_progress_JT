@@ -63,6 +63,10 @@ export const ku: Record<TranslationKey, string> = {
   'picker.newProject': '+ Projeya nû',
   'picker.loadingProjects': 'Projeyên te tên barkirin…',
   'picker.noProjects': 'Hîn projeyek ji hesabê te re nehatiye danîn. Ji admînekî bixwaze te vexwîne.',
+  'picker.viewList': "Lîste",
+  'picker.viewMap': "Nexşe",
+  'picker.mapLoading': "Cihên projeyan tên barkirin…",
+  'picker.mapNoLocation': "{count} proje hîn cihek nînin (stûn nehatine barkirin).",
 
   'topbar.backToProjects': '← Proje',
   'topbar.publicLink': 'Girêdana giştî: {path}',

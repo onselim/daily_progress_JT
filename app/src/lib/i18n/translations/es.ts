@@ -60,6 +60,10 @@ export const es: Record<TranslationKey, string> = {
   'picker.newProject': '+ Nuevo proyecto',
   'picker.loadingProjects': 'Cargando sus proyectos…',
   'picker.noProjects': 'Aún no se han asignado proyectos a su cuenta. Pida a un administrador que le invite.',
+  'picker.viewList': "Lista",
+  'picker.viewMap': "Mapa",
+  'picker.mapLoading': "Cargando ubicaciones de proyectos…",
+  'picker.mapNoLocation': "{count} proyecto(s) aún no tienen ubicación (no se han importado torres).",
 
   'topbar.backToProjects': '← Proyectos',
   'topbar.publicLink': 'Enlace público: {path}',

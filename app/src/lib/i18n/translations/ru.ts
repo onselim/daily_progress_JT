@@ -60,6 +60,10 @@ export const ru: Record<TranslationKey, string> = {
   'picker.newProject': '+ Новый проект',
   'picker.loadingProjects': 'Загрузка ваших проектов…',
   'picker.noProjects': 'Вашей учётной записи ещё не назначены проекты. Попросите администратора пригласить вас.',
+  'picker.viewList': "Список",
+  'picker.viewMap': "Карта",
+  'picker.mapLoading': "Загрузка расположения проектов…",
+  'picker.mapNoLocation': "{count} проект(ов) пока без местоположения (опоры не импортированы).",
 
   'topbar.backToProjects': '← Проекты',
   'topbar.publicLink': 'Публичная ссылка: {path}',

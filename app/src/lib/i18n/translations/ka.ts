@@ -60,6 +60,10 @@ export const ka: Record<TranslationKey, string> = {
   'picker.newProject': '+ ახალი პროექტი',
   'picker.loadingProjects': 'თქვენი პროექტები იტვირთება…',
   'picker.noProjects': 'თქვენს ანგარიშს ჯერ არ აქვს მინიჭებული პროექტები. სთხოვეთ ადმინისტრატორს მოგიწვიოთ.',
+  'picker.viewList': "სია",
+  'picker.viewMap': "რუკა",
+  'picker.mapLoading': "პროექტების მდებარეობები იტვირთება…",
+  'picker.mapNoLocation': "{count} პროექტს ჯერ არ აქვს მდებარეობა (ანძები არ არის შემოტანილი).",
 
   'topbar.backToProjects': '← პროექტები',
   'topbar.publicLink': 'საჯარო ბმული: {path}',

@@ -60,6 +60,10 @@ export const tr: Record<TranslationKey, string> = {
   'picker.newProject': '+ Yeni proje',
   'picker.loadingProjects': 'Projeleriniz yükleniyor…',
   'picker.noProjects': 'Hesabınıza henüz proje atanmamış. Bir admin sizi davet etsin.',
+  'picker.viewList': "Liste",
+  'picker.viewMap': "Harita",
+  'picker.mapLoading': "Proje konumları yükleniyor…",
+  'picker.mapNoLocation': "{count} projenin henüz konumu yok (direk içe aktarılmamış).",
 
   'topbar.backToProjects': '← Projeler',
   'topbar.publicLink': 'Herkese açık link: {path}',

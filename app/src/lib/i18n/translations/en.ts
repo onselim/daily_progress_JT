@@ -65,6 +65,10 @@ export const en = {
   'picker.newProject': '+ New project',
   'picker.loadingProjects': 'Loading your projects…',
   'picker.noProjects': 'No projects are assigned to your account yet. Ask an admin to invite you.',
+  'picker.viewList': "List",
+  'picker.viewMap': "Map",
+  'picker.mapLoading': "Loading project locations…",
+  'picker.mapNoLocation': "{count} project(s) have no location yet (no towers imported).",
 
   // ---- topbar ----
   'topbar.backToProjects': '← Projects',

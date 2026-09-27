@@ -60,6 +60,10 @@ export const ar: Record<TranslationKey, string> = {
   'picker.newProject': '+ مشروع جديد',
   'picker.loadingProjects': 'جارٍ تحميل مشاريعك…',
   'picker.noProjects': 'لم يتم تعيين أي مشروع لحسابك بعد. اطلب من المسؤول دعوتك.',
+  'picker.viewList': "قائمة",
+  'picker.viewMap': "خريطة",
+  'picker.mapLoading': "جارٍ تحميل مواقع المشاريع…",
+  'picker.mapNoLocation': "{count} مشروع (مشاريع) ليس لها موقع بعد (لم يتم استيراد الأبراج).",
 
   'topbar.backToProjects': '→ المشاريع',
   'topbar.publicLink': 'الرابط العام: {path}',

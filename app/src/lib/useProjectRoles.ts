@@ -7,7 +7,7 @@ export type ProjectRole = 'admin' | 'field_engineer' | 'viewer';
 export interface ProjectRoleRow {
   project_id: string;
   role: ProjectRole;
-  project: { slug: string; name: string };
+  project: { slug: string; name: string; coordinate_system: string | null };
 }
 
 export function useProjectRoles() {
@@ -27,7 +27,7 @@ export function useProjectRoles() {
 
     supabase
       .from('user_project_roles')
-      .select('project_id, role, project:projects(slug, name)')
+      .select('project_id, role, project:projects(slug, name, coordinate_system)')
       .eq('user_id', user.id)
       .then(({ data, error }) => {
         if (cancelled) return;
