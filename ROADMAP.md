@@ -87,8 +87,9 @@ Bu, kullanıcının "dağınık olmasın" isteğinin asıl karşılığı:
    bazlı, adlandırılmış, opt-in paylaşımlı kütüphane. Detay Bölüm 4.
 2. **Bestana ailesinin tamamı** — 2T1/2T2/2TT + Good/Soft/Rock zemin
    varyantları (2S zaten çözüldü, formül doğrulandı).
-3. **Erbil 132kV'nin A/C/K sorusu** — `StubSettingDimensions.pdf`'teki
-   sütunların tam anlamı netleşmeli (kullanıcı ya da eski bir mühendis).
+3. **Erbil 132kV'nin verisini çıkarma** — formül artık çözüldü (bkz. Bölüm
+   4), sadece `Foundations Construction Drawings/` altındaki her tip × her
+   zemin çizimini okumak kaldı.
 4. **`/ar/:slug` entegrasyonunu pushlama** — kullanıcı onayı bekleniyor.
 5. **Irak 400kV eski tip** — henüz hiç doküman yok, kullanıcı ekleyecek.
 
@@ -112,7 +113,7 @@ kullanıcı "kütüphaneden seç" ya da "yeni gir + adlandırarak kaydet" yapar.
 |---|---|
 | 500kV Jvari (B30/B60/B90/B90C/BNS/BLS/BLC) | Zaten Supabase'de, doğrulanmış (804/804 satır, 0.5mm) |
 | 33kV Bestana/Mitas (2S/2T1/2T2/2TT) | 2S çözüldü ve demoya eklendi; diğerleri bekliyor |
-| 132kV Erbil DC ailesi | 3D geometri var (`.tow`→`towers.json`), kazı verisi A/C/K sorusuna takılı |
+| 132kV Erbil DC ailesi | 3D geometri var (`.tow`→`towers.json`); kazı formülü çözüldü (Z1-Z5, Bestana ile aynı yöntem), veri henüz çıkarılmadı |
 | 400kV Irak yeni tip (Besmaya) | Dokümanlar temiz/okunabilir, henüz işlenmedi |
 | 400kV Irak eski tip | Doküman yok |
 
@@ -120,8 +121,9 @@ kullanıcı "kütüphaneden seç" ya da "yeni gir + adlandırarak kaydet" yapar.
 (`demo-kazi/index.html`'deki `TOWERS` objesi, `kind: 'angle'` vs `'z'`):**
 - **Jvari tipi:** `angleFactor {a,j,k}` + tablo, 804 gerçek noktadan
   doğrulanmış formülle.
-- **Bestana tipi:** çizimin kendi Z1/Z2 tablosundan doğrudan okunuyor
-  (`legM = (Z1+Z2)/2`), formül fit etmeye gerek yok.
+- **Bestana/Erbil tipi:** çizimin kendi Z1/Z2 tablosundan doğrudan okunuyor
+  (`legM = (Z1+Z2)/2`, B = Z1−Z2), formül fit etmeye gerek yok. Erbil'in
+  Z3/Z4/Z5'i aynı formülün √2'li çapraz kontrol halleri (doğrulandı).
 
 **Henüz yapılmadı:** `tower_type_library` tablosu (migration), admin
 arayüzü (kütüphaneden seç / yeni gir + kaydet), mevcut Jvari verisinin bu
