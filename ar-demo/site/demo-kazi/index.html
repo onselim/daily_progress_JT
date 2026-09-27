@@ -50,6 +50,7 @@
     <label>Bacak 4 (Z44) LE (m)<select id="le4"></select></label>
   </div>
   <p class="hint">LE (Leg Extension): pozitif değer o bacağın merkeze göre <b>aşağıda</b>, negatif değer <b>yukarıda</b> olduğu anlamına gelir — AR bunu her bacağın kazı yüksekliğine otomatik yansıtır.</p>
+  <p class="hint">⚠ Gerçek B30 direği geniştir: 4 bacak, merkezden köşegen yönde <b>~8 m</b> uzakta (karşılıklı bacaklar arası ~16,5 m). Küçük bir odada değil, <b>açık ve geniş bir alanda</b> dene; merkezi işaretledikten sonra etrafına bak/yürü.</p>
   <button class="primary" id="btnAR">▶ AR'ı başlat</button>
   <div id="status">Adımlar: 1) AR'ı başlat, 2) direğin olması gerektiğini düşündüğün merkeze git ve "Merkez" işaretle, 3) isteğe bağlı olarak 1-2 aliman (hat yönü) işaretle. Sadece merkez de yeterli, o zaman kazı alanları kuzeye göre çizilir.</div>
 </div>
@@ -176,11 +177,11 @@ function recompute() {
   const e = c.x + bis[0] * 4, n = c.z + bis[1] * 4;
   const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([c.x, c.y + 0.02, c.z, e, c.y + 0.02, n]), 3));
   digGroup.add(new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0x7dff8a })));
-  const mg = new THREE.RingGeometry(0.12, 0.22, 24); mg.rotateX(-Math.PI / 2);
+  const mg = new THREE.RingGeometry(0.35, 0.5, 24); mg.rotateX(-Math.PI / 2);
   const marker = new THREE.Mesh(mg, new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
   marker.position.set(c.x, c.y + 0.02, c.z); digGroup.add(marker);
 }
-let groundMsg = null;
+let groundMsg = null, errMsg = null;
 function mark(which, how) {
   const now = performance.now();
   let pt;
@@ -190,29 +191,32 @@ function mark(which, how) {
   } else pt = { x: camPos.x, y: lastHit ? lastHit.y : camPos.y - 1.4, z: camPos.z };
   DIG.pts[which] = pt;
   groundMsg = { t: now, s: `${which === 'center' ? 'Merkez' : which === 'back' ? 'Arka aliman' : 'İleri aliman'} işaretlendi ✓` };
-  recompute();
+  try { recompute(); errMsg = null; } catch (e) { errMsg = e.message; console.error(e); }
 }
 function hud(now) {
   const ok = (v) => (v ? '✓' : '–'), c = DIG.pts.center, b = DIG.pts.back, f = DIG.pts.front;
   let s = `Demo: B30+0 · Good Soil<br>Merkez ${ok(c)}  Arka ${ok(b)}  İleri ${ok(f)}`;
   if (DIG.legs) {
-    s += ' · 4 bacak da çizildi';
+    s += ' · 4 bacak da çizildi (her biri merkezden ~8 m, köşegen yönde — geniş bir alanda ol, çevrene bak/yürü)';
     s += DIG.angleDeg != null ? (DIG.angleDeg > 179.5 ? ' · düz hat' : ` · açı: hat açısı ${DIG.angleDeg.toFixed(1)}° (sapma ${(180 - DIG.angleDeg).toFixed(1)}°)`) : (b || f ? ' · süspansiyon (tek aliman)' : ' · aliman yok: kuzeye göre çizildi');
   }
+  if (errMsg) s += '<br>⚠ HATA: ' + errMsg;
   if (groundMsg && now - groundMsg.t < 3000) s += '<br>' + groundMsg.s;
   return s;
 }
 function frame(t, xrFrame) {
   if (!xrFrame) return;
-  const ref = renderer.xr.getReferenceSpace(), pose = xrFrame.getViewerPose(ref);
-  if (pose) { const p = pose.transform.position; camPos = { x: p.x, y: p.y, z: p.z }; }
-  if (hitSource) {
-    const res = xrFrame.getHitTestResults(hitSource);
-    const hp = res.length ? res[0].getPose(ref).transform.position : null;
-    lastHit = hp ? { x: hp.x, y: hp.y, z: hp.z } : null;
-  }
-  $('hud').innerHTML = hud(performance.now());
-  renderer.render(scene, camera);
+  try {
+    const ref = renderer.xr.getReferenceSpace(), pose = xrFrame.getViewerPose(ref);
+    if (pose) { const p = pose.transform.position; camPos = { x: p.x, y: p.y, z: p.z }; }
+    if (hitSource) {
+      const res = xrFrame.getHitTestResults(hitSource);
+      const hp = res.length ? res[0].getPose(ref).transform.position : null;
+      lastHit = hp ? { x: hp.x, y: hp.y, z: hp.z } : null;
+    }
+    $('hud').innerHTML = hud(performance.now());
+    renderer.render(scene, camera);
+  } catch (e) { errMsg = e.message; console.error(e); $('hud').innerHTML = '⚠ HATA: ' + e.message; }
 }
 async function startAR() {
   if (!navigator.xr || !(await navigator.xr.isSessionSupported('immersive-ar'))) { alert('Bu tarayıcı/telefon AR desteklemiyor. Android’de Chrome ile aç.'); return; }
@@ -231,7 +235,7 @@ $('btnAR').addEventListener('click', startAR);
 $('btnExit').addEventListener('click', () => { if (session) session.end(); });
 $('btnReset').addEventListener('click', () => { DIG.pts = { center: null, back: null, front: null }; recompute(); groundMsg = { t: performance.now(), s: 'Sıfırlandı' }; });
 $('overlay').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-dig]'); if (!b) return; mark(b.dataset.dig, b.dataset.m); });
-for (const id of ['le1', 'le2', 'le3', 'le4']) $(id).addEventListener('change', () => { if (DIG.pts.center) recompute(); });
+for (const id of ['le1', 'le2', 'le3', 'le4']) $(id).addEventListener('change', () => { if (!DIG.pts.center) return; try { recompute(); errMsg = null; } catch (e) { errMsg = e.message; console.error(e); } });
 
 // test hooks (no XR device needed): __dig.sim(center, back, front) with plain {x,y,z} objects
 window.__dig = {
