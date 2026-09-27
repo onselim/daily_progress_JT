@@ -121,6 +121,17 @@
       <button id="btnKmzClear" class="small" style="align-self:flex-end">Hepsini sil</button>
     </div>
     <div class="hint" id="kmzInfo" style="display:none"></div>
+    <div class="row">
+      <button id="btnDigOpen">🕳 Kazı aplikasyonu (günlük rapor projesinden)</button>
+    </div>
+    <div id="digForm" style="display:none">
+      <div class="row">
+        <label>Proje (slug)<input id="digSlug" type="text" autocomplete="off" spellcheck="false" placeholder="jvari-tskaltubo"></label>
+        <label>Direk No<input id="digCode" type="text" autocomplete="off" spellcheck="false" placeholder="100"></label>
+      </div>
+      <button class="full" id="btnDigGo">Direk verisini getir</button>
+      <div class="hint" id="digInfo"></div>
+    </div>
     <div class="row" id="projRow" style="display:none">
       <div class="hint" id="projInfo" style="flex:1;margin:0"></div>
       <button id="btnProjClear" class="small">Sil</button>
@@ -192,11 +203,19 @@
       <button class="full" id="btnGround">Zemin seviyesini ölç</button>
       <button class="full" id="btnNorth">Şu an tam kuzeye bakıyorum</button>
     </div>
+    <div id="pDig" class="apanel">
+      <div class="note">Önce ana ekrandan "🕳 Kazı aplikasyonu" ile direk verisini getir. Sonra sırayla: <b>1) direk merkezi</b> (fiili merkezde dur ve 📍, ya da daireyi merkeze tutup 🎯), <b>2) geride kalan aliman</b>, <b>3) ilerideki aliman</b>. Aliman tek ise (süsp. direk) sadece birini işaretle. Hep yerel ölçüm; GPS/pusula kullanılmaz.</div>
+      <div class="r"><span>1. Merkez</span><button data-dig="center" data-m="aim" style="flex:0 0 40px">🎯</button><button data-dig="center" data-m="here" style="flex:0 0 40px">📍</button></div>
+      <div class="r"><span>2. Arka aliman</span><button data-dig="back" data-m="aim" style="flex:0 0 40px">🎯</button><button data-dig="back" data-m="here" style="flex:0 0 40px">📍</button></div>
+      <div class="r"><span>3. İleri aliman</span><button data-dig="front" data-m="aim" style="flex:0 0 40px">🎯</button><button data-dig="front" data-m="here" style="flex:0 0 40px">📍</button></div>
+      <button class="full" id="btnDigReset">Kazı işaretlerini sıfırla</button>
+    </div>
     <div class="bar">
       <button id="btnRef">Ref.</button>
       <button id="btnObj">Nesne</button>
       <button id="btnKmzP">Hat</button>
       <button id="btnElev">Kot</button>
+      <button id="btnDig">Kazı</button>
       <button id="btnAlign">Hizalama</button>
       <button id="btnExit">Çık</button>
     </div>
@@ -781,7 +800,7 @@ function initThree() {
   renderer.xr.enabled = true; renderer.localClippingEnabled = true; renderer.xr.setReferenceSpaceType('local-floor');
   Object.assign(renderer.domElement.style, { position: 'fixed', left: '0', top: '0', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none' });
   document.body.appendChild(renderer.domElement);
-  scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(70, 1, 0.1, 6000); scene.add(kmzGroup); scene.add(projGroup);
+  scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(70, 1, 0.1, 6000); scene.add(kmzGroup); scene.add(projGroup); scene.add(digGroup);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x8fa0b3, 1.5));
   const sun = new THREE.DirectionalLight(0xfff4e0, 2.0); sun.position.set(40, 80, 30); scene.add(sun);
 }
@@ -891,7 +910,7 @@ function placeAll() {
 function hudText(now) {
   if (cal) {
     const el = Math.min(8, (now - cal.t0) / 1000);
-    return `Kalibrasyon… ${el.toFixed(0)}/8 sn. Telefonu dik tut, ufka bak, kıpırdama.<br>Konum: ${S.origin.mode === 'map' ? 'haritadan' : (fix ? 'GPS ±' + fix.acc.toFixed(0) + ' m' : 'GPS yok')} · Pusula: ${heading != null ? 'var' : 'yok'}`;
+    return `Kalibrasyon… ${el.toFixed(0)}/8 sn. Telefonu dik tut, ufka bak, kıpırdama.<br>Konum: ${S.origin.mode === 'map' ? 'haritadan' : (fix ? 'GPS ±' + fix.acc.toFixed(0) + ' m' : 'GPS yok')} · Pusula: ${heading != null ? 'var' : 'yok'}` + digHud();
   }
   if (!selInfo) {   // georeference mode, waiting for 2 or 3 points
     const ok = (i) => (S.refs[i] ? (refMarks[i] ? '✓' : '…') : '–');
@@ -899,7 +918,7 @@ function hudText(now) {
     let next;
     if (refCount() < 2) next = '⚠ En az 2 nokta gerekli: yaz ya da KMZ yüklüyse direk listesinden seç (ana ekran)';
     else { const wait = [0, 1, 2].find((i) => S.refs[i] && !refMarks[i]); next = wait !== undefined ? `R${wait + 1} noktasına git: üstünde dur 📍 ya da daireyi tam üstüne tut 🎯` : (refInfo ? '' : 'Hesaplanıyor…'); }
-    return `<b>Georeferans</b>  ${rows}<br>${next}` + (groundMsg && now - groundMsg.t < 3500 ? '<br>' + groundMsg.s : '');
+    return `<b>Georeferans</b>  ${rows}<br>${next}` + (groundMsg && now - groundMsg.t < 3500 ? '<br>' + groundMsg.s : '') + digHud();
   }
   const { o, dist, rel, dz } = selInfo;
   const dir = Math.abs(rel) < 0.35 ? 'önünde' : (rel > 0 ? `sağında ${(rel * deg).toFixed(0)}°` : `solunda ${(-rel * deg).toFixed(0)}°`);
@@ -921,7 +940,7 @@ function hudText(now) {
   if (PROJ && projOpt.on) { const n = nearestProject(); if (n) s += `<br>Proje: en yakın direk <b>${n.a.c}</b> (${n.d.toFixed(0)} m): <b>${projStatus(n.a).t}</b>${n.a.a ? ' · bugün/yarın iş var' : ''}${n.a.r ? ' · <b style="color:#ff8a70">saha kısıtlı</b>' : ''}`; }
   if (KMZ && kmzOpt.on) { const n = nearestStruct(); if (n) s += `<br>Hat: en yakın direk <b>${n.s.name}</b> (${n.d.toFixed(0)} m), arazi kotu ${n.s.ele} m${S.zUser === 0 ? (DEM.mode === 'dem' ? ' · zemin: ' + DEM.info : DEM.mode === 'wait' ? ' · zemin: DEM bekleniyor (şimdilik direk tabanı)' : ' · zemin referansı: bu direğin tabanı (otomatik)') : ''}`; }
   if (groundMsg && now - groundMsg.t < 3500) s += '<br>' + groundMsg.s;
-  return s;
+  return s + digHud();
 }
 
 async function startAR() {
@@ -1487,7 +1506,7 @@ if (projLoad() && /[?&]proje/.test(location.search) && PROJ.assets.length) map.f
 
 // ----- AR controls -----
 function showPanel(id) {
-  for (const [p, b] of [['pRef', 'btnRef'], ['pObj', 'btnObj'], ['pKmz', 'btnKmzP'], ['pElev', 'btnElev'], ['pAlign', 'btnAlign']]) {
+  for (const [p, b] of [['pRef', 'btnRef'], ['pObj', 'btnObj'], ['pKmz', 'btnKmzP'], ['pElev', 'btnElev'], ['pDig', 'btnDig'], ['pAlign', 'btnAlign']]) {
     const on = p === id; $(p).style.display = on ? 'block' : 'none'; $(b).classList.toggle('on', on);
   }
 }
@@ -1573,7 +1592,169 @@ function startPreview(only) {
 }
 if (location.hash.startsWith('#onizleme')) startPreview(location.hash.split('=')[1]);
 
-refreshAll();
+// ================= excavation-pit stakeout (kazı aplikasyonu) =================
+// Reuses the exact validated formula from app/src/lib/stubGeometry.ts (804/804 real-tower rows, 0.5 mm),
+// but the "bisector direction" input is not computed from neighbouring-tower coordinates: it's measured
+// directly in AR from the tower's own centre + alignment stakes (aliman), so it needs no GPS/compass/UTM
+// at all and is exact even where the built line deviates from the design. See project notes for the
+// derivation of `perp` (AR's (x,z) plane is a MIRRORED version of the UTM (E,N) plane -- verified against
+// stubGeometry.ts by a rotation-invariance test).
+// Anon key: public by design (protected by RLS, same key already shipped in the app's own JS bundle).
+const SB_URL = 'https://dgwposrzxzycoownpcdk.supabase.co', SB_KEY = 'sb_publishable_vrRcFEJadOB1BlYa32ZkvA_fQ1wy_5s';
+async function sbGet(path) {
+  const r = await fetch(SB_URL + '/rest/v1/' + path, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } });
+  if (!r.ok) throw new Error('Sunucu hatası (' + r.status + ')');
+  return r.json();
+}
+const DIG_TOWER_TYPES = ['B90C', 'BNS', 'B30', 'B60', 'B90', 'BLC', 'BLS'];
+const DIG_TYPE_ALIAS = { B90C: 'B90' };   // B90C has no dedicated stub/foundation table -> reuse B90's (same rule as the app)
+function digParseType(assetType) {
+  if (!assetType) return null;
+  for (const type of DIG_TOWER_TYPES) if (assetType.startsWith(type)) {
+    const m = assetType.slice(type.length).match(/^([+-]\d+(?:\.\d+)?)/);
+    return { type, bodyExtM: m ? Number(m[1]) : 0 };
+  }
+  return null;
+}
+async function digFetch(slug, code) {
+  const projs = await sbGet(`projects?select=id,name,coordinate_system&slug=eq.${encodeURIComponent(slug)}`);
+  if (!projs.length) throw new Error('Proje bulunamadı: "' + slug + '" (yayınlanmış olmalı)');
+  const proj = projs[0];
+  const assets = await sbGet(`assets?select=asset_code,asset_type,x,y,z,lat,lng,leg1_ext_m,leg2_ext_m,leg3_ext_m,leg4_ext_m,soil_type&project_id=eq.${proj.id}&asset_code=eq.${encodeURIComponent(code)}`);
+  if (!assets.length) throw new Error('Direk bulunamadı: ' + code);
+  const a = assets[0];
+  const parsed = digParseType(a.asset_type);
+  if (!parsed) throw new Error('Direk tipi tanınamadı: ' + a.asset_type);
+  const lookupType = DIG_TYPE_ALIAS[parsed.type] || parsed.type;
+  const cfgRows = await sbGet(`project_config?select=key,value&project_id=eq.${proj.id}&key=in.(stub_settings,foundation_types)`);
+  const stubList = (cfgRows.find((r) => r.key === 'stub_settings') || {}).value || [];
+  const foundList = (cfgRows.find((r) => r.key === 'foundation_types') || {}).value || [];
+  const stub = stubList.find((t) => t.type === lookupType);
+  if (!stub) throw new Error('Stub ayarı tablosu yok: ' + lookupType);
+  const foundOpts = foundList.filter((f) => f.type === lookupType);
+  if (!foundOpts.length) throw new Error('Foundation (kazı) verisi yok: ' + lookupType);
+  const found = foundOpts.find((f) => f.soilTypeCode === a.soil_type) || foundOpts[0];
+  const legExts = [a.leg1_ext_m, a.leg2_ext_m, a.leg3_ext_m, a.leg4_ext_m];
+  if (legExts.some((e) => e == null)) throw new Error('Bacak uzatma verisi eksik: ' + code);
+  let lat = a.lat, lng = a.lng;
+  if ((lat == null || lng == null) && a.x != null && a.y != null && proj.coordinate_system) {
+    const m = /EPSG:(\d{4,5})/.exec(proj.coordinate_system);
+    if (m) {
+      const epsg = +m[1], north = epsg < 32700, zone = north ? epsg - 32600 : epsg - 32700;
+      if (zone >= 1 && zone <= 60) [lat, lng] = utmToLatLng(zone, north, a.x, a.y);
+    }
+  }
+  return { code: a.asset_code, base: parsed.type, bodyExtM: parsed.bodyExtM, legExts, bWidthM: found.bWidthM, stub, lat, lng, projectName: proj.name, soilLabel: found.soilType };
+}
+let DIG = { data: null, pts: { center: null, back: null, front: null }, legs: null, angleDeg: null };
+const digGroup = new THREE.Group();
+const DIG_STUB_NAMES = { 1: 'Z41', 2: 'Z42', 3: 'Z43', 4: 'Z44' };
+const DIG_LEG_SIGNS = { 1: [-1, 1], 2: [-1, -1], 3: [1, -1], 4: [1, 1] };
+function digNormalize(v) { const m = Math.hypot(v[0], v[1]); return [v[0] / m, v[1] / m]; }
+// prev/next (AR-local [x,z], y ignored) may be null: only-back or only-front covers a suspension tower/line end.
+function digBisector(prev, cur, next) {
+  let bis;
+  if (!prev) bis = digNormalize([next[0] - cur[0], next[1] - cur[1]]);
+  else if (!next) bis = digNormalize([cur[0] - prev[0], cur[1] - prev[1]]);
+  else { const v1 = digNormalize([cur[0] - prev[0], cur[1] - prev[1]]), v2 = digNormalize([next[0] - cur[0], next[1] - cur[1]]); bis = digNormalize([v1[0] + v2[0], v1[1] + v2[1]]); }
+  return [bis, [-bis[1], bis[0]]];   // perp = "right hand when facing bis" (AR's x,z is East,-North: a mirrored frame, hence the sign flip vs the UTM formula)
+}
+function digLegCorners(d, legIndex, center, bis, perp) {
+  const entry = d.stub.table.find((t) => t.bodyExtM === d.bodyExtM && t.legExtM === d.legExts[legIndex - 1]);
+  if (!entry) return null;
+  const dimMm = d.base === 'BLS' ? entry.bMm : entry.wMm;
+  const { a, j, k } = d.stub.angleFactor, offsetMm = (a / j) * k;
+  const z1Mm = offsetMm + dimMm / 2 + (d.bWidthM * 1000) / 2, hM = d.bWidthM / 2, legM = z1Mm / 1000 - hM;
+  const [sBis, sPerp] = DIG_LEG_SIGNS[legIndex];
+  const lc = [center[0] + sBis * legM * bis[0] + sPerp * legM * perp[0], center[1] + sBis * legM * bis[1] + sPerp * legM * perp[1]];
+  const signs = [[-1, 1], [-1, -1], [1, -1], [1, 1]];
+  return { leg: legIndex, name: DIG_STUB_NAMES[legIndex], hM, legCenter: lc, corners: signs.map(([cb, cp]) => [lc[0] + cb * hM * bis[0] + cp * hM * perp[0], lc[1] + cb * hM * bis[1] + cp * hM * perp[1]]) };
+}
+function digQuad(corners, y, color) {
+  const [c0, c1, c2, c3] = corners;
+  const pos = new Float32Array([c0[0], y, c0[1], c1[0], y, c1[1], c2[0], y, c2[1], c0[0], y, c0[1], c2[0], y, c2[1], c3[0], y, c3[1]]);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.computeVertexNormals();
+  const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.42, side: THREE.DoubleSide }));
+  const lp = new Float32Array([c0[0], y + 0.01, c0[1], c1[0], y + 0.01, c1[1], c2[0], y + 0.01, c2[1], c3[0], y + 0.01, c3[1], c0[0], y + 0.01, c0[1]]);
+  const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(lp, 3));
+  const line = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0xffffff }));
+  const grp = new THREE.Group(); grp.add(mesh); grp.add(line); return grp;
+}
+const DIG_COLORS = { 1: 0xff5a5a, 2: 0xffd23f, 3: 0x6be3ff, 4: 0x7dff8a };
+function digBuild() {
+  digGroup.clear();
+  const d = DIG.data, c = DIG.pts.center; if (!d || !c || !DIG.legs) return;
+  DIG.legs.forEach((leg) => {
+    if (!leg) return;
+    digGroup.add(digQuad(leg.corners, c.y, DIG_COLORS[leg.leg]));
+    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: kmzLabelTex([leg.name, `Bacak ${leg.leg}`]), depthTest: false, transparent: true }));
+    label.scale.set(2.4, 0.9, 1); label.position.set(leg.legCenter[0], c.y + 0.6, leg.legCenter[1]); label.renderOrder = 10; digGroup.add(label);
+  });
+  if (DIG.bis) {
+    const e = c.x + DIG.bis[0] * 4, n = c.z + DIG.bis[1] * 4;
+    const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([c.x, c.y + 0.02, c.z, e, c.y + 0.02, n]), 3));
+    digGroup.add(new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0x7dff8a })));
+    const mg = new THREE.RingGeometry(0.12, 0.22, 24); mg.rotateX(-Math.PI / 2);
+    const marker = new THREE.Mesh(mg, new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
+    marker.position.set(c.x, c.y + 0.02, c.z); digGroup.add(marker);
+  }
+}
+function digRecompute() {
+  DIG.legs = null; DIG.angleDeg = null; DIG.bis = null;
+  const d = DIG.data, c = DIG.pts.center; if (!d || !c) { digBuild(); return; }
+  const b = DIG.pts.back, f = DIG.pts.front; if (!b && !f) { digBuild(); return; }
+  const cur = [c.x, c.z], prev = b ? [b.x, b.z] : null, next = f ? [f.x, f.z] : null;
+  const [bis, perp] = digBisector(prev, cur, next);
+  DIG.bis = bis;
+  if (b && f) {
+    const v1 = digNormalize([cur[0] - prev[0], cur[1] - prev[1]]), v2 = digNormalize([next[0] - cur[0], next[1] - cur[1]]);
+    DIG.angleDeg = 180 - Math.acos(Math.max(-1, Math.min(1, v1[0] * v2[0] + v1[1] * v2[1]))) * deg;   // deviation from a straight line (0° = suspension-like)
+  }
+  DIG.legs = [1, 2, 3, 4].map((i) => digLegCorners(d, i, cur, bis, perp));
+  digBuild();
+}
+function markDig(which, how) {
+  const now = performance.now();
+  if (!DIG.data) { groundMsg = { t: now, s: '⚠ Önce ana ekrandan direk verisini getir' }; return; }
+  let pt;
+  if (how === 'aim') {
+    if (!lastHit) { groundMsg = { t: now, s: '⚠ Zemin bulunamadı: daireyi noktaya tut, telefonu yavaşça gezdir, tekrar bas' }; return; }
+    pt = { x: lastHit.x, y: lastHit.y, z: lastHit.z };
+  } else pt = { x: camPos.x, y: lastHit ? lastHit.y : camPos.y - 1.4, z: camPos.z };
+  DIG.pts[which] = pt;
+  const label = which === 'center' ? 'Merkez' : which === 'back' ? 'Arka aliman' : 'İleri aliman';
+  groundMsg = { t: now, s: `${label} işaretlendi ✓` };
+  digRecompute();
+}
+function digHud() {
+  if (!DIG.data) return '';
+  const ok = (v) => (v ? '✓' : '–'), c = DIG.pts.center, b = DIG.pts.back, f = DIG.pts.front;
+  let s = `<br>🕳 Kazı ${DIG.data.code} (${DIG.data.base}): Merkez ${ok(c)}  Arka ${ok(b)}  İleri ${ok(f)}`;
+  if (DIG.legs) {
+    const missing = DIG.legs.map((l, i) => (l ? null : DIG_STUB_NAMES[i + 1])).filter(Boolean);
+    s += missing.length ? ` · ⚠ veri yok: ${missing.join(', ')}` : ' · 4 bacak da çizildi';
+    s += DIG.angleDeg != null ? (DIG.angleDeg > 179.5 ? ' · düz hat (sapma yok)' : ` · açı direği: hat açısı ${DIG.angleDeg.toFixed(1)}° (sapma ${(180 - DIG.angleDeg).toFixed(1)}°)`) : (b || f ? ' · süspansiyon (tek aliman)' : '');
+  }
+  return s;
+}
+$('btnDigOpen').addEventListener('click', () => { $('digForm').style.display = $('digForm').style.display === 'none' ? 'block' : 'none'; });
+$('btnDigGo').addEventListener('click', async () => {
+  const slug = $('digSlug').value.trim(), code = $('digCode').value.trim();
+  if (!slug || !code) { $('digInfo').textContent = '⚠ Proje ve direk no gerekli'; $('digInfo').style.display = ''; return; }
+  $('digInfo').style.display = ''; $('digInfo').textContent = 'Getiriliyor…';
+  try {
+    const d = await digFetch(slug, code);
+    DIG = { data: d, pts: { center: null, back: null, front: null }, legs: null, angleDeg: null };
+    const missing = [1, 2, 3, 4].filter((i) => !d.stub.table.find((t) => t.bodyExtM === d.bodyExtM && t.legExtM === d.legExts[i - 1]));
+    $('digInfo').textContent = `✓ ${d.projectName} · Direk ${d.code} (${d.base}${d.bodyExtM >= 0 ? '+' : ''}${d.bodyExtM}) · zemin: ${d.soilLabel}` +
+      (missing.length ? ` · ⚠ ${missing.map((i) => DIG_STUB_NAMES[i]).join(', ')} için tablo verisi yok` : ' · 4 bacak da hesaplanabilir') +
+      '. AR\'ı başlat, alttan "Kazı" panelini aç.';
+    if (d.lat != null && d.lng != null) projLoad({ v: 1, slug: 'kazi-' + code, name: `Direk ${d.code}`, at: new Date().toISOString(), assets: [{ c: d.code, lat: d.lat, lng: d.lng, z: null, s: 'not_started', a: 0, r: 0, st: null, t: d.base }] });
+  } catch (e) { $('digInfo').textContent = '⚠ ' + e.message; console.error(e); }
+});
+$('pDig').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-dig]'); if (!b) return; markDig(b.dataset.dig, b.dataset.m); });
+$('btnDigReset').addEventListener('click', () => { DIG.pts = { center: null, back: null, front: null }; digRecompute(); groundMsg = { t: performance.now(), s: 'Kazı işaretleri sıfırlandı' }; });
+
 // desktop preview of an imported line around one structure: __geo.kmzPreview('10')
 function kmzPreview(sname) {
   initThree(); $('app').style.display = 'none';
@@ -1604,6 +1785,8 @@ window.__geo = {
   },
   // test hook: pretend the user stands at (lat,lng) with the given north-yaw and run the KMZ culling/placement once
   walkFit,
+  dig: () => DIG, digFetch, digBisector, digLegCorners, digRecompute,
+  digSim: (data, center, back, front) => { DIG = { data, pts: { center, back, front }, legs: null, angleDeg: null }; digRecompute(); return { legs: DIG.legs, angleDeg: DIG.angleDeg, bis: DIG.bis }; },
   // test hook: feed a synthetic walk through walkApply and report where a GPS point lands in AR space with the resulting alignment
   walkSim: (pts, mode, probe) => {
     S.origin = { mode }; origin = { lat: pts[0].lat, lng: pts[0].lng, x: pts[0].x, z: pts[0].z }; thetaN = 0; adj.e = adj.n = adj.rot = 0;
