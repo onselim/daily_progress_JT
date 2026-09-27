@@ -51,6 +51,10 @@
   </div>
   <p class="hint">LE (Leg Extension): pozitif değer o bacağın merkeze göre <b>aşağıda</b>, negatif değer <b>yukarıda</b> olduğu anlamına gelir — AR bunu her bacağın kazı yüksekliğine otomatik yansıtır.</p>
   <p class="hint">⚠ Gerçek B30 direği geniştir: 4 bacak, merkezden köşegen yönde <b>~8 m</b> uzakta (karşılıklı bacaklar arası ~16,5 m). Küçük bir odada değil, <b>açık ve geniş bir alanda</b> dene; merkezi işaretledikten sonra etrafına bak/yürü.</p>
+  <div class="row">
+    <label>Telefon yüksekliği — sadece <b>zemin bulunamazsa</b> kullanılır (m)<input id="phoneH" type="number" step="0.05" min="0.5" max="2.2"></label>
+  </div>
+  <p class="hint">Önce mutlaka <b>🎯 (nişanla)</b> ile dene: gerçek zemin ölçümü kullanır, bu değere hiç ihtiyaç duymaz. "📍 (buradayım)" ise zemin taranmadıysa bu tahmini kullanır — HUD'da hangisinin kullanıldığı yazar ("✓ gerçek ölçüm" / "⚠ tahmini"). Havada/gömülü çıkıyorsa bu sayıyı ona göre değiştir.</p>
   <button class="primary" id="btnAR">▶ AR'ı başlat</button>
   <div id="status">Adımlar: 1) AR'ı başlat, 2) direğin olması gerektiğini düşündüğün merkeze git ve "Merkez" işaretle, 3) isteğe bağlı olarak 1-2 aliman (hat yönü) işaretle. Sadece merkez de yeterli, o zaman kazı alanları kuzeye göre çizilir.</div>
 </div>
@@ -64,6 +68,7 @@
       <div class="r"><span>1. Merkez</span><button data-dig="center" data-m="aim">🎯</button><button data-dig="center" data-m="here">📍</button></div>
       <div class="r"><span>2. Arka aliman</span><button data-dig="back" data-m="aim">🎯</button><button data-dig="back" data-m="here">📍</button></div>
       <div class="r"><span>3. İleri aliman</span><button data-dig="front" data-m="aim">🎯</button><button data-dig="front" data-m="here">📍</button></div>
+      <div class="r"><span>Kot ayarı</span><button data-adj="-0.5">-50cm</button><button data-adj="-0.1">-10cm</button><button data-adj="0.1">+10cm</button><button data-adj="0.5">+50cm</button></div>
       <button class="full" id="btnReset">Sıfırla</button>
       <div class="bar"><button id="btnExit">Çık</button></div>
     </div>
@@ -97,6 +102,12 @@ const LE_OPTIONS = TOWER.stub.table.map((t) => t.legExtM);
 for (const id of ['le1', 'le2', 'le3', 'le4']) {
   $(id).innerHTML = LE_OPTIONS.map((v) => `<option value="${v}" ${v === 0 ? 'selected' : ''}>${v >= 0 ? '+' : ''}${v} m</option>`).join('');
 }
+// "📍" fallback height when hit-test finds no ground: person-specific (how you hold the phone), so it's a
+// live-editable field, not a hardcoded guess. Remembered per phone via localStorage.
+let phoneHVal = 1.2; try { const s = localStorage.getItem('digPhoneH'); if (s) phoneHVal = +s; } catch (e) {}
+$('phoneH').value = phoneHVal;
+$('phoneH').addEventListener('change', () => { const v = +$('phoneH').value; if (v > 0) { phoneHVal = v; try { localStorage.setItem('digPhoneH', String(v)); } catch (e) {} } });
+const phoneH = () => phoneHVal;
 
 // ---- excavation-pit geometry: same formula as app/src/lib/stubGeometry.ts, ported to the AR-local (x,z) frame
 // (verified in the main AR page's dig_test.js) ----
@@ -155,6 +166,7 @@ function quad(corners, y, color) {
 }
 
 let DIG = { pts: { center: null, back: null, front: null }, legs: null, bis: null, angleDeg: null };
+let adjUp = 0;   // manual "kot ayarı" (m) - nudges everything up/down after marking, e.g. to correct a wrong height-estimate fallback
 function recompute() {
   digGroup.clear(); DIG.legs = null; DIG.bis = null; DIG.angleDeg = null;
   const c = DIG.pts.center; if (!c) return;
@@ -168,18 +180,19 @@ function recompute() {
   }
   const les = [+$('le1').value, +$('le2').value, +$('le3').value, +$('le4').value];
   DIG.legs = [1, 2, 3, 4].map((i) => legCorners(i, les[i - 1], cur, bis, perp));
+  const cy = c.y + adjUp;
   DIG.legs.forEach((leg) => {
-    const y = c.y - leg.legExtM;
+    const y = cy - leg.legExtM;
     digGroup.add(quad(leg.corners, y, COLORS[leg.leg]));
     const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex([leg.name, `LE ${leg.legExtM >= 0 ? '+' : ''}${leg.legExtM} m`]), depthTest: false, transparent: true }));
     label.scale.set(2.4, 0.9, 1); label.position.set(leg.legCenter[0], y + 0.6, leg.legCenter[1]); label.renderOrder = 10; digGroup.add(label);
   });
   const e = c.x + bis[0] * 4, n = c.z + bis[1] * 4;
-  const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([c.x, c.y + 0.02, c.z, e, c.y + 0.02, n]), 3));
+  const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([c.x, cy + 0.02, c.z, e, cy + 0.02, n]), 3));
   digGroup.add(new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0x7dff8a })));
   const mg = new THREE.RingGeometry(0.35, 0.5, 24); mg.rotateX(-Math.PI / 2);
   const marker = new THREE.Mesh(mg, new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
-  marker.position.set(c.x, c.y + 0.02, c.z); digGroup.add(marker);
+  marker.position.set(c.x, cy + 0.02, c.z); digGroup.add(marker);
 }
 let groundMsg = null, errMsg = null;
 function mark(which, how) {
@@ -187,19 +200,21 @@ function mark(which, how) {
   let pt;
   if (how === 'aim') {
     if (!lastHit) { groundMsg = { t: now, s: '⚠ Zemin bulunamadı: daireyi noktaya tut, telefonu yavaşça gezdir, tekrar bas' }; return; }
-    pt = { x: lastHit.x, y: lastHit.y, z: lastHit.z };
-  } else pt = { x: camPos.x, y: lastHit ? lastHit.y : camPos.y - 1.2, z: camPos.z };
+    pt = { x: lastHit.x, y: lastHit.y, z: lastHit.z, approx: false };
+  } else pt = { x: camPos.x, y: lastHit ? lastHit.y : camPos.y - phoneH(), z: camPos.z, approx: !lastHit };
   DIG.pts[which] = pt;
-  groundMsg = { t: now, s: `${which === 'center' ? 'Merkez' : which === 'back' ? 'Arka aliman' : 'İleri aliman'} işaretlendi ✓` };
+  const label = which === 'center' ? 'Merkez' : which === 'back' ? 'Arka aliman' : 'İleri aliman';
+  groundMsg = { t: now, s: pt.approx ? `⚠ ${label} işaretlendi — zemin bulunamadı, "${phoneH().toFixed(2)} m telefon yüksekliği" TAHMİNİ kullanıldı` : `${label} işaretlendi ✓ (gerçek zemin ölçümü)` };
   try { recompute(); errMsg = null; } catch (e) { errMsg = e.message; console.error(e); }
 }
 function hud(now) {
-  const ok = (v) => (v ? '✓' : '–'), c = DIG.pts.center, b = DIG.pts.back, f = DIG.pts.front;
+  const ok = (v) => (!v ? '–' : v.approx ? '⚠(tahmini)' : '✓'), c = DIG.pts.center, b = DIG.pts.back, f = DIG.pts.front;
   let s = `Demo: B30+0 · Good Soil<br>Merkez ${ok(c)}  Arka ${ok(b)}  İleri ${ok(f)}`;
   if (DIG.legs) {
     s += ' · 4 bacak da çizildi (her biri merkezden ~8 m, köşegen yönde — geniş bir alanda ol, çevrene bak/yürü)';
     s += DIG.angleDeg != null ? (DIG.angleDeg > 179.5 ? ' · düz hat' : ` · açı: hat açısı ${DIG.angleDeg.toFixed(1)}° (sapma ${(180 - DIG.angleDeg).toFixed(1)}°)`) : (b || f ? ' · süspansiyon (tek aliman)' : ' · aliman yok: kuzeye göre çizildi');
   }
+  if (adjUp !== 0) s += ` · kot ayarı: ${adjUp >= 0 ? '+' : ''}${adjUp.toFixed(2)} m`;
   if (errMsg) s += '<br>⚠ HATA: ' + errMsg;
   if (groundMsg && now - groundMsg.t < 3000) s += '<br>' + groundMsg.s;
   return s;
@@ -233,13 +248,18 @@ async function startAR() {
 }
 $('btnAR').addEventListener('click', startAR);
 $('btnExit').addEventListener('click', () => { if (session) session.end(); });
-$('btnReset').addEventListener('click', () => { DIG.pts = { center: null, back: null, front: null }; recompute(); groundMsg = { t: performance.now(), s: 'Sıfırlandı' }; });
-$('overlay').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-dig]'); if (!b) return; mark(b.dataset.dig, b.dataset.m); });
+$('btnReset').addEventListener('click', () => { DIG.pts = { center: null, back: null, front: null }; adjUp = 0; recompute(); groundMsg = { t: performance.now(), s: 'Sıfırlandı' }; });
+$('overlay').addEventListener('click', (ev) => {
+  const d = ev.target.closest('button[data-dig]');
+  if (d) { mark(d.dataset.dig, d.dataset.m); return; }
+  const a = ev.target.closest('button[data-adj]');
+  if (a) { adjUp += +a.dataset.adj; try { recompute(); errMsg = null; } catch (e) { errMsg = e.message; console.error(e); } groundMsg = { t: performance.now(), s: `Kot ayarı: ${adjUp >= 0 ? '+' : ''}${adjUp.toFixed(2)} m` }; }
+});
 for (const id of ['le1', 'le2', 'le3', 'le4']) $(id).addEventListener('change', () => { if (!DIG.pts.center) return; try { recompute(); errMsg = null; } catch (e) { errMsg = e.message; console.error(e); } });
 
 // test hooks (no XR device needed): __dig.sim(center, back, front) with plain {x,y,z} objects
 window.__dig = {
-  bisector, legCorners, get: () => DIG, digGroup,
+  bisector, legCorners, get: () => DIG, digGroup, getAdjUp: () => adjUp, setAdjUp: (v) => { adjUp = v; recompute(); },
   sim(center, back, front) { DIG.pts = { center, back, front }; recompute(); return { legs: DIG.legs, bis: DIG.bis, angleDeg: DIG.angleDeg }; },
 };
 </script>
