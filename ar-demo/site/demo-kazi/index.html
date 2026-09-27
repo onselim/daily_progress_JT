@@ -189,6 +189,21 @@ const labelTex = (txt) => {
   g.fillStyle = '#9fd0ff'; g.font = '26px system-ui,sans-serif'; g.fillText(txt[1] || '', 128, 80);
   return new THREE.CanvasTexture(c);
 };
+// No box, no billboard: a thin word that lies flat on the ground, right on the excavation line, rotated to run along it.
+const edgeTex = (text) => {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 96; const g = c.getContext('2d');
+  g.fillStyle = '#ffffff'; g.font = '500 46px system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.shadowColor = 'rgba(0,0,0,0.9)'; g.shadowBlur = 6;
+  g.fillText(text, 256, 50);
+  return new THREE.CanvasTexture(c);
+};
+function edgeLabel(p0, p1, y, text) {
+  const dx = p1[0] - p0[0], dz = p1[1] - p0[1], len = Math.hypot(dx, dz), ang = Math.atan2(dz, dx);
+  const w = Math.min(len * 0.7, 1.1), h = w * (96 / 512);
+  const g = new THREE.PlaneGeometry(w, h); g.rotateX(-Math.PI / 2); g.rotateY(-ang);
+  const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: edgeTex(text), transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+  mesh.position.set((p0[0] + p1[0]) / 2, y + 0.015, (p0[1] + p1[1]) / 2); mesh.renderOrder = 11; return mesh;
+}
 const COLORS = { 1: 0xff5a5a, 2: 0xffd23f, 3: 0x6be3ff, 4: 0x7dff8a };
 function quad(corners, y, color) {
   const [c0, c1, c2, c3] = corners;
@@ -223,12 +238,8 @@ function recompute() {
     digGroup.add(quad(leg.corners, y, COLORS[leg.leg]));
     const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex([leg.name, `LE ${leg.legExtM >= 0 ? '+' : ''}${leg.legExtM} m`]), depthTest: false, transparent: true }));
     label.scale.set(2.4, 0.9, 1); label.position.set(leg.legCenter[0], y + 0.6, leg.legCenter[1]); label.renderOrder = 10; digGroup.add(label);
-    // width written on each edge of the pit (kazı genişliği kenara yazılsın)
-    for (let i = 0; i < 4; i++) {
-      const p0 = leg.corners[i], p1 = leg.corners[(i + 1) % 4], mx = (p0[0] + p1[0]) / 2, mz = (p0[1] + p1[1]) / 2;
-      const edge = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex([bTxt, '']), depthTest: false, transparent: true }));
-      edge.scale.set(1.5, 0.56, 1); edge.position.set(mx, y + 0.15, mz); edge.renderOrder = 10; digGroup.add(edge);
-    }
+    // width written thin, flat and parallel right on each edge of the pit (kazı genişliği kenara yazılsın, kutu yok)
+    for (let i = 0; i < 4; i++) digGroup.add(edgeLabel(leg.corners[i], leg.corners[(i + 1) % 4], y, bTxt));
   });
   const e = c.x + bis[0] * 4, n = c.z + bis[1] * 4;
   const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([c.x, cy + 0.02, c.z, e, cy + 0.02, n]), 3));
