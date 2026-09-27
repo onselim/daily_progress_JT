@@ -188,7 +188,7 @@ function mark(which, how) {
   if (how === 'aim') {
     if (!lastHit) { groundMsg = { t: now, s: '⚠ Zemin bulunamadı: daireyi noktaya tut, telefonu yavaşça gezdir, tekrar bas' }; return; }
     pt = { x: lastHit.x, y: lastHit.y, z: lastHit.z };
-  } else pt = { x: camPos.x, y: lastHit ? lastHit.y : camPos.y - 1.4, z: camPos.z };
+  } else pt = { x: camPos.x, y: lastHit ? lastHit.y : camPos.y - 1.2, z: camPos.z };
   DIG.pts[which] = pt;
   groundMsg = { t: now, s: `${which === 'center' ? 'Merkez' : which === 'back' ? 'Arka aliman' : 'İleri aliman'} işaretlendi ✓` };
   try { recompute(); errMsg = null; } catch (e) { errMsg = e.message; console.error(e); }

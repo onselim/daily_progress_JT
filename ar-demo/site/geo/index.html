@@ -974,7 +974,7 @@ function markRef(i, how) {
   if (how === 'aim') {
     if (!lastHit) { groundMsg = { t: now, s: '⚠ Zemin bulunamadı: daireyi noktaya tut, telefonu yavaşça gezdir, tekrar bas' }; return; }
     p = { ...lastHit, approx: false };
-  } else p = { x: camPos.x, z: camPos.z, y: lastHit ? lastHit.y : camPos.y - 1.4, approx: !lastHit };
+  } else p = { x: camPos.x, z: camPos.z, y: lastHit ? lastHit.y : camPos.y - 1.2, approx: !lastHit };
   refMarks[i] = p; groundMsg = { t: now, s: `R${i + 1} işaretlendi ✓` };
   solveRefs();
 }
@@ -1723,7 +1723,7 @@ function markDig(which, how) {
   if (how === 'aim') {
     if (!lastHit) { groundMsg = { t: now, s: '⚠ Zemin bulunamadı: daireyi noktaya tut, telefonu yavaşça gezdir, tekrar bas' }; return; }
     pt = { x: lastHit.x, y: lastHit.y, z: lastHit.z };
-  } else pt = { x: camPos.x, y: lastHit ? lastHit.y : camPos.y - 1.4, z: camPos.z };
+  } else pt = { x: camPos.x, y: lastHit ? lastHit.y : camPos.y - 1.2, z: camPos.z };
   DIG.pts[which] = pt;
   const label = which === 'center' ? 'Merkez' : which === 'back' ? 'Arka aliman' : 'İleri aliman';
   groundMsg = { t: now, s: `${label} işaretlendi ✓` };
