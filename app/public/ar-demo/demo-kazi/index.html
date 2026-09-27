@@ -217,11 +217,18 @@ function recompute() {
   const les = [+$('le1').value, +$('le2').value, +$('le3').value, +$('le4').value];
   DIG.legs = [1, 2, 3, 4].map((i) => legCorners(i, les[i - 1], cur, bis, perp));
   const cy = c.y + adjUp;
+  const bTxt = `${TOWER.bWidthM.toFixed(2)} m`;
   DIG.legs.forEach((leg) => {
     const y = cy - leg.legExtM;
     digGroup.add(quad(leg.corners, y, COLORS[leg.leg]));
     const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex([leg.name, `LE ${leg.legExtM >= 0 ? '+' : ''}${leg.legExtM} m`]), depthTest: false, transparent: true }));
     label.scale.set(2.4, 0.9, 1); label.position.set(leg.legCenter[0], y + 0.6, leg.legCenter[1]); label.renderOrder = 10; digGroup.add(label);
+    // width written on each edge of the pit (kazı genişliği kenara yazılsın)
+    for (let i = 0; i < 4; i++) {
+      const p0 = leg.corners[i], p1 = leg.corners[(i + 1) % 4], mx = (p0[0] + p1[0]) / 2, mz = (p0[1] + p1[1]) / 2;
+      const edge = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex([bTxt, '']), depthTest: false, transparent: true }));
+      edge.scale.set(1.5, 0.56, 1); edge.position.set(mx, y + 0.15, mz); edge.renderOrder = 10; digGroup.add(edge);
+    }
   });
   const e = c.x + bis[0] * 4, n = c.z + bis[1] * 4;
   const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([c.x, cy + 0.02, c.z, e, cy + 0.02, n]), 3));
