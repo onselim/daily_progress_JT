@@ -7,7 +7,7 @@ da bir şey tamamlandığında burası güncellenir. Amaç: her yeniliğin dağ�
 kalmaması, nerede durduğumuzu her seferinde yeniden hatırlamak zorunda
 kalmamak.
 
-**Son güncelleme:** 2026-09-27
+**Son güncelleme:** 2026-09-27 (admin proje haritası tamamlandı)
 
 ---
 
@@ -16,9 +16,14 @@ kalmamak.
 ### Ana uygulama — `svkdk.com` (Netlify, özel domain, private repo)
 - **Roller:** Admin (giriş var), Saha mühendisi (giriş var), Viewer (link ile,
   giriş yok).
-- **Admin paneli:** proje listesi (`ProjectPickerPage.tsx`), proje kurulum
-  sihirbazı (`/admin/new`, 3 adım: temel bilgiler → iş kalemleri → Excel/CSV
-  ile direk içe aktarma), iş kalemi düzenleme, kullanıcı davet.
+- **Admin paneli:** proje listesi (`ProjectPickerPage.tsx`) — artık **Liste /
+  Harita** sekmeli (`ProjectMapView.tsx`, `useProjectLocations.ts`): harita
+  görünümünde her projenin direklerinin ortalama konumuna göre bir pin +
+  isim etiketi var, pin'e basınca o projeye gidiyor, 9 dilde çeviri var.
+  Direksiz (henüz içe aktarılmamış) projeler haritada görünmüyor, altta not
+  olarak sayılıyor. Ayrıca proje kurulum sihirbazı (`/admin/new`, 3 adım:
+  temel bilgiler → iş kalemleri → Excel/CSV ile direk içe aktarma), iş
+  kalemi düzenleme, kullanıcı davet.
 - **İlerleme sistemi:** Design/Construction/Supply ayrı takip, ağırlıklı
   toplam yüzde, direk bazlı iş kalemi durumu (tap-to-select, yazı girişi
   yok).
@@ -78,19 +83,19 @@ Bu, kullanıcının "dağınık olmasın" isteğinin asıl karşılığı:
 
 ## 3. Sırada Ne Var (öncelik sırasına göre)
 
-1. **Admin proje haritası** — proje listesinin altında/yanında harita,
-   pin'e basınca o projeye git. Motivasyon: çok şantiyeli bir yönetici/EPC
-   için ilk ekranda istenecek şey (bkz. Bölüm 5). *Henüz kapsamı
-   netleşmedi: hangi route, pin verisi kaynağı, mevcut listeyi değiştirir mi
-   / tamamlar mı.*
-2. **Direk Kütüphanesi** (`tower_type_library`) — proje bazlı yerine hesap
+1. **Direk Kütüphanesi** (`tower_type_library`) — proje bazlı yerine hesap
    bazlı, adlandırılmış, opt-in paylaşımlı kütüphane. Detay Bölüm 4.
-3. **Bestana ailesinin tamamı** — 2T1/2T2/2TT + Good/Soft/Rock zemin
+2. **Bestana ailesinin tamamı** — 2T1/2T2/2TT + Good/Soft/Rock zemin
    varyantları (2S zaten çözüldü, formül doğrulandı).
-4. **Erbil 132kV'nin A/C/K sorusu** — `StubSettingDimensions.pdf`'teki
+3. **Erbil 132kV'nin A/C/K sorusu** — `StubSettingDimensions.pdf`'teki
    sütunların tam anlamı netleşmeli (kullanıcı ya da eski bir mühendis).
-5. **`/ar/:slug` entegrasyonunu pushlama** — kullanıcı onayı bekleniyor.
-6. **Irak 400kV eski tip** — henüz hiç doküman yok, kullanıcı ekleyecek.
+4. **`/ar/:slug` entegrasyonunu pushlama** — kullanıcı onayı bekleniyor.
+5. **Irak 400kV eski tip** — henüz hiç doküman yok, kullanıcı ekleyecek.
+
+**Tamamlandı (2026-09-27):** Admin proje haritası — bkz. Bölüm 1, Ana
+uygulama. Konum verisi asset'lerden türetiliyor (proje tablosunda kendi
+konum alanı yok); ileride gerçek bir proje-merkezi alanı eklenmek istenirse
+bu ayrı bir iş.
 
 ---
 
