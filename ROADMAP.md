@@ -43,6 +43,7 @@ Hepsi **ana React uygulamasından bağımsız**, vanilla JS/HTML statik sayfalar
 |---|---|---|
 | AR Konum | `/ar-demo/geo/` | Aktif — KMZ hat (çoklu), proje direk katmanı, kazı aplikasyonu, georeferans, yürüyerek hizalama, DEM zemin kotu |
 | Kazı Aplikasyonu Demo | `/ar-demo/demo-kazi/` | Aktif — projeden bağımsız, direk tipi seçilebilir (B30, 2S), tanıtım amaçlı |
+| Sehim Kontrolü Demo | `/ar-demo/demo-sehim/` | Aktif — sıcaklık/sehim tablosu gir, 2 nokta işaretle, parabolik sehim eğrisi AR'da çizilir |
 | AR Masaüstü Model | `/ar-demo/` | Aktif — direk kütüphanesi, masa üstü 3D önizleme |
 | AR Sinema | `/ar-demo/sinema/` | Durduruldu — 360° deneyi, su akışı gerçekçi bulunmadı |
 | Nokta Bulutu | `/nokta-bulutu/` | Aktif — alan çiz, yükseklik verisinden nokta bulutu üret |
