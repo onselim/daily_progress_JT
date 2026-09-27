@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Linkler</title>
+<style>
+  :root { --bg:#0f1720; --panel:#16202b; --line:#2a3846; --fg:#e6edf3; --dim:#9fb0c0; --acc:#2f81f7; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background:var(--bg); color:var(--fg); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+  body { padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 4px 0 4px; }
+  p.hint { color: var(--dim); font-size: 13px; line-height: 1.5; margin: 0 0 20px; }
+  .card { display: block; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; text-decoration: none; color: inherit; }
+  .card:active { background: #1c2836; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .icon { font-size: 26px; flex: 0 0 auto; width: 34px; text-align: center; }
+  .title { font-size: 16px; font-weight: 600; margin: 0; }
+  .badge { font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 6px; margin-left: 6px; vertical-align: 1px; }
+  .badge.on { background: #16382c; color: #7dff8a; }
+  .badge.off { background: #3a2a1a; color: #ffb454; }
+  .desc { color: var(--dim); font-size: 13px; margin: 5px 0 0; line-height: 1.45; }
+  .url { color: var(--acc); font-size: 12px; margin: 6px 0 0; word-break: break-all; }
+  footer { color: var(--dim); font-size: 11.5px; text-align: center; margin-top: 24px; }
+</style>
+</head>
+<body>
+  <h1>🔗 Linkler</h1>
+  <p class="hint">svkdk.com üzerindeki çalışan araçlar ve demolar — adres çubuğuna yazmak yerine buradan aç.</p>
+
+  <a class="card" href="/ar-demo/geo/">
+    <div class="row"><span class="icon">🌍</span><p class="title">AR Konum <span class="badge on">aktif</span></p></div>
+    <p class="desc">Ana AR aracı: PLS-CADD KMZ hat yükleme (birden fazla hat), günlük rapor projesinden direk katmanı, kazı aplikasyonu (merkez + aliman + LE), georeferans (2-3 nokta), yürüyerek hizalama, DEM zemin kotu.</p>
+    <p class="url">svkdk.com/ar-demo/geo/</p>
+  </a>
+
+  <a class="card" href="/ar-demo/demo-kazi/">
+    <div class="row"><span class="icon">🕳️</span><p class="title">Kazı Aplikasyonu — Demo <span class="badge on">aktif</span></p></div>
+    <p class="desc">Bağımsız demo, hiçbir projeye bağlı değil. Direk tipi seç (B30 / 2S), 4 bacağın LE'sini ayarla, bulunduğun yere AR ile aplike et.</p>
+    <p class="url">svkdk.com/ar-demo/demo-kazi/</p>
+  </a>
+
+  <a class="card" href="/nokta-bulutu/">
+    <div class="row"><span class="icon">☁️</span><p class="title">Nokta Bulutu <span class="badge on">aktif</span></p></div>
+    <p class="desc">Haritada alan/dikdörtgen/koridor/nokta çiz, yükseklik verisinden (Terrarium/Open-Meteo) nokta bulutu üret. CSV, XYZ, LAS, DXF, KML indir.</p>
+    <p class="url">svkdk.com/nokta-bulutu/</p>
+  </a>
+
+  <a class="card" href="/ar-demo/">
+    <div class="row"><span class="icon">🏗</span><p class="title">AR Masaüstü Model <span class="badge on">aktif</span></p></div>
+    <p class="desc">Direk kütüphanesi (PLS .tow'dan), masa üstü ölçekte 3D model önizleme — sahaya çıkmadan tanıtım için.</p>
+    <p class="url">svkdk.com/ar-demo/</p>
+  </a>
+
+  <a class="card" href="/ar-demo/sinema/">
+    <div class="row"><span class="icon">🎬</span><p class="title">AR Sinema <span class="badge off">durduruldu</span></p></div>
+    <p class="desc">360° çevreleyen ekran, prosedürel şelale ya da kendi 360° foto/video'n. Geliştirmesi şimdilik durduruldu (su akışı gerçekçi bulunmadı).</p>
+    <p class="url">svkdk.com/ar-demo/sinema/</p>
+  </a>
+
+  <footer>Bu sayfa elle güncelleniyor — yeni bir araç yayına alındığında buraya da eklenir.</footer>
+</body>
+</html>
