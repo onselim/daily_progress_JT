@@ -43,6 +43,18 @@
   <h1>📉 Sehim Kontrolü — Demo</h1>
   <p class="hint">Bu, çözümü tanıtmak için hazırlanmış <b>bağımsız bir demodur</b>. PLS-CADD'in sıcaklığa göre ürettiği sehim değerlerini aşağıya gir, AR'da iki direk arasındaki iletken bağlantı noktasını işaretle — telefon, seçtiğin sıcaklıktaki eğriyi havada çizer. Gerçek telle çakışıyorsa sehim doğru demektir.</p>
 
+  <div class="row" style="display:flex;gap:8px;margin-bottom:6px">
+    <label style="flex:1;font-size:11.5px;color:var(--dim)">Direk A tipi<select id="twA"></select></label>
+    <label style="flex:1;font-size:11.5px;color:var(--dim)">Direk B tipi<select id="twB"></select></label>
+  </div>
+  <p class="hint" id="twHint"></p>
+
+  <div class="row" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:6px">
+    <label style="flex:1;font-size:11.5px;color:var(--dim)">Açıklık — span (m)<input id="spanM" type="number" step="10" value="350" style="width:100%;background:#0d141b;color:var(--fg);border:1px solid var(--line);border-radius:7px;padding:9px 8px;font-size:15px"></label>
+    <button id="btnFromTeal" style="flex:0 0 auto;background:#1c2836;color:var(--acc);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:12.5px;white-space:nowrap">🔄 ACSR Teal'a göre hesapla</button>
+  </div>
+  <p class="hint">ACSR Teal (605 kcmil, 30/19): 1,40 kg/m, kopma yükü 133,4 kN. Örnek olarak %20 RTS (günlük gerinim varsayımı, 15°C referans) ve sadece termal uzama ile hesaplanır — <b>gerçek PLS-CADD sehim-gerinim tablon varsa onu kullan</b>, bu sadece gerçekçi bir başlangıç.</p>
+
   <table class="sag-table">
     <thead><tr><th>Sıcaklık (°C)</th><th>Sehim (m)</th><th></th></tr></thead>
     <tbody id="rows"></tbody>
@@ -79,6 +91,43 @@ let groundMsg = null, errMsg = null;
 const sagGroup = new THREE.Group();
 let PTS = { a: null, b: null };
 let SAG = { curve: null, mid: null };
+
+// ---- two example towers (real geometry, from the already-parsed .tow library -- ar-demo/site/geo/towers.json)
+// so the demo has a concrete story instead of generic "Direk A/B". Attach height = tower height + the insulator
+// set's own z offset (towers.json's "ins" entries; z=0 at the top, negative going down) -- picked the MIDDLE
+// phase level of each (informational only, to help aim in AR; the actual math uses wherever you mark). ----
+const TOWERS = {
+  'DCD+0': { name: 'DCD+0 (132kV Erbil)', heightM: 34.9 - 12.78 },
+  '2T1': { name: '2T1 (33kV Bestana)', heightM: 25.25 - 7.755 },
+};
+for (const id of ['twA', 'twB']) $(id).innerHTML = Object.keys(TOWERS).map((k) => `<option value="${k}">${TOWERS[k].name}</option>`).join('');
+$('twB').value = '2T1';
+function updateTwHint() {
+  const a = TOWERS[$('twA').value], b = TOWERS[$('twB').value];
+  $('twHint').innerHTML = `Yaklaşık iletken yüksekliği (sadece bilgi amaçlı, orta faz): <b>Direk A ${a.heightM.toFixed(1)} m</b> · <b>Direk B ${b.heightM.toFixed(1)} m</b> — AR'da gerçek noktayı işaretle, bu sayı sadece nereye bakacağını tahmin etmen için.`;
+}
+$('twA').addEventListener('change', updateTwHint); $('twB').addEventListener('change', updateTwHint);
+updateTwHint();
+
+// ---- ACSR Teal (605 kcmil, 30/19 stranding): published weight/strength, standard "everyday tension" (~20% RTS
+// at 15°C) as an illustrative reference state, sag at other temperatures from thermal elongation only (ignores
+// elastic stretch/creep -- a real sag-tension "change of state" solve needs modulus of elasticity + initial
+// stringing data this demo doesn't have). Good enough to look physically plausible as a starting point; the
+// table stays fully editable so real PLS-CADD numbers always win. ----
+const TEAL = { wNpm: 939 * 0.45359237 / 304.8 * 9.80665, rtsN: 30000 * 4.4482216, alphaPerC: 19e-6 };
+function sagFromTeal(spanM) {
+  const T0 = 15, H0 = 0.20 * TEAL.rtsN, D0 = TEAL.wNpm * spanM * spanM / (8 * H0);
+  const s0 = spanM + (8 * D0 * D0) / (3 * spanM);
+  const sagAt = (T) => {
+    const sT = s0 * (1 + TEAL.alphaPerC * (T - T0));
+    return Math.sqrt((3 * spanM / 8) * (sT - spanM));
+  };
+  return [-20, -10, 0, 10, 20, 30, 40, 50].map((t) => ({ t, s: +sagAt(t).toFixed(2) }));
+}
+$('btnFromTeal').addEventListener('click', () => {
+  const span = +$('spanM').value; if (!(span > 0)) return;
+  ROWS = sagFromTeal(span); activeRow = 4; renderRows();
+});
 
 // ---- editable temperature -> sag(m) table (user's own PLS-CADD values; these are just a placeholder starting point) ----
 let ROWS = [
@@ -199,13 +248,13 @@ function mark(which, how) {
     pt = { x: lastHit.x, y: lastHit.y, z: lastHit.z, approx: false };
   } else pt = { x: camPos.x, y: lastHit ? lastHit.y : camPos.y - phoneH(), z: camPos.z, approx: !lastHit };
   PTS[which] = pt;
-  const label = which === 'a' ? 'Direk A' : 'Direk B';
+  const label = which === 'a' ? `Direk A (${$('twA').value})` : `Direk B (${$('twB').value})`;
   groundMsg = { t: now, s: pt.approx ? `⚠ ${label} işaretlendi — nokta bulunamadı, tahmini konum kullanıldı` : `${label} işaretlendi ✓ (gerçek ölçüm)` };
   try { recompute(); errMsg = null; } catch (e) { errMsg = e.message; console.error(e); }
 }
 function hud(now) {
   const ok = (v) => (!v ? '–' : v.approx ? '⚠(tahmini)' : '✓'), a = PTS.a, b = PTS.b;
-  let s = `Sehim demo<br>Direk A ${ok(a)}  Direk B ${ok(b)}`;
+  let s = `Sehim demo (${$('twA').value} — ${$('twB').value})<br>Direk A ${ok(a)}  Direk B ${ok(b)}`;
   if (SAG.curve) s += ` · eğri çizildi (${$('tempRow').textContent})`;
   if (errMsg) s += '<br>⚠ HATA: ' + errMsg;
   if (groundMsg && now - groundMsg.t < 3000) s += '<br>' + groundMsg.s;
