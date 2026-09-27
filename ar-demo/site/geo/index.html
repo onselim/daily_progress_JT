@@ -1138,7 +1138,9 @@ function parseKml(text, fname) {
   const cm = /Project coordinate system:\s*UTM Zone\s*(\d+)\s*([NS])/i.exec(text.slice(0, 4000));
   const mlng = structs.reduce((a, x) => a + x.lng, 0) / structs.length, mlat = structs.reduce((a, x) => a + x.lat, 0) / structs.length;
   const crs = cm ? { zone: +cm[1], north: cm[2].toUpperCase() === 'N', src: 'dosyadan' } : { zone: utmZoneOf(mlng), north: mlat >= 0, src: 'konumdan' };
-  return { name: title || fname, fname, shift, structs, chunks, crs, ms: Math.round(performance.now() - t0) };
+  // Dosya adı önce: aynı hattın farklı PLS-CADD çıktılarını (ör. farklı sıcaklık/hava durumu senaryoları)
+  // ayırt etmenin tek yolu bu -- KMZ'nin içindeki Document adı genelde hepsinde aynı kalıyor (bkz. proje notları).
+  return { name: fname, title, fname, shift, structs, chunks, crs, ms: Math.round(performance.now() - t0) };
 }
 
 // tiny IndexedDB key/value store so a large import survives reloads
