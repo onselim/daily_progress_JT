@@ -237,7 +237,7 @@ function recompute() {
     const y = cy - leg.legExtM;
     digGroup.add(quad(leg.corners, y, COLORS[leg.leg]));
     const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex([leg.name, `LE ${leg.legExtM >= 0 ? '+' : ''}${leg.legExtM} m`]), depthTest: false, transparent: true }));
-    label.scale.set(2.4, 0.9, 1); label.position.set(leg.legCenter[0], y + 0.6, leg.legCenter[1]); label.renderOrder = 10; digGroup.add(label);
+    label.scale.set(0.6, 0.225, 1); label.position.set(leg.legCenter[0], y + 0.3, leg.legCenter[1]); label.renderOrder = 10; digGroup.add(label);
     // width written thin, flat and parallel right on each edge of the pit (kazı genişliği kenara yazılsın, kutu yok)
     for (let i = 0; i < 4; i++) digGroup.add(edgeLabel(leg.corners[i], leg.corners[(i + 1) % 4], y, bTxt));
   });
