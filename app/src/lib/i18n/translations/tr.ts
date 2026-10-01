@@ -129,6 +129,8 @@ export const tr: Record<TranslationKey, string> = {
   'assetEditor.concrete': 'Beton',
   'assetEditor.excavation': 'Kazı',
   'assetEditor.openArExcavation': "Bu direğin kazı çukurunu AR'da gör",
+  'assetEditor.openArStringingBtn': "Açıklığı AR'da gör",
+  'assetEditor.openArStringingHint': "Gerçek iletkeni, içe aktarılan PLS-CADD hattıyla karşılaştırır: sahada aç, açıklığın ortasından yaklaşık 50-100 m uzaklaş, telefonu hatta doğru tut ve AR'ı başlat.",
   'assetEditor.reinforcement': 'Donatı',
   'assetEditor.leanConcrete': 'Grobeton',
   'assetEditor.soilType': 'Zemin Tipi',

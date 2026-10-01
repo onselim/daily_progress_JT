@@ -79,3 +79,18 @@ export function arExcavationUrl(projectSlug: string, assetCode: string): string 
   const qs = new URLSearchParams({ dig: '1', slug: projectSlug, code: assetCode });
   return `/ar-demo/geo/index.html?${qs.toString()}`;
 }
+
+/** Deep link into the AR page's full line/KMZ viewer (the "Hat" panel), centred on one tower,
+ * for the Stringing section's visual sag check: a field engineer stands ~50-100 m off the
+ * midpoint of a span and compares the real conductor against the imported PLS-CADD line drawn
+ * in AR. If the project's line was uploaded as a Layers document (`kmz`), the AR page fetches
+ * and imports it automatically instead of requiring a manual KMZ pick on that device; if not,
+ * the AR page still opens and prompts for a manual KMZ/KML upload (same as using it directly). */
+export function arStringingUrl(assetCode: string, kmz: { url: string; name: string } | null): string {
+  const qs = new URLSearchParams({ goto: assetCode });
+  if (kmz) {
+    qs.set('kmzurl', kmz.url);
+    qs.set('kmzname', kmz.name);
+  }
+  return `/ar-demo/geo/index.html?${qs.toString()}`;
+}

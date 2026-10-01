@@ -129,6 +129,8 @@ export const fr: Record<TranslationKey, string> = {
   'assetEditor.concrete': 'Béton',
   'assetEditor.excavation': 'Excavation',
   'assetEditor.openArExcavation': 'Voir la fouille de ce pylône en RA',
+  'assetEditor.openArStringingBtn': 'Voir la portée en RA',
+  'assetEditor.openArStringingHint': "Compare le conducteur réel à la ligne PLS-CADD importée : ouvrez sur site, éloignez-vous d'environ 50-100 m du milieu de la portée, pointez la caméra vers elle et démarrez la RA.",
   'assetEditor.reinforcement': 'Ferraillage',
   'assetEditor.leanConcrete': 'Béton de propreté',
   'assetEditor.soilType': 'Type de sol',

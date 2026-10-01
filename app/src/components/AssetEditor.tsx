@@ -18,7 +18,7 @@ import { RenamableText } from './RenamableText';
 import { WindyPopup } from './WindyPopup';
 import { DeleteAssetDialog } from './DeleteAssetDialog';
 import { utmToLatLng } from '../lib/utmToLatLng';
-import { arExcavationUrl } from '../lib/arPayload';
+import { arExcavationUrl, arStringingUrl } from '../lib/arPayload';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 import type { TranslationKey } from '../lib/i18n/translations/en';
 
@@ -163,6 +163,7 @@ function DocumentLinks({
 interface AssetEditorProps {
   projectId: string;
   projectSlug: string;
+  lineKmz?: { url: string; name: string } | null;
   assetId: string;
   coordinateSystem?: string | null;
   editable?: boolean;
@@ -176,6 +177,7 @@ interface AssetEditorProps {
 export function AssetEditor({
   projectId,
   projectSlug,
+  lineKmz = null,
   assetId,
   coordinateSystem = null,
   editable = true,
@@ -709,6 +711,19 @@ export function AssetEditor({
                       )}
                     </span>
                   )}
+                </div>
+              )}
+              {group.name.toUpperCase() === 'STRINGING' && assetCode.trim() && (
+                <div className="group-ar-row">
+                  <a
+                    className="group-ar-link"
+                    href={arStringingUrl(assetCode.trim(), lineKmz)}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={t('assetEditor.openArStringingHint')}
+                  >
+                    🕶 {t('assetEditor.openArStringingBtn')}
+                  </a>
                 </div>
               )}
               {group.items.map((item) => {

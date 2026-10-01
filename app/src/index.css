@@ -983,6 +983,29 @@ button:disabled {
   margin: -4px 0 10px;
 }
 
+.group-ar-row {
+  margin: -4px 0 10px;
+}
+
+.group-ar-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.group-ar-link:hover {
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+
 .soil-type-picker {
   display: flex;
   align-items: center;

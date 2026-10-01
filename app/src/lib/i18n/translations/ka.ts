@@ -129,6 +129,8 @@ export const ka: Record<TranslationKey, string> = {
   'assetEditor.concrete': 'ბეტონი',
   'assetEditor.excavation': 'გათხრები',
   'assetEditor.openArExcavation': 'ამ ანძის სათხრელის ნახვა AR-ში',
+  'assetEditor.openArStringingBtn': 'გაჭიმულობის ნახვა AR-ში',
+  'assetEditor.openArStringingHint': 'ადარებს რეალურ გამტარს იმპორტირებულ PLS-CADD ხაზს: გახსენით ადგილზე, გასცდით შუაწერტილიდან დაახლოებით 50-100 მ, მიმართეთ კამერა მასზე და გაუშვით AR.',
   'assetEditor.reinforcement': 'არმატურა',
   'assetEditor.leanConcrete': 'მჭლე ბეტონი',
   'assetEditor.soilType': 'გრუნტის ტიპი',

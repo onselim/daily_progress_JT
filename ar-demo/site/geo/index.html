@@ -1371,7 +1371,44 @@ $('btnKmzZ').addEventListener('click', () => {
 idb.get('kmzLines').then(async (arr) => {
   if (Array.isArray(arr) && arr.length) { LINES.length = 0; arr.forEach((L) => { if (L && L.chunks) LINES.push(L); }); kmzMerge(); return; }
   const k = await idb.get('kmz'); if (k && k.chunks) { kmzSet(k); kmzPersist(); }   // migrate the older single-line save
-}).catch(() => {});
+}).catch(() => {}).then(() => handleLineDeepLink());
+
+// Fetches and imports a KMZ/KML the same way the "KMZ / KML ekle" file picker does, but from a
+// URL instead of a local file (a File extends Blob, so the existing reader/parser works as-is).
+async function kmzImportFromUrl(url, filename) {
+  const info = $('kmzInfo'); info.style.display = ''; info.textContent = `${filename} indiriliyor…`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('İndirilemedi (' + r.status + ')');
+  const blob = await r.blob();
+  await kmzImport(new File([blob], filename, { type: blob.type }));
+}
+function gotoKmzCode(code) {
+  if (!KMZ) return false;
+  const i = KMZ.structs.findIndex((s) => s.code === code);
+  if (i < 0) return false;
+  $('kmzStr').value = String(i);
+  const s = KMZ.structs[i];
+  map.setView([s.lat, s.lng], 18);
+  $('kmzInfo').textContent = `Direk ${s.name}: ${s.ht} m, arazi kotu ${s.ele} m, istasyon ${s.sta}, X=${s.x} Y=${s.y} (UTM). Bu koordinat, direğin taban merkezidir.`;
+  return true;
+}
+// Deep link from the daily-report app's per-tower "AR" button in the Stringing section:
+// /ar-demo/geo/index.html?goto=<direk no>&kmzurl=<proje Katmanlar belgesindeki KMZ'nin genel URL'i>&kmzname=<dosya adı>
+// Hattın PLS-CADD çıktısı bu cihazda zaten yüklüyse (yukarıdaki restore) tekrar indirmez; aksi
+// halde projenin Katmanlar bölümüne yüklenmiş KMZ'yi otomatik indirip içe aktarır -- her cihazda
+// elle dosya seçmek gerekmez. Sonunda haritayı istenen direğe ortalar; gerçek iletkeni AR'da
+// karşılaştırmak için açıklığın ortasından 50-100 m uzaklaşıp kamerayı hatta doğru tutmak sahada
+// elle yapılır (ölçüm hassasiyeti GPS'e değil, georeferans adımına dayanır -- bkz. "Georeferans").
+async function handleLineDeepLink() {
+  const qp = new URLSearchParams(location.search);
+  const code = (qp.get('goto') || '').trim();
+  const kmzUrl = qp.get('kmzurl'), kmzName = qp.get('kmzname') || 'line.kmz';
+  if (!code && !kmzUrl) return;
+  if (kmzUrl && !(KMZ && KMZ.structs.some((s) => s.code === code))) {
+    try { await kmzImportFromUrl(kmzUrl, kmzName); } catch (e) { $('kmzInfo').style.display = ''; $('kmzInfo').textContent = '⚠ Hat indirilemedi: ' + e.message; }
+  }
+  if (code && !gotoKmzCode(code)) { $('kmzInfo').style.display = ''; $('kmzInfo').textContent = `⚠ Direk "${code}" hatta bulunamadı.`; }
+}
 
 // ================= project layer: tower status from the daily-report app =================
 // The app (svkdk.com/ar/<project>) writes localStorage 'arProject' (same origin) and opens this page. Payload v1:

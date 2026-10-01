@@ -129,6 +129,8 @@ export const ru: Record<TranslationKey, string> = {
   'assetEditor.concrete': 'Бетон',
   'assetEditor.excavation': 'Земляные работы',
   'assetEditor.openArExcavation': 'Посмотреть котлован этой опоры в AR',
+  'assetEditor.openArStringingBtn': 'Посмотреть пролёт в AR',
+  'assetEditor.openArStringingHint': 'Сравнивает реальный провод с импортированной линией PLS-CADD: откройте на месте, отойдите примерно на 50-100 м от середины пролёта, направьте камеру на него и запустите AR.',
   'assetEditor.reinforcement': 'Армирование',
   'assetEditor.leanConcrete': 'Тощий бетон',
   'assetEditor.soilType': 'Тип грунта',

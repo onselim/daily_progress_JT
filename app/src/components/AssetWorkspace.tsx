@@ -20,6 +20,7 @@ import { useLineSummary } from '../lib/useLineSummary';
 import { useFoundationTypesConfig, getFoundationTypeForAsset } from '../lib/useFoundationTypesConfig';
 import { useTowerWeightsConfig, getTowerWeightForAsset } from '../lib/useTowerWeightsConfig';
 import { useMapLayers } from '../lib/useMapLayers';
+import { useProjectDocuments } from '../lib/useProjectDocuments';
 import { utmToLatLng } from '../lib/utmToLatLng';
 
 interface AssetWorkspaceProps {
@@ -75,6 +76,16 @@ export function AssetWorkspace({
   const { layers: mapLayers, refresh: refreshMapLayers } = useMapLayers(projectId);
   const [enabledLayerIds, setEnabledLayerIds] = useState<Set<string>>(new Set());
   const [layerErrors, setLayerErrors] = useState<Record<string, string>>({});
+
+  // The line's PLS-CADD export (if the admin has uploaded one to the Layers documents, e.g.
+  // the same KMZ used for the existing-infrastructure/excavation-pit overlays) -- handed to
+  // the AR page's per-span "stringing" deep link so it can show the real imported conductor
+  // geometry instead of requiring a manual re-upload on every device.
+  const { documents: layerDocuments } = useProjectDocuments(projectId, 'layers');
+  const lineKmz = useMemo(() => {
+    const doc = layerDocuments.find((d) => /\.(kmz|kml)$/i.test(d.slot_name) || /\.(kmz|kml)$/i.test(d.file_url));
+    return doc ? { url: doc.file_url, name: doc.slot_name } : null;
+  }, [layerDocuments]);
 
   function toggleLayer(layerId: string) {
     setEnabledLayerIds((prev) => {
@@ -355,6 +366,7 @@ export function AssetWorkspace({
               key={selectedAssetId}
               projectId={projectId}
               projectSlug={projectSlug}
+              lineKmz={lineKmz}
               assetId={selectedAssetId}
               coordinateSystem={coordinateSystem}
               editable={editable}
