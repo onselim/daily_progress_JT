@@ -107,6 +107,7 @@ export default function AdminProjectPage() {
 
       <AssetWorkspace
         projectId={project.id}
+        projectSlug={project.slug}
         coordinateSystem={project.coordinate_system}
         isAdmin
         onAssetSaved={() => setDailyRefreshSignal((s) => s + 1)}

@@ -108,7 +108,12 @@ export default function PublicViewerPage() {
         </div>
       </header>
 
-      <AssetWorkspace projectId={project.id} coordinateSystem={project.coordinate_system} editable={false} />
+      <AssetWorkspace
+        projectId={project.id}
+        projectSlug={project.slug}
+        coordinateSystem={project.coordinate_system}
+        editable={false}
+      />
     </div>
   );
 }

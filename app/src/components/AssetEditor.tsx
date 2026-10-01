@@ -18,6 +18,7 @@ import { RenamableText } from './RenamableText';
 import { WindyPopup } from './WindyPopup';
 import { DeleteAssetDialog } from './DeleteAssetDialog';
 import { utmToLatLng } from '../lib/utmToLatLng';
+import { arExcavationUrl } from '../lib/arPayload';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 import type { TranslationKey } from '../lib/i18n/translations/en';
 
@@ -161,6 +162,7 @@ function DocumentLinks({
 
 interface AssetEditorProps {
   projectId: string;
+  projectSlug: string;
   assetId: string;
   coordinateSystem?: string | null;
   editable?: boolean;
@@ -173,6 +175,7 @@ interface AssetEditorProps {
 
 export function AssetEditor({
   projectId,
+  projectSlug,
   assetId,
   coordinateSystem = null,
   editable = true,
@@ -770,6 +773,17 @@ export function AssetEditor({
                         >
                           📄 {itemDocs.length > 0 ? n(itemDocs.length) : ''}
                         </button>
+                      )}
+                      {isFoundationItem && item.label.trim().toLowerCase() === 'excavation' && assetCode.trim() && (
+                        <a
+                          className="photo-toggle-btn"
+                          href={arExcavationUrl(projectSlug, assetCode.trim())}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={t('assetEditor.openArExcavation')}
+                        >
+                          🕶 AR
+                        </a>
                       )}
                     </div>
 

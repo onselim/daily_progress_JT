@@ -24,6 +24,7 @@ import { utmToLatLng } from '../lib/utmToLatLng';
 
 interface AssetWorkspaceProps {
   projectId: string;
+  projectSlug: string;
   coordinateSystem: string | null;
   editable?: boolean;
   isAdmin?: boolean;
@@ -32,6 +33,7 @@ interface AssetWorkspaceProps {
 
 export function AssetWorkspace({
   projectId,
+  projectSlug,
   coordinateSystem,
   editable = true,
   isAdmin = false,
@@ -352,6 +354,7 @@ export function AssetWorkspace({
             <AssetEditor
               key={selectedAssetId}
               projectId={projectId}
+              projectSlug={projectSlug}
               assetId={selectedAssetId}
               coordinateSystem={coordinateSystem}
               editable={editable}

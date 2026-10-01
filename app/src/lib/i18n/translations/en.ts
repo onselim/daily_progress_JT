@@ -137,6 +137,7 @@ export const en = {
   'assetEditor.workItems': 'Work items',
   'assetEditor.concrete': 'Concrete',
   'assetEditor.excavation': 'Excavation',
+  'assetEditor.openArExcavation': "View this tower's excavation pit in AR",
   'assetEditor.reinforcement': 'Reinforcement',
   'assetEditor.leanConcrete': 'Lean Concrete',
   'assetEditor.soilType': 'Soil Type',
@@ -382,6 +383,12 @@ export const en = {
   'print.approvedBy': 'Approved by: Resident Engineer',
   'print.todaysActiveTowers': "TODAY'S ACTIVE TOWERS — {date}",
   'print.notAvailable': 'This project report is not available.',
+  'arLaunch.title': 'AR view',
+  'arLaunch.intro': "See the project's towers through your phone camera, coloured by construction status. Works on an Android phone with Chrome.",
+  'arLaunch.open': 'Open in AR',
+  'arLaunch.noCoords': 'This project has no towers with coordinates yet.',
+  'arLaunch.towersReady': '{count} towers with coordinates',
+  'arLaunch.onHold': 'On hold',
 } as const;
 
 export type TranslationKey = keyof typeof en;

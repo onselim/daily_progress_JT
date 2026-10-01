@@ -92,6 +92,7 @@ export default function FieldProjectPage() {
 
       <AssetWorkspace
         projectId={project.id}
+        projectSlug={project.slug}
         coordinateSystem={project.coordinate_system}
         onAssetSaved={() => setDailyRefreshSignal((s) => s + 1)}
       />

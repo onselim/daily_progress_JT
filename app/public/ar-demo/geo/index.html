@@ -1754,11 +1754,26 @@ $('btnDigGo').addEventListener('click', async () => {
     $('digInfo').textContent = `✓ ${d.projectName} · Direk ${d.code} (${d.base}${d.bodyExtM >= 0 ? '+' : ''}${d.bodyExtM}) · zemin: ${d.soilLabel}` +
       (missing.length ? ` · ⚠ ${missing.map((i) => DIG_STUB_NAMES[i]).join(', ')} için tablo verisi yok` : ' · 4 bacak da hesaplanabilir') +
       '. AR\'ı başlat, alttan "Kazı" panelini aç.';
-    if (d.lat != null && d.lng != null) projLoad({ v: 1, slug: 'kazi-' + code, name: `Direk ${d.code}`, at: new Date().toISOString(), assets: [{ c: d.code, lat: d.lat, lng: d.lng, z: null, s: 'not_started', a: 0, r: 0, st: null, t: d.base }] });
+    if (d.lat != null && d.lng != null) { projLoad({ v: 1, slug: 'kazi-' + code, name: `Direk ${d.code}`, at: new Date().toISOString(), assets: [{ c: d.code, lat: d.lat, lng: d.lng, z: null, s: 'not_started', a: 0, r: 0, st: null, t: d.base }] }); map.setView([d.lat, d.lng], 18); }
   } catch (e) { $('digInfo').textContent = '⚠ ' + e.message; console.error(e); }
 });
 $('pDig').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-dig]'); if (!b) return; markDig(b.dataset.dig, b.dataset.m); });
 $('btnDigReset').addEventListener('click', () => { DIG.pts = { center: null, back: null, front: null }; digRecompute(); groundMsg = { t: performance.now(), s: 'Kazı işaretleri sıfırlandı' }; });
+
+// Deep link from the daily-report app's per-tower "AR" button: /ar-demo/geo/index.html?dig=1&slug=<proje-slug>&code=<direk-no>
+// Pre-fills the excavation-application form above and runs the same fetch as pressing "Direk verisini getir",
+// so a field engineer opens straight into that tower's data instead of typing the project slug and tower
+// number by hand on their phone. Physically marking the centre/back/front stakes in AR still has to happen
+// on site (see "Kazı" panel note), so this only saves the lookup step.
+(function () {
+  const qp = new URLSearchParams(location.search);
+  if (qp.get('dig') !== '1') return;
+  const slug = (qp.get('slug') || '').trim(), code = (qp.get('code') || '').trim();
+  if (!slug || !code) return;
+  $('digForm').style.display = 'block';
+  $('digSlug').value = slug; $('digCode').value = code;
+  $('btnDigGo').click();
+})();
 
 // desktop preview of an imported line around one structure: __geo.kmzPreview('10')
 function kmzPreview(sname) {

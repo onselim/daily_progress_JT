@@ -128,6 +128,7 @@ export const de: Record<TranslationKey, string> = {
   'assetEditor.workItems': 'Bauleistungen',
   'assetEditor.concrete': 'Beton',
   'assetEditor.excavation': 'Aushub',
+  'assetEditor.openArExcavation': 'Baugrube dieses Mastes in AR ansehen',
   'assetEditor.reinforcement': 'Bewehrung',
   'assetEditor.leanConcrete': 'Sauberkeitsschicht',
   'assetEditor.soilType': 'Bodenart',
@@ -367,4 +368,10 @@ export const de: Record<TranslationKey, string> = {
   'print.approvedBy': 'Genehmigt von: Bauüberwachender Ingenieur',
   'print.todaysActiveTowers': 'HEUTE AKTIVE MASTEN — {date}',
   'print.notAvailable': 'Der Bericht für dieses Projekt ist derzeit nicht verfügbar.',
+  'arLaunch.title': 'AR-Ansicht',
+  'arLaunch.intro': 'Sehen Sie die Masten des Projekts durch die Handykamera, eingefärbt nach Baufortschritt. Funktioniert auf einem Android-Handy mit Chrome.',
+  'arLaunch.open': 'In AR öffnen',
+  'arLaunch.noCoords': 'Dieses Projekt hat noch keine Masten mit Koordinaten.',
+  'arLaunch.towersReady': '{count} Masten mit Koordinaten',
+  'arLaunch.onHold': 'Angehalten',
 };

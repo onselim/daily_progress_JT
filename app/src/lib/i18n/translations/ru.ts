@@ -128,6 +128,7 @@ export const ru: Record<TranslationKey, string> = {
   'assetEditor.workItems': 'Виды работ',
   'assetEditor.concrete': 'Бетон',
   'assetEditor.excavation': 'Земляные работы',
+  'assetEditor.openArExcavation': 'Посмотреть котлован этой опоры в AR',
   'assetEditor.reinforcement': 'Армирование',
   'assetEditor.leanConcrete': 'Тощий бетон',
   'assetEditor.soilType': 'Тип грунта',
@@ -366,4 +367,10 @@ export const ru: Record<TranslationKey, string> = {
   'print.approvedBy': 'Утвердил: инженер-резидент',
   'print.todaysActiveTowers': 'АКТИВНЫЕ ОПОРЫ СЕГОДНЯ — {date}',
   'print.notAvailable': 'Отчёт по этому проекту сейчас недоступен.',
+  'arLaunch.title': 'AR-просмотр',
+  'arLaunch.intro': 'Смотрите опоры проекта через камеру телефона, окрашенные по статусу строительства. Работает на телефоне Android в Chrome.',
+  'arLaunch.open': 'Открыть в AR',
+  'arLaunch.noCoords': 'В этом проекте пока нет опор с координатами.',
+  'arLaunch.towersReady': 'Опор с координатами: {count}',
+  'arLaunch.onHold': 'Приостановлено',
 };

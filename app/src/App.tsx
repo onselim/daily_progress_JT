@@ -17,6 +17,7 @@ import TeamPage from './pages/admin/TeamPage';
 import FieldProjectPage from './pages/field/FieldProjectPage';
 import PublicViewerPage from './pages/PublicViewerPage';
 import PrintReportPage from './pages/PrintReportPage';
+import ArLaunchPage from './pages/ArLaunchPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
@@ -62,6 +63,7 @@ export default function App() {
         </Route>
 
         <Route path="/print/:slug" element={<PrintReportPage />} />
+        <Route path="/ar/:slug" element={<ArLaunchPage />} />
         <Route path="/reports/:slug" element={<PublicViewerPage />} />
         <Route path="/:slug" element={<PublicViewerPage />} />
         <Route path="*" element={<NotFoundPage />} />

@@ -128,6 +128,7 @@ export const es: Record<TranslationKey, string> = {
   'assetEditor.workItems': 'Partidas de obra',
   'assetEditor.concrete': 'Hormigón',
   'assetEditor.excavation': 'Excavación',
+  'assetEditor.openArExcavation': 'Ver la excavación de esta torre en RA',
   'assetEditor.reinforcement': 'Armadura',
   'assetEditor.leanConcrete': 'Hormigón de limpieza',
   'assetEditor.soilType': 'Tipo de suelo',
@@ -369,4 +370,10 @@ export const es: Record<TranslationKey, string> = {
   'print.approvedBy': 'Aprobado por: Ingeniero residente',
   'print.todaysActiveTowers': 'TORRES ACTIVAS HOY — {date}',
   'print.notAvailable': 'El informe de este proyecto no está disponible actualmente.',
+  'arLaunch.title': 'Vista RA',
+  'arLaunch.intro': 'Vea las torres del proyecto a través de la cámara del teléfono, coloreadas según el estado de construcción. Funciona en un teléfono Android con Chrome.',
+  'arLaunch.open': 'Abrir en RA',
+  'arLaunch.noCoords': 'Este proyecto aún no tiene torres con coordenadas.',
+  'arLaunch.towersReady': '{count} torres con coordenadas',
+  'arLaunch.onHold': 'En pausa',
 };

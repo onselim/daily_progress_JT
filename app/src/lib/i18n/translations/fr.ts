@@ -128,6 +128,7 @@ export const fr: Record<TranslationKey, string> = {
   'assetEditor.workItems': 'Postes de travaux',
   'assetEditor.concrete': 'Béton',
   'assetEditor.excavation': 'Excavation',
+  'assetEditor.openArExcavation': 'Voir la fouille de ce pylône en RA',
   'assetEditor.reinforcement': 'Ferraillage',
   'assetEditor.leanConcrete': 'Béton de propreté',
   'assetEditor.soilType': 'Type de sol',
@@ -369,4 +370,10 @@ export const fr: Record<TranslationKey, string> = {
   'print.approvedBy': 'Approuvé par : ingénieur résident',
   'print.todaysActiveTowers': "PYLÔNES ACTIFS AUJOURD'HUI — {date}",
   'print.notAvailable': "Le rapport de ce projet n'est pas disponible actuellement.",
+  'arLaunch.title': 'Vue RA',
+  'arLaunch.intro': "Voyez les pylônes du projet à travers la caméra de votre téléphone, colorés selon l'état d'avancement. Fonctionne sur un téléphone Android avec Chrome.",
+  'arLaunch.open': 'Ouvrir en RA',
+  'arLaunch.noCoords': "Ce projet n'a pas encore de pylônes avec coordonnées.",
+  'arLaunch.towersReady': '{count} pylônes avec coordonnées',
+  'arLaunch.onHold': 'En attente',
 };

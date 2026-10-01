@@ -128,6 +128,7 @@ export const tr: Record<TranslationKey, string> = {
   'assetEditor.workItems': 'İş kalemleri',
   'assetEditor.concrete': 'Beton',
   'assetEditor.excavation': 'Kazı',
+  'assetEditor.openArExcavation': "Bu direğin kazı çukurunu AR'da gör",
   'assetEditor.reinforcement': 'Donatı',
   'assetEditor.leanConcrete': 'Grobeton',
   'assetEditor.soilType': 'Zemin Tipi',
@@ -367,4 +368,10 @@ export const tr: Record<TranslationKey, string> = {
   'print.approvedBy': 'Onaylayan: Yapım Mühendisi',
   'print.todaysActiveTowers': 'BUGÜNÜN AKTİF DİREKLERİ — {date}',
   'print.notAvailable': 'Bu proje raporu şu anda kullanılamıyor.',
+  'arLaunch.title': 'AR görünümü',
+  'arLaunch.intro': 'Projenin direklerini telefon kameranla, yapım durumuna göre renklendirilmiş olarak gör. Chrome yüklü Android telefonda çalışır.',
+  'arLaunch.open': "AR'da aç",
+  'arLaunch.noCoords': 'Bu projede henüz koordinatı olan direk yok.',
+  'arLaunch.towersReady': '{count} direğin koordinatı var',
+  'arLaunch.onHold': 'Beklemede',
 };

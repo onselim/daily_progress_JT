@@ -131,6 +131,7 @@ export const ku: Record<TranslationKey, string> = {
   'assetEditor.workItems': 'Hêmanên xebatê',
   'assetEditor.concrete': 'Beton',
   'assetEditor.excavation': 'Kolan',
+  'assetEditor.openArExcavation': 'Kolana vê stûnê di AR de bibîne',
   'assetEditor.reinforcement': 'Hesinkarî',
   'assetEditor.leanConcrete': 'Betona Zuha',
   'assetEditor.soilType': 'Cureyê Axê',
@@ -372,4 +373,10 @@ export const ku: Record<TranslationKey, string> = {
   'print.approvedBy': 'Pejirand: Endezyarê Niştecih',
   'print.todaysActiveTowers': 'KULEYÊN ÇALAK ÊN ÎRO — {date}',
   'print.notAvailable': 'Ev rapora projeyê ne berdest e.',
+  'arLaunch.title': 'Dîtina AR',
+  'arLaunch.intro': 'Kuleyên projeyê bi kamerayê telefonê xwe bibîne, li gorî rewşa avakirinê rengîn. Li ser telefonên Android bi Chrome dixebite.',
+  'arLaunch.open': 'Di AR de veke',
+  'arLaunch.noCoords': 'Di vê projeyê de hêj kuleyên xwedî koordînat tune ne.',
+  'arLaunch.towersReady': '{count} kule xwedî koordînat in',
+  'arLaunch.onHold': 'Sekinandî',
 };
