@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Stub Ayar Ölçüleri — 3B</title>
+<title>Stub</title>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <style>
   :root { --bg:#0b0f17; --panel:#131a26; --line:#25314a; --fg:#e6edf7; --dim:#8c9bb5; --teal:#00d4aa; --amber:#ffd23f; --orange:#ff7a59; --blue:#5aa9ff; }
@@ -56,6 +56,8 @@
   #tags3 { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
   .t3tag { position:absolute; left:0; top:0; background:rgba(13,20,32,.88); border:1px solid #3a4a6b; border-left:3px solid #9aa7bd; border-radius:6px; padding:3px 8px; font-size:12px; line-height:1.3; white-space:nowrap; }
   .t3tag.w { border-left-color:var(--teal); } .t3tag.b { border-left-color:var(--amber); } .t3tag.h { border-left-color:var(--blue); } .t3tag.g { border-left-color:#8a96ab; } .t3tag.p { border-left-color:#e6edf7; } .t3tag.small { font-size:11px; padding:2px 6px; }
+  #stage3, #tags3, #read3, #hud3 { direction:ltr; }
+  .mbtn small, .towerline b { direction:ltr; unicode-bidi:isolate; }
   .sub2 { color:var(--dim); font-size:11.5px; }
   .t3wrap { position:absolute; left:0; top:0; width:0; height:0; } .t3wrap > .t3tag { transform:translate(-50%,-135%); }
   .t3dot { position:absolute; left:-4px; top:-4px; width:8px; height:8px; border-radius:50%; background:#e6edf7; border:1px solid #0d1420; }
@@ -82,20 +84,20 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Stub ayar ölçüleri — 3B</h1>
-  <p class="sub">Şerit metreyle hangi ölçünün nereden alındığını 3B gösterir. LE farklıysa ΔH çizilir.</p>
+  <h1 data-i="title"></h1>
+  <p class="sub" data-i="sub"></p>
 
   <div id="towerLine" class="towerline"></div>
   <details class="card" id="setup">
-    <summary>Ayarlar · direk / profil seçimi (bu sayfa direğe özel açılınca gerekmez)</summary>
+    <summary data-i="setup"></summary>
     <div class="tabs">
-      <button id="tabManual" class="on">Elle seç (direkten bağımsız)</button>
-      <button id="tabProject">Projeden direk</button>
+      <button id="tabManual" class="on" data-i="manual"></button>
+      <button id="tabProject" data-i="projTab"></button>
     </div>
     <div id="manual">
       <div class="row">
-        <label>Direk tipi<select id="selType"></select></label>
-        <label>Gövde uzantısı (m)<select id="selBody"></select></label>
+        <label><span data-i="lblType"></span><select id="selType"></select></label>
+        <label><span data-i="lblBody"></span><select id="selBody"></select></label>
         <div class="legs">
           <label>Z41 · L1 (m)<select id="le0"></select></label>
           <label>Z42 · L2 (m)<select id="le1"></select></label>
@@ -104,35 +106,35 @@
         </div>
       </div>
       <div class="row">
-        <button class="chip" data-p="flat">Düz zemin (hepsi aynı)</button>
-        <button class="chip" data-p="one">Tek bacak +1,5</button>
-        <button class="chip" data-p="slope">Eğimli: 0 / +1,5 / 0 / −1,5</button>
-        <button class="chip" data-p="steep">Dik yamaç: 0 / +3 / +4,5 / +1,5</button>
+        <button class="chip" data-p="flat" data-i="chipFlat"></button>
+        <button class="chip" data-p="one" data-i="chipOne"></button>
+        <button class="chip" data-p="slope" data-i="chipSlope"></button>
+        <button class="chip" data-p="steep" data-i="chipSteep"></button>
       </div>
     </div>
     <div id="project" style="display:none">
       <div class="row">
-        <label>Proje (slug)<input id="inSlug" value="jvari-tskaltubo" autocomplete="off" spellcheck="false"></label>
-        <label>Direk no<input id="inCode" value="163" autocomplete="off" spellcheck="false" style="width:100px"></label>
-        <button class="btn primary" id="btnFetch">Direği getir</button>
+        <label><span data-i="lblSlug"></span><input id="inSlug" value="jvari-tskaltubo" autocomplete="off" spellcheck="false"></label>
+        <label><span data-i="lblCode"></span><input id="inCode" value="163" autocomplete="off" spellcheck="false" style="width:100px"></label>
+        <button class="btn primary" id="btnFetch" data-i="btnFetch"></button>
       </div>
     </div>
     <p id="status"></p>
     <div class="row" style="margin-top:6px">
-      <label>Stub profili<select id="selProf"><option>L100×8</option><option>L120×10</option><option selected>L150×12</option><option>L150×15</option><option>L180×16</option><option>L200×16</option><option>L200×20</option></select></label>
+      <label><span data-i="lblProf"></span><select id="selProf"><option>L100×8</option><option>L120×10</option><option selected>L150×12</option><option>L150×15</option><option>L180×16</option><option>L200×16</option><option>L200×20</option></select></label>
     </div>
   </details>
 
   <div class="card">
     <div class="steps">
-      <button class="btn primary" id="btnPlay">▶ Oynat</button>
-      <button class="btn step dot0" data-s="0"><i>1</i>Stub profili</button>
-      <button class="btn step dotB" data-s="2"><i>2</i>Stub köşesi · B</button>
-      <button class="btn step dotC" data-s="3"><i>3</i>Köşegen · BC</button>
-      <button class="btn step dotW" data-s="1"><i>4</i>Alt delik · W</button>
-      <button class="btn" id="btnFree3">⏹ Dur · serbest kamera</button>
-      <label style="flex-direction:row;align-items:center;gap:6px;margin-left:auto">Hız
-        <select id="selSpeed"><option value="1.6">yavaş</option><option value="1" selected>normal</option><option value="0.5">hızlı</option></select>
+      <button class="btn primary" id="btnPlay" data-i="play"></button>
+      <button class="btn step dot0" data-s="0"><i>1</i><span data-i="st0"></span></button>
+      <button class="btn step dotB" data-s="2"><i>2</i><span data-i="st2"></span></button>
+      <button class="btn step dotC" data-s="3"><i>3</i><span data-i="st3"></span></button>
+      <button class="btn step dotW" data-s="1"><i>4</i><span data-i="st1"></span></button>
+      <button class="btn" id="btnFree3" data-i="free"></button>
+      <label style="flex-direction:row;align-items:center;gap:6px;margin-left:auto"><span data-i="speed"></span>
+        <select id="selSpeed"><option value="1.6" data-i="spdSlow"></option><option value="1" selected data-i="spdNorm"></option><option value="0.5" data-i="spdFast"></option></select>
       </label>
     </div>
     <div id="caption"></div>
@@ -140,11 +142,11 @@
 
   <div class="card">
     <div id="stage3"><canvas id="cv3"></canvas><div id="tags3"></div><div id="hud3"></div><div id="read3"></div></div>
-    <p class="note" id="note3">Sürükleyerek döndürebilir, tekerlek/iki parmakla yakınlaştırabilirsiniz. “Oynat” animasyonu başlatır; tablodan tek bir ölçüyü de seçebilirsiniz.</p>
+    <p class="note" id="note3" data-i="hint"></p>
   </div>
 
   <div class="card">
-    <h2>Animasyon</h2>
+    <h2 data-i="anim"></h2>
     <div id="pairs"></div>
     <p class="note" id="note"></p>
   </div>
@@ -152,6 +154,224 @@
 
 <script type="module">
 const TABLES = {"B30":[[-3,-3,8755.35,8657.45],[-3,-1.5,9208.54,9110.64],[-3,0,9661.73,9563.83],[-3,1.5,10114.92,10017.02],[-3,3,10568.12,10470.21],[-3,4.5,11021.31,10923.4],[-3,6,11474.5,11376.59],[0,-3,9661.73,9563.83],[0,-1.5,10114.92,10017.02],[0,0,10568.12,10470.21],[0,1.5,11021.31,10923.4],[0,3,11474.5,11376.59],[0,4.5,11927.69,11829.78],[0,6,12380.88,12282.97],[3,-3,10568.12,10470.21],[3,-1.5,11021.31,10923.4],[3,0,11474.5,11376.59],[3,1.5,11927.69,11829.78],[3,3,12380.88,12282.97],[3,4.5,12834.07,12736.16],[3,6,13287.26,13189.35],[6,-3,11474.5,11376.59],[6,-1.5,11927.69,11829.78],[6,0,12380.88,12282.97],[6,1.5,12834.07,12736.16],[6,3,13287.26,13189.35],[6,4.5,13740.45,13642.54],[6,6,14193.64,14095.73],[9,-3,12380.88,12282.97],[9,-1.5,12834.07,12736.16],[9,0,13287.26,13189.35],[9,1.5,13740.45,13642.54],[9,3,14193.64,14095.73],[9,4.5,14646.83,14548.92],[9,6,15100.02,15002.11],[12,-3,13287.26,13189.35],[12,-1.5,13740.45,13642.54],[12,0,14193.64,14095.73],[12,1.5,14646.83,14548.92],[12,3,15100.02,15002.11],[12,4.5,15553.21,15455.3],[12,6,16006.4,15908.5]],"B60":[[-3,-3,8783.02,8705.94],[-3,-1.5,9201.83,9124.75],[-3,0,9620.64,9543.56],[-3,1.5,10039.45,9962.37],[-3,3,10458.26,10381.18],[-3,4.5,10877.07,10799.99],[-3,6,11295.88,11218.81],[0,-3,9620.64,9543.56],[0,-1.5,10039.45,9962.37],[0,0,10458.26,10381.18],[0,1.5,10877.07,10799.99],[0,3,11295.88,11218.81],[0,4.5,11714.7,11637.62],[0,6,12133.51,12056.43],[3,-3,10458.26,10381.18],[3,-1.5,10877.07,10799.99],[3,0,11295.88,11218.81],[3,1.5,11714.7,11637.62],[3,3,12133.51,12056.43],[3,4.5,12552.32,12475.24],[3,6,12971.13,12894.05],[6,-3,11295.88,11218.81],[6,-1.5,11714.7,11637.62],[6,0,12133.51,12056.43],[6,1.5,12552.32,12475.24],[6,3,12971.13,12894.05],[6,4.5,13389.94,13312.86],[6,6,13808.75,13731.67],[9,-3,12133.51,12056.43],[9,-1.5,12552.32,12475.24],[9,0,12971.13,12894.05],[9,1.5,13389.94,13312.86],[9,3,13808.75,13731.67],[9,4.5,14227.56,14150.48],[9,6,14646.37,14569.29],[12,-3,12971.13,12894.05],[12,-1.5,13389.94,13312.86],[12,0,13808.75,13731.67],[12,1.5,14227.56,14150.48],[12,3,14646.37,14569.29],[12,4.5,15065.18,14988.1],[12,6,15483.99,15406.91]],"B90":[[-3,-3,10726.65,10601.61],[-3,-1.5,11240.13,11115.1],[-3,0,11753.62,11628.58],[-3,1.5,12267.1,12142.07],[-3,3,12780.59,12655.55],[-3,4.5,13294.07,13169.04],[-3,6,13807.56,13682.52],[0,-3,11753.62,11628.58],[0,-1.5,12267.1,12142.07],[0,0,12780.59,12655.55],[0,1.5,13294.07,13169.04],[0,3,13807.56,13682.52],[0,4.5,14321.04,14196.01],[0,6,14834.53,14709.49],[3,-3,12780.59,12655.55],[3,-1.5,13294.07,13169.04],[3,0,13807.56,13682.52],[3,1.5,14321.04,14196.01],[3,3,14834.53,14709.49],[3,4.5,15348.02,15222.98],[3,6,15861.5,15736.46],[6,-3,13807.56,13682.52],[6,-1.5,14321.04,14196.01],[6,0,14834.53,14709.49],[6,1.5,15348.02,15222.98],[6,3,15861.5,15736.46],[6,4.5,16374.99,16249.95],[6,6,16888.47,16763.43],[9,-3,14834.53,14709.49],[9,-1.5,15348.02,15222.98],[9,0,15861.5,15736.46],[9,1.5,16374.99,16249.95],[9,3,16888.47,16763.43],[9,4.5,17401.96,17276.92],[9,6,17915.44,17790.4],[12,-3,15861.5,15736.46],[12,-1.5,16374.99,16249.95],[12,0,16888.47,16763.43],[12,1.5,17401.96,17276.92],[12,3,17915.44,17790.4],[12,4.5,18428.93,18303.89],[12,6,18942.41,18817.37]],"B90C":[[0,-1.5,8262.38,8137.36],[0,0,8775.83,8650.81],[0,1.5,9289.28,9164.26]],"BLS":[[-6,-4.5,9506.17,9330.11],[-6,-3,10045.86,9869.8],[-6,-1.5,10585.55,10409.49],[-6,0,11125.25,10949.19],[-6,1.5,11664.94,11488.88],[-6,3,12204.63,12028.57],[-6,4.5,12744.33,12568.26],[-6,6,13284.02,13107.96],[0,-4.5,11664.94,11488.88],[0,-3,12204.63,12028.57],[0,-1.5,12744.33,12568.26],[0,0,13284.02,13107.96],[0,1.5,13823.71,13647.65],[0,3,14363.4,14187.34],[0,4.5,14903.1,14727.04],[0,6,15442.79,15266.73],[6,-4.5,13823.71,13647.65],[6,-3,14363.4,14187.34],[6,-1.5,14903.1,14727.04],[6,0,15442.79,15266.73],[6,1.5,15982.48,15806.42],[6,3,16522.18,16346.12],[6,4.5,17061.87,16885.81],[6,6,17601.56,17425.5],[12,-4.5,15982.48,15806.42],[12,-3,16522.18,16346.12],[12,-1.5,17061.87,16885.81],[12,0,17601.56,17425.5],[12,1.5,18141.26,17965.2],[12,3,18680.95,18504.89],[12,4.5,19220.64,19044.58],[12,6,19760.34,19584.27],[18,-4.5,18141.26,17965.2],[18,-3,18680.95,18504.89],[18,-1.5,19220.64,19044.58],[18,0,19760.34,19584.27],[18,1.5,20300.03,20123.97],[18,3,20839.72,20663.66],[18,4.5,21379.41,21203.35],[18,6,21919.11,21743.05]],"BNS":[[-3,-3,7782.56,7754.56],[-3,-1.5,8103.2,8075.2],[-3,0,8423.84,8395.84],[-3,1.5,8744.48,8716.48],[-3,3,9065.12,9037.12],[-3,4.5,9385.76,9357.76],[-3,6,9706.4,9678.4],[0,-3,8423.84,8395.84],[0,-1.5,8744.48,8716.48],[0,0,9065.12,9037.12],[0,1.5,9385.76,9357.76],[0,3,9706.4,9678.4],[0,4.5,10027.04,9999.04],[0,6,10347.68,10319.68],[3,-3,9065.12,9037.12],[3,-1.5,9385.76,9357.76],[3,0,9706.4,9678.4],[3,1.5,10027.04,9999.04],[3,3,10347.68,10319.68],[3,4.5,10668.32,10640.32],[3,6,10988.96,10960.96],[6,-3,9706.4,9678.4],[6,-1.5,10027.04,9999.04],[6,0,10347.68,10319.68],[6,1.5,10668.32,10640.32],[6,3,10988.96,10960.96],[6,4.5,11309.6,11281.6],[6,6,11630.24,11602.24],[9,-3,10347.68,10319.68],[9,-1.5,10668.32,10640.32],[9,0,10988.96,10960.96],[9,1.5,11309.6,11281.6],[9,3,11630.24,11602.24],[9,4.5,11950.88,11922.88],[9,6,12271.52,12243.52],[12,-3,10988.96,10960.96],[12,-1.5,11309.6,11281.6],[12,0,11630.24,11602.24],[12,1.5,11950.88,11922.88],[12,3,12271.52,12243.52],[12,4.5,12592.16,12564.16],[12,6,12912.8,12884.8]],"BLC":[[-6,0,8996.44,8885.28],[-6,1.5,9467.1,9355.94],[-6,3,9937.76,9826.6],[0,-1.5,10408.42,10297.26],[0,0,10879.08,10767.92],[0,1.5,11349.73,11238.58],[0,3,11820.39,11709.23],[12,0,14644.34,14533.18],[12,1.5,15115,15003.84],[12,3,15585.66,15474.5],[18,-4.5,15115,15003.84],[18,-3,15585.66,15474.5],[18,0,16526.98,16415.82],[18,1.5,16997.63,16886.48],[18,3,17468.29,17357.13],[18,4.5,17938.95,17827.79],[18,6,18409.61,18298.45]]};
+
+// ------------------------------------------------------------------ language (same codes as the app: tr en ar ru ka fr de es ku)
+const I18N = {
+  tr: {
+    title: 'Stub ayar ölçüleri — 3B', sub: 'Şerit metreyle hangi ölçünün nereden alındığını 3B gösterir. LE farklıysa ΔH çizilir.', setup: 'Ayarlar · direk / profil seçimi',
+    manual: 'Elle seç (direkten bağımsız)', projTab: 'Projeden direk', lblType: 'Direk tipi', lblBody: 'Gövde uzantısı (m)',
+    chipFlat: 'Düz zemin (hepsi aynı)', chipOne: 'Tek bacak +1,5', chipSlope: 'Eğimli: 0 / +1,5 / 0 / −1,5', chipSteep: 'Dik yamaç: 0 / +3 / +4,5 / +1,5',
+    lblSlug: 'Proje (slug)', lblCode: 'Direk no', btnFetch: 'Direği getir', lblProf: 'Stub profili',
+    play: '▶ Oynat', st0: 'Stub profili', st2: 'Stub köşesi · B', st3: 'Köşegen · BC', st1: 'Alt delik · W', free: '⏹ Dur · serbest kamera', speed: 'Hız', spdSlow: 'yavaş', spdNorm: 'normal', spdFast: 'hızlı',
+    hint: 'Sürükleyerek döndürebilir, tekerlek/iki parmakla yakınlaştırabilirsiniz. “Oynat” animasyonu başlatır; aşağıdan tek bir ölçüyü de seçebilirsiniz.', anim: 'Animasyon',
+    tower: 'Direk', towerLine: 'Tip {t}, gövde {b} m',
+    source: 'Kaynak: stub_settings tablosu · eğim tanα = {a}, YK = {y} · ölçüler mm. Doğrudan bağlantı:',
+    grpB: 'Stub köşesi · B', subB: 'üst uçtaki dış köşeler arası', grpBC: 'Köşegen · BC', subBC: 'karşılıklı stub üstleri arası', grpW: 'Alt delik · W', subW: 'betonun üstündeki ilk delik merkezleri arası', all: 'hepsi',
+    missing: 'Tabloda yok: {l} — bu gövde uzantısı için bu LE değeri stub tablosunda tanımlı değil.',
+    srvErr: 'Sunucu hatası ({x})', noProj: 'Proje bulunamadı: {x}', noTower: 'Direk bulunamadı: {x}', noType: 'Direk tipi tanınamadı: {x}', noTable: 'Stub ayar tablosu yok: {x}', noLeg: 'Bacak uzatma verisi eksik: {x}',
+    fetching: 'Getiriliyor…', libFail: '3B kütüphanesi yüklenemedi (internet bağlantısı gerekir): {x}', noData: 'Bu seçim için stub tablosunda veri yok.',
+    model: 'Model: {t}, gövde {b} m · profil {p}. ', verify: '3B doğrulama: {n} ölçünün model mesafesi tabloyla aynı (en büyük sapma {w} mm). Profil ve delik düzeni şematiktir.',
+    datum: 'merkez referansı (LE = 0)', hudW: 'ilk delik merkezinden ilk delik merkezine', hudB: 'stub üstü dış köşeden dış köşeye', whatW: 'betonun üstündeki ilk delik', whatB: 'stub üstü dış köşe',
+    tapeStart: 'Şeridin ucu burada', tapeEnd: 'Şeridin sonu: {v} mm', dhTag: 'LE farkı → eğik ölçü', profHud: 'Stub profili {p}', profHud2: '{z} stub’ı: ölçü noktaları nerede?',
+    tagTopT: 'Stub üstü', tagTopS: 'B ve BC buradan', tagHoleT: 'İlk delik', tagHoleS: 'W buradan',
+    leDiff: 'Bacak uzantıları (LE) farklı: stub’lar farklı yüksekliklerde.', leSame: 'Dört bacağın uzantısı aynı.',
+    cap0: "<b style='color:var(--blue)'>Stub profili ve ölçüm noktaları.</b> {le} Kamera {p} stub’ının etrafında dönüyor.",
+    cap1: "<b class='w'>W — ilk delik arası.</b> Şerit metrenin iki ucu iki stub’un <b>betonun üstündeki ilk delik merkezindedir</b>. LE farkı varsa eğik ölçülür: √( ((W₁+W₂)/2)² + (ΔH·YK)² ), YK = {yk}.",
+    cap2: "<b class='b'>B — stub üstü kenar.</b> Şerit, aynı stub’ların <b>üst ucundaki dış (sırt/topuk) köşeleri</b> arasında. Stub içeri eğimli olduğu için üstte W’ye göre daralır.",
+    cap3: "<b class='c'>BC — stub üstü köşegen.</b> Karşılıklı stub’ların (1–3 ve 2–4) üst uçlarındaki dış köşeler arası: BC = √( (B_ort·√2)² + ΔH² ).",
+  },
+  en: {
+    title: 'Stub setting dimensions — 3D', sub: 'Shows in 3D where each dimension is taken with a tape measure. If the leg extensions (LE) differ, ΔH is drawn.', setup: 'Settings · tower / profile selection',
+    manual: 'Manual (any tower)', projTab: 'Tower from project', lblType: 'Tower type', lblBody: 'Body extension (m)',
+    chipFlat: 'Level ground (all equal)', chipOne: 'One leg +1.5', chipSlope: 'Sloped: 0 / +1.5 / 0 / −1.5', chipSteep: 'Steep slope: 0 / +3 / +4.5 / +1.5',
+    lblSlug: 'Project (slug)', lblCode: 'Tower no.', btnFetch: 'Load tower', lblProf: 'Stub profile',
+    play: '▶ Play', st0: 'Stub profile', st2: 'Stub corner · B', st3: 'Diagonal · BC', st1: 'Lower hole · W', free: '⏹ Stop · free camera', speed: 'Speed', spdSlow: 'slow', spdNorm: 'normal', spdFast: 'fast',
+    hint: 'Drag to rotate, scroll or pinch to zoom. “Play” starts the animation; you can also pick a single measurement below.', anim: 'Animation',
+    tower: 'Tower', towerLine: 'Type {t}, body {b} m',
+    source: 'Source: stub_settings table · slope tanα = {a}, YK = {y} · dimensions in mm. Direct link:',
+    grpB: 'Stub corner · B', subB: 'between the outer corners at the stub top', grpBC: 'Diagonal · BC', subBC: 'between opposite stub tops', grpW: 'Lower hole · W', subW: 'between the centres of the first hole above the concrete', all: 'all',
+    missing: 'Not in table: {l} — this LE value is not defined in the stub table for this body extension.',
+    srvErr: 'Server error ({x})', noProj: 'Project not found: {x}', noTower: 'Tower not found: {x}', noType: 'Tower type not recognised: {x}', noTable: 'No stub setting table: {x}', noLeg: 'Leg extension data missing: {x}',
+    fetching: 'Loading…', libFail: 'Could not load the 3D library (internet connection required): {x}', noData: 'No stub-table data for this selection.',
+    model: 'Model: {t}, body {b} m · profile {p}. ', verify: '3D check: the model distances of all {n} dimensions match the table (largest deviation {w} mm). Profile and hole pattern are schematic.',
+    datum: 'centre reference (LE = 0)', hudW: 'from first-hole centre to first-hole centre', hudB: 'from stub-top outer corner to outer corner', whatW: 'first hole above the concrete', whatB: 'stub-top outer corner',
+    tapeStart: 'Tape end here', tapeEnd: 'Tape end: {v} mm', dhTag: 'LE difference → slanted measure', profHud: 'Stub profile {p}', profHud2: '{z} stub: where are the measuring points?',
+    tagTopT: 'Stub top', tagTopS: 'B and BC from here', tagHoleT: 'First hole', tagHoleS: 'W from here',
+    leDiff: 'Leg extensions (LE) differ: the stubs are at different heights.', leSame: 'All four legs have the same extension.',
+    cap0: "<b style='color:var(--blue)'>Stub profile and measuring points.</b> {le} The camera circles the {p} stub.",
+    cap1: "<b class='w'>W — between the first holes.</b> The two ends of the tape are at the <b>centres of the first holes above the concrete</b> of two stubs. With an LE difference it is measured slanted: √( ((W₁+W₂)/2)² + (ΔH·YK)² ), YK = {yk}.",
+    cap2: "<b class='b'>B — stub-top edge.</b> The tape runs between the <b>outer (back/heel) corners at the top end</b> of the same stubs. The stub leans inwards, so it is narrower at the top than W.",
+    cap3: "<b class='c'>BC — stub-top diagonal.</b> Between the outer corners at the top ends of opposite stubs (1–3 and 2–4): BC = √( (B_avg·√2)² + ΔH² ).",
+  },
+  ar: {
+    title: 'أبعاد ضبط الستَب — ثلاثي الأبعاد', sub: 'يعرض بالأبعاد الثلاثة مكان أخذ كل قياس بشريط القياس. إذا اختلفت امتدادات الأرجل (LE) يُرسم ΔH.', setup: 'الإعدادات · اختيار البرج / المقطع',
+    manual: 'يدوي (أي برج)', projTab: 'برج من المشروع', lblType: 'نوع البرج', lblBody: 'امتداد الجسم (م)',
+    chipFlat: 'أرض مستوية (الكل متساوٍ)', chipOne: 'رجل واحدة +1٫5', chipSlope: 'مائلة: 0 / +1٫5 / 0 / −1٫5', chipSteep: 'منحدر شديد: 0 / +3 / +4٫5 / +1٫5',
+    lblSlug: 'المشروع (slug)', lblCode: 'رقم البرج', btnFetch: 'تحميل البرج', lblProf: 'مقطع الستَب',
+    play: '▶ تشغيل', st0: 'مقطع الستَب', st2: 'ركن الستَب · B', st3: 'القطر · BC', st1: 'الثقب السفلي · W', free: '⏹ إيقاف · كاميرا حرة', speed: 'السرعة', spdSlow: 'بطيء', spdNorm: 'عادي', spdFast: 'سريع',
+    hint: 'اسحب للتدوير، وبالعجلة أو بإصبعين للتكبير. «تشغيل» يبدأ الحركة، ويمكنك اختيار قياس واحد من الأسفل.', anim: 'الحركة',
+    tower: 'البرج', towerLine: 'النوع {t}، الجسم {b} م',
+    source: 'المصدر: جدول stub_settings · الميل tanα = {a}، YK = {y} · الأبعاد بالملم. رابط مباشر:',
+    grpB: 'ركن الستَب · B', subB: 'بين الركنين الخارجيين عند أعلى الستَب', grpBC: 'القطر · BC', subBC: 'بين أعلى ستَبين متقابلين', grpW: 'الثقب السفلي · W', subW: 'بين مركزي أول ثقب فوق الخرسانة', all: 'الكل',
+    missing: 'غير موجود في الجدول: {l} — قيمة LE هذه غير معرّفة في جدول الستَب لامتداد الجسم هذا.',
+    srvErr: 'خطأ في الخادم ({x})', noProj: 'المشروع غير موجود: {x}', noTower: 'البرج غير موجود: {x}', noType: 'نوع البرج غير معروف: {x}', noTable: 'لا يوجد جدول ضبط الستَب: {x}', noLeg: 'بيانات امتداد الأرجل ناقصة: {x}',
+    fetching: 'جارٍ التحميل…', libFail: 'تعذر تحميل مكتبة ثلاثي الأبعاد (يلزم الاتصال بالإنترنت): {x}', noData: 'لا توجد بيانات في جدول الستَب لهذا الاختيار.',
+    model: 'النموذج: {t}، الجسم {b} م · المقطع {p}. ', verify: 'التحقق ثلاثي الأبعاد: مسافات النموذج لجميع الأبعاد ({n}) تطابق الجدول (أكبر انحراف {w} ملم). المقطع ونمط الثقوب تخطيطيان.',
+    datum: 'المرجع المركزي (LE = 0)', hudW: 'من مركز أول ثقب إلى مركز أول ثقب', hudB: 'من الركن الخارجي إلى الركن الخارجي عند أعلى الستَب', whatW: 'أول ثقب فوق الخرسانة', whatB: 'الركن الخارجي عند أعلى الستَب',
+    tapeStart: 'بداية الشريط هنا', tapeEnd: 'نهاية الشريط: {v} ملم', dhTag: 'فرق LE ← قياس مائل', profHud: 'مقطع الستَب {p}', profHud2: 'الستَب {z}: أين نقاط القياس؟',
+    tagTopT: 'أعلى الستَب', tagTopS: 'B و BC من هنا', tagHoleT: 'أول ثقب', tagHoleS: 'W من هنا',
+    leDiff: 'امتدادات الأرجل (LE) مختلفة: الستَبات على ارتفاعات مختلفة.', leSame: 'امتداد الأرجل الأربع متساوٍ.',
+    cap0: "<b style='color:var(--blue)'>مقطع الستَب ونقاط القياس.</b> {le} تدور الكاميرا حول الستَب {p}.",
+    cap1: "<b class='w'>W — بين الثقبين الأولين.</b> طرفا الشريط عند <b>مركزي أول ثقب فوق الخرسانة</b> في ستَبين. إذا اختلف LE يُقاس بشكل مائل: √( ((W₁+W₂)/2)² + (ΔH·YK)² )، YK = {yk}.",
+    cap2: "<b class='b'>B — حافة أعلى الستَب.</b> يمتد الشريط بين <b>الركنين الخارجيين (الظهر/الكعب) عند الطرف العلوي</b> لنفس الستَبين. الستَب مائل للداخل لذا يضيق في الأعلى عن W.",
+    cap3: "<b class='c'>BC — قطر أعلى الستَب.</b> بين الركنين الخارجيين عند أعلى الستَبين المتقابلين (1–3 و2–4): BC = √( (B_avg·√2)² + ΔH² ).",
+  },
+  ru: {
+    title: 'Размеры установки анкерных уголков — 3D', sub: 'Показывает в 3D, откуда рулеткой снимается каждый размер. Если удлинения ног (LE) разные, рисуется ΔH.', setup: 'Настройки · выбор опоры / профиля',
+    manual: 'Вручную (любая опора)', projTab: 'Опора из проекта', lblType: 'Тип опоры', lblBody: 'Удлинение тела (м)',
+    chipFlat: 'Ровная площадка (все равны)', chipOne: 'Одна нога +1,5', chipSlope: 'Склон: 0 / +1,5 / 0 / −1,5', chipSteep: 'Крутой склон: 0 / +3 / +4,5 / +1,5',
+    lblSlug: 'Проект (slug)', lblCode: 'Номер опоры', btnFetch: 'Загрузить опору', lblProf: 'Профиль стаба',
+    play: '▶ Пуск', st0: 'Профиль стаба', st2: 'Угол стаба · B', st3: 'Диагональ · BC', st1: 'Нижнее отверстие · W', free: '⏹ Стоп · свободная камера', speed: 'Скорость', spdSlow: 'медленно', spdNorm: 'обычно', spdFast: 'быстро',
+    hint: 'Тяните, чтобы вращать; колесо или щипок — масштаб. «Пуск» запускает анимацию; ниже можно выбрать один замер.', anim: 'Анимация',
+    tower: 'Опора', towerLine: 'Тип {t}, тело {b} м',
+    source: 'Источник: таблица stub_settings · уклон tanα = {a}, YK = {y} · размеры в мм. Прямая ссылка:',
+    grpB: 'Угол стаба · B', subB: 'между наружными углами верха стаба', grpBC: 'Диагональ · BC', subBC: 'между верхами противоположных стабов', grpW: 'Нижнее отверстие · W', subW: 'между центрами первого отверстия над бетоном', all: 'все',
+    missing: 'Нет в таблице: {l} — это значение LE не задано в таблице стаба для данного удлинения тела.',
+    srvErr: 'Ошибка сервера ({x})', noProj: 'Проект не найден: {x}', noTower: 'Опора не найдена: {x}', noType: 'Тип опоры не распознан: {x}', noTable: 'Нет таблицы установки стаба: {x}', noLeg: 'Нет данных об удлинении ног: {x}',
+    fetching: 'Загрузка…', libFail: 'Не удалось загрузить 3D-библиотеку (нужен интернет): {x}', noData: 'Для этого выбора нет данных в таблице стаба.',
+    model: 'Модель: {t}, тело {b} м · профиль {p}. ', verify: 'Проверка 3D: расстояния модели для всех {n} размеров совпадают с таблицей (наибольшее отклонение {w} мм). Профиль и расположение отверстий схематичны.',
+    datum: 'центральная отметка (LE = 0)', hudW: 'от центра первого отверстия до центра первого отверстия', hudB: 'от наружного угла до наружного угла вверху стаба', whatW: 'первое отверстие над бетоном', whatB: 'наружный угол верха стаба',
+    tapeStart: 'Начало рулетки здесь', tapeEnd: 'Конец рулетки: {v} мм', dhTag: 'разница LE → наклонный замер', profHud: 'Профиль стаба {p}', profHud2: 'Стаб {z}: где точки замера?',
+    tagTopT: 'Верх стаба', tagTopS: 'B и BC отсюда', tagHoleT: 'Первое отверстие', tagHoleS: 'W отсюда',
+    leDiff: 'Удлинения ног (LE) разные: стабы на разной высоте.', leSame: 'У всех четырёх ног одинаковое удлинение.',
+    cap0: "<b style='color:var(--blue)'>Профиль стаба и точки замера.</b> {le} Камера облетает стаб {p}.",
+    cap1: "<b class='w'>W — между первыми отверстиями.</b> Концы рулетки находятся в <b>центрах первых отверстий над бетоном</b> двух стабов. При разнице LE замер наклонный: √( ((W₁+W₂)/2)² + (ΔH·YK)² ), YK = {yk}.",
+    cap2: "<b class='b'>B — кромка верха стаба.</b> Рулетка идёт между <b>наружными (спинка/пятка) углами верхнего торца</b> тех же стабов. Стаб наклонён внутрь, поэтому вверху он уже, чем W.",
+    cap3: "<b class='c'>BC — диагональ верха стаба.</b> Между наружными углами верхних торцов противоположных стабов (1–3 и 2–4): BC = √( (B_ср·√2)² + ΔH² ).",
+  },
+  ka: {
+    title: 'სტაბის დაყენების ზომები — 3D', sub: 'აჩვენებს 3D-ში, საიდან იზომება თითოეული ზომა რულეტით. თუ ფეხების გახანგრძლივება (LE) განსხვავებულია, ΔH იხატება.', setup: 'პარამეტრები · ანძის / პროფილის არჩევა',
+    manual: 'ხელით (ნებისმიერი ანძა)', projTab: 'ანძა პროექტიდან', lblType: 'ანძის ტიპი', lblBody: 'ტანის გახანგრძლივება (მ)',
+    chipFlat: 'ბრტყელი ადგილი (ყველა ტოლი)', chipOne: 'ერთი ფეხი +1,5', chipSlope: 'დახრილი: 0 / +1,5 / 0 / −1,5', chipSteep: 'ციცაბო ფერდობი: 0 / +3 / +4,5 / +1,5',
+    lblSlug: 'პროექტი (slug)', lblCode: 'ანძის №', btnFetch: 'ანძის ჩატვირთვა', lblProf: 'სტაბის პროფილი',
+    play: '▶ დაწყება', st0: 'სტაბის პროფილი', st2: 'სტაბის კუთხე · B', st3: 'დიაგონალი · BC', st1: 'ქვედა ხვრელი · W', free: '⏹ გაჩერება · თავისუფალი კამერა', speed: 'სიჩქარე', spdSlow: 'ნელა', spdNorm: 'ჩვეულებრივ', spdFast: 'სწრაფად',
+    hint: 'გადაათრიეთ დასატრიალებლად, ბორბლით ან ორი თითით — გასადიდებლად. „დაწყება“ ანიმაციას იწყებს; ქვემოდან ერთი გაზომვის არჩევაც შეიძლება.', anim: 'ანიმაცია',
+    tower: 'ანძა', towerLine: 'ტიპი {t}, ტანი {b} მ',
+    source: 'წყარო: stub_settings ცხრილი · დახრა tanα = {a}, YK = {y} · ზომები მმ-ში. პირდაპირი ბმული:',
+    grpB: 'სტაბის კუთხე · B', subB: 'სტაბის ზედა ბოლოს გარე კუთხეებს შორის', grpBC: 'დიაგონალი · BC', subBC: 'ურთიერთსაპირისპირო სტაბების ზედა ბოლოებს შორის', grpW: 'ქვედა ხვრელი · W', subW: 'ბეტონის ზემოთ პირველი ხვრელის ცენტრებს შორის', all: 'ყველა',
+    missing: 'ცხრილში არ არის: {l} — ეს LE მნიშვნელობა ამ ტანის გახანგრძლივებისთვის სტაბის ცხრილში განსაზღვრული არ არის.',
+    srvErr: 'სერვერის შეცდომა ({x})', noProj: 'პროექტი ვერ მოიძებნა: {x}', noTower: 'ანძა ვერ მოიძებნა: {x}', noType: 'ანძის ტიპი ვერ ამოიცნო: {x}', noTable: 'სტაბის დაყენების ცხრილი არ არის: {x}', noLeg: 'ფეხების გახანგრძლივების მონაცემები აკლია: {x}',
+    fetching: 'იტვირთება…', libFail: '3D ბიბლიოთეკა ვერ ჩაიტვირთა (საჭიროა ინტერნეტი): {x}', noData: 'ამ არჩევანისთვის სტაბის ცხრილში მონაცემები არ არის.',
+    model: 'მოდელი: {t}, ტანი {b} მ · პროფილი {p}. ', verify: '3D შემოწმება: მოდელის მანძილები ყველა {n} ზომისთვის ემთხვევა ცხრილს (უდიდესი გადახრა {w} მმ). პროფილი და ხვრელების განლაგება სქემატურია.',
+    datum: 'ცენტრალური ნიშნული (LE = 0)', hudW: 'პირველი ხვრელის ცენტრიდან პირველი ხვრელის ცენტრამდე', hudB: 'გარე კუთხიდან გარე კუთხემდე სტაბის თავზე', whatW: 'ბეტონის ზემოთ პირველი ხვრელი', whatB: 'სტაბის ზედა გარე კუთხე',
+    tapeStart: 'რულეტის ბოლო აქაა', tapeEnd: 'რულეტის ბოლო: {v} მმ', dhTag: 'LE სხვაობა → დახრილი გაზომვა', profHud: 'სტაბის პროფილი {p}', profHud2: 'სტაბი {z}: სად არის გაზომვის წერტილები?',
+    tagTopT: 'სტაბის თავი', tagTopS: 'B და BC აქედან', tagHoleT: 'პირველი ხვრელი', tagHoleS: 'W აქედან',
+    leDiff: 'ფეხების გახანგრძლივება (LE) განსხვავებულია: სტაბები სხვადასხვა სიმაღლეზეა.', leSame: 'ოთხივე ფეხის გახანგრძლივება ერთნაირია.',
+    cap0: "<b style='color:var(--blue)'>სტაბის პროფილი და გაზომვის წერტილები.</b> {le} კამერა {p} სტაბის გარშემო ტრიალებს.",
+    cap1: "<b class='w'>W — პირველ ხვრელებს შორის.</b> რულეტის ორივე ბოლო ორი სტაბის <b>ბეტონის ზემოთ პირველი ხვრელის ცენტრშია</b>. LE სხვაობისას გაზომვა დახრილია: √( ((W₁+W₂)/2)² + (ΔH·YK)² ), YK = {yk}.",
+    cap2: "<b class='b'>B — სტაბის ზედა წიბო.</b> რულეტი გადის იმავე სტაბების <b>ზედა ბოლოს გარე (ზურგის/ქუსლის) კუთხეებს</b> შორის. სტაბი შიგნით არის დახრილი, ამიტომ ზევით W-ზე ვიწროა.",
+    cap3: "<b class='c'>BC — სტაბის ზედა დიაგონალი.</b> საპირისპირო სტაბების (1–3 და 2–4) ზედა ბოლოების გარე კუთხეებს შორის: BC = √( (B_საშ·√2)² + ΔH² ).",
+  },
+  fr: {
+    title: 'Cotes de calage des stubs — 3D', sub: 'Montre en 3D où chaque cote est prise au mètre ruban. Si les extensions de pied (LE) diffèrent, ΔH est tracé.', setup: 'Réglages · choix du pylône / du profilé',
+    manual: 'Manuel (tout pylône)', projTab: 'Pylône du projet', lblType: 'Type de pylône', lblBody: 'Extension du fût (m)',
+    chipFlat: 'Terrain plat (tous égaux)', chipOne: 'Un pied +1,5', chipSlope: 'En pente : 0 / +1,5 / 0 / −1,5', chipSteep: 'Forte pente : 0 / +3 / +4,5 / +1,5',
+    lblSlug: 'Projet (slug)', lblCode: 'N° du pylône', btnFetch: 'Charger le pylône', lblProf: 'Profilé du stub',
+    play: '▶ Lecture', st0: 'Profilé du stub', st2: 'Coin du stub · B', st3: 'Diagonale · BC', st1: 'Trou bas · W', free: '⏹ Stop · caméra libre', speed: 'Vitesse', spdSlow: 'lent', spdNorm: 'normal', spdFast: 'rapide',
+    hint: 'Glissez pour tourner, molette ou pincement pour zoomer. « Lecture » lance l’animation ; vous pouvez aussi choisir une seule mesure ci-dessous.', anim: 'Animation',
+    tower: 'Pylône', towerLine: 'Type {t}, fût {b} m',
+    source: 'Source : table stub_settings · pente tanα = {a}, YK = {y} · cotes en mm. Lien direct :',
+    grpB: 'Coin du stub · B', subB: 'entre les coins extérieurs en tête de stub', grpBC: 'Diagonale · BC', subBC: 'entre les têtes de stubs opposés', grpW: 'Trou bas · W', subW: 'entre les centres du premier trou au-dessus du béton', all: 'tout',
+    missing: 'Absent de la table : {l} — cette valeur de LE n’est pas définie dans la table des stubs pour cette extension de fût.',
+    srvErr: 'Erreur serveur ({x})', noProj: 'Projet introuvable : {x}', noTower: 'Pylône introuvable : {x}', noType: 'Type de pylône non reconnu : {x}', noTable: 'Pas de table de calage des stubs : {x}', noLeg: 'Données d’extension de pied manquantes : {x}',
+    fetching: 'Chargement…', libFail: 'Impossible de charger la bibliothèque 3D (connexion internet requise) : {x}', noData: 'Aucune donnée dans la table des stubs pour cette sélection.',
+    model: 'Modèle : {t}, fût {b} m · profilé {p}. ', verify: 'Contrôle 3D : les distances du modèle pour les {n} cotes correspondent à la table (écart maximal {w} mm). Le profilé et la disposition des trous sont schématiques.',
+    datum: 'référence centrale (LE = 0)', hudW: 'du centre du premier trou au centre du premier trou', hudB: 'du coin extérieur au coin extérieur en tête de stub', whatW: 'premier trou au-dessus du béton', whatB: 'coin extérieur en tête de stub',
+    tapeStart: 'Début du ruban ici', tapeEnd: 'Fin du ruban : {v} mm', dhTag: 'écart de LE → mesure oblique', profHud: 'Profilé du stub {p}', profHud2: 'Stub {z} : où sont les points de mesure ?',
+    tagTopT: 'Tête du stub', tagTopS: 'B et BC à partir d’ici', tagHoleT: 'Premier trou', tagHoleS: 'W à partir d’ici',
+    leDiff: 'Les extensions de pied (LE) diffèrent : les stubs sont à des hauteurs différentes.', leSame: 'Les quatre pieds ont la même extension.',
+    cap0: "<b style='color:var(--blue)'>Profilé du stub et points de mesure.</b> {le} La caméra tourne autour du stub {p}.",
+    cap1: "<b class='w'>W — entre les premiers trous.</b> Les deux extrémités du ruban sont aux <b>centres des premiers trous au-dessus du béton</b> de deux stubs. Avec un écart de LE, la mesure est oblique : √( ((W₁+W₂)/2)² + (ΔH·YK)² ), YK = {yk}.",
+    cap2: "<b class='b'>B — arête en tête de stub.</b> Le ruban va entre les <b>coins extérieurs (dos/talon) de l’extrémité supérieure</b> des mêmes stubs. Le stub penche vers l’intérieur, il est donc plus étroit en haut que W.",
+    cap3: "<b class='c'>BC — diagonale en tête de stub.</b> Entre les coins extérieurs des extrémités supérieures de stubs opposés (1–3 et 2–4) : BC = √( (B_moy·√2)² + ΔH² ).",
+  },
+  de: {
+    title: 'Stub-Einstellmaße — 3D', sub: 'Zeigt in 3D, wo jedes Maß mit dem Maßband genommen wird. Bei unterschiedlichen Beinverlängerungen (LE) wird ΔH gezeichnet.', setup: 'Einstellungen · Mast- / Profilauswahl',
+    manual: 'Manuell (beliebiger Mast)', projTab: 'Mast aus Projekt', lblType: 'Masttyp', lblBody: 'Schaftverlängerung (m)',
+    chipFlat: 'Ebenes Gelände (alle gleich)', chipOne: 'Ein Bein +1,5', chipSlope: 'Geneigt: 0 / +1,5 / 0 / −1,5', chipSteep: 'Steilhang: 0 / +3 / +4,5 / +1,5',
+    lblSlug: 'Projekt (Slug)', lblCode: 'Mast-Nr.', btnFetch: 'Mast laden', lblProf: 'Stub-Profil',
+    play: '▶ Abspielen', st0: 'Stub-Profil', st2: 'Stub-Ecke · B', st3: 'Diagonale · BC', st1: 'Unteres Loch · W', free: '⏹ Stopp · freie Kamera', speed: 'Tempo', spdSlow: 'langsam', spdNorm: 'normal', spdFast: 'schnell',
+    hint: 'Ziehen zum Drehen, Scrollen oder Zwei-Finger-Zoom zum Zoomen. „Abspielen“ startet die Animation; unten lässt sich auch eine einzelne Messung wählen.', anim: 'Animation',
+    tower: 'Mast', towerLine: 'Typ {t}, Schaft {b} m',
+    source: 'Quelle: Tabelle stub_settings · Neigung tanα = {a}, YK = {y} · Maße in mm. Direktlink:',
+    grpB: 'Stub-Ecke · B', subB: 'zwischen den äußeren Ecken am Stub-Kopf', grpBC: 'Diagonale · BC', subBC: 'zwischen den Köpfen gegenüberliegender Stubs', grpW: 'Unteres Loch · W', subW: 'zwischen den Mitten des ersten Lochs über dem Beton', all: 'alle',
+    missing: 'Nicht in der Tabelle: {l} — dieser LE-Wert ist in der Stub-Tabelle für diese Schaftverlängerung nicht definiert.',
+    srvErr: 'Serverfehler ({x})', noProj: 'Projekt nicht gefunden: {x}', noTower: 'Mast nicht gefunden: {x}', noType: 'Masttyp nicht erkannt: {x}', noTable: 'Keine Stub-Einstelltabelle: {x}', noLeg: 'Daten zur Beinverlängerung fehlen: {x}',
+    fetching: 'Wird geladen…', libFail: '3D-Bibliothek konnte nicht geladen werden (Internetverbindung nötig): {x}', noData: 'Für diese Auswahl gibt es keine Daten in der Stub-Tabelle.',
+    model: 'Modell: {t}, Schaft {b} m · Profil {p}. ', verify: '3D-Prüfung: Die Modellabstände aller {n} Maße stimmen mit der Tabelle überein (größte Abweichung {w} mm). Profil und Lochbild sind schematisch.',
+    datum: 'Mittenbezug (LE = 0)', hudW: 'von Lochmitte des ersten Lochs zu Lochmitte des ersten Lochs', hudB: 'von äußerer Ecke zu äußerer Ecke am Stub-Kopf', whatW: 'erstes Loch über dem Beton', whatB: 'äußere Ecke am Stub-Kopf',
+    tapeStart: 'Bandanfang hier', tapeEnd: 'Bandende: {v} mm', dhTag: 'LE-Unterschied → schräges Maß', profHud: 'Stub-Profil {p}', profHud2: 'Stub {z}: Wo liegen die Messpunkte?',
+    tagTopT: 'Stub-Kopf', tagTopS: 'B und BC von hier', tagHoleT: 'Erstes Loch', tagHoleS: 'W von hier',
+    leDiff: 'Beinverlängerungen (LE) unterschiedlich: Die Stubs stehen auf verschiedenen Höhen.', leSame: 'Alle vier Beine haben dieselbe Verlängerung.',
+    cap0: "<b style='color:var(--blue)'>Stub-Profil und Messpunkte.</b> {le} Die Kamera umkreist den Stub {p}.",
+    cap1: "<b class='w'>W — zwischen den ersten Löchern.</b> Die beiden Bandenden liegen in den <b>Mitten der ersten Löcher über dem Beton</b> zweier Stubs. Bei LE-Unterschied wird schräg gemessen: √( ((W₁+W₂)/2)² + (ΔH·YK)² ), YK = {yk}.",
+    cap2: "<b class='b'>B — Stub-Kopfkante.</b> Das Band verläuft zwischen den <b>äußeren (Rücken-/Fersen-)Ecken am oberen Ende</b> derselben Stubs. Der Stub neigt sich nach innen, daher ist er oben schmaler als W.",
+    cap3: "<b class='c'>BC — Stub-Kopfdiagonale.</b> Zwischen den äußeren Ecken an den oberen Enden gegenüberliegender Stubs (1–3 und 2–4): BC = √( (B_mittel·√2)² + ΔH² ).",
+  },
+  es: {
+    title: 'Cotas de ajuste de stubs — 3D', sub: 'Muestra en 3D dónde se toma cada cota con la cinta métrica. Si las extensiones de pata (LE) difieren, se dibuja ΔH.', setup: 'Ajustes · selección de torre / perfil',
+    manual: 'Manual (cualquier torre)', projTab: 'Torre del proyecto', lblType: 'Tipo de torre', lblBody: 'Extensión del cuerpo (m)',
+    chipFlat: 'Terreno llano (todas iguales)', chipOne: 'Una pata +1,5', chipSlope: 'Inclinado: 0 / +1,5 / 0 / −1,5', chipSteep: 'Ladera pronunciada: 0 / +3 / +4,5 / +1,5',
+    lblSlug: 'Proyecto (slug)', lblCode: 'N.º de torre', btnFetch: 'Cargar torre', lblProf: 'Perfil del stub',
+    play: '▶ Reproducir', st0: 'Perfil del stub', st2: 'Esquina del stub · B', st3: 'Diagonal · BC', st1: 'Agujero inferior · W', free: '⏹ Parar · cámara libre', speed: 'Velocidad', spdSlow: 'lenta', spdNorm: 'normal', spdFast: 'rápida',
+    hint: 'Arrastre para girar; rueda o pellizco para acercar. «Reproducir» inicia la animación; abajo también puede elegir una sola medición.', anim: 'Animación',
+    tower: 'Torre', towerLine: 'Tipo {t}, cuerpo {b} m',
+    source: 'Fuente: tabla stub_settings · pendiente tanα = {a}, YK = {y} · cotas en mm. Enlace directo:',
+    grpB: 'Esquina del stub · B', subB: 'entre las esquinas exteriores en la cabeza del stub', grpBC: 'Diagonal · BC', subBC: 'entre las cabezas de stubs opuestos', grpW: 'Agujero inferior · W', subW: 'entre los centros del primer agujero sobre el hormigón', all: 'todo',
+    missing: 'No está en la tabla: {l} — este valor de LE no está definido en la tabla de stubs para esta extensión de cuerpo.',
+    srvErr: 'Error del servidor ({x})', noProj: 'Proyecto no encontrado: {x}', noTower: 'Torre no encontrada: {x}', noType: 'Tipo de torre no reconocido: {x}', noTable: 'No hay tabla de ajuste de stubs: {x}', noLeg: 'Faltan datos de extensión de patas: {x}',
+    fetching: 'Cargando…', libFail: 'No se pudo cargar la biblioteca 3D (se requiere conexión a internet): {x}', noData: 'No hay datos en la tabla de stubs para esta selección.',
+    model: 'Modelo: {t}, cuerpo {b} m · perfil {p}. ', verify: 'Verificación 3D: las distancias del modelo de las {n} cotas coinciden con la tabla (desviación máxima {w} mm). El perfil y la disposición de agujeros son esquemáticos.',
+    datum: 'referencia central (LE = 0)', hudW: 'del centro del primer agujero al centro del primer agujero', hudB: 'de la esquina exterior a la esquina exterior en la cabeza del stub', whatW: 'primer agujero sobre el hormigón', whatB: 'esquina exterior en la cabeza del stub',
+    tapeStart: 'Inicio de la cinta aquí', tapeEnd: 'Fin de la cinta: {v} mm', dhTag: 'diferencia de LE → medida oblicua', profHud: 'Perfil del stub {p}', profHud2: 'Stub {z}: ¿dónde están los puntos de medida?',
+    tagTopT: 'Cabeza del stub', tagTopS: 'B y BC desde aquí', tagHoleT: 'Primer agujero', tagHoleS: 'W desde aquí',
+    leDiff: 'Las extensiones de pata (LE) difieren: los stubs están a distintas alturas.', leSame: 'Las cuatro patas tienen la misma extensión.',
+    cap0: "<b style='color:var(--blue)'>Perfil del stub y puntos de medida.</b> {le} La cámara gira alrededor del stub {p}.",
+    cap1: "<b class='w'>W — entre los primeros agujeros.</b> Los dos extremos de la cinta están en los <b>centros de los primeros agujeros sobre el hormigón</b> de dos stubs. Con diferencia de LE se mide en oblicuo: √( ((W₁+W₂)/2)² + (ΔH·YK)² ), YK = {yk}.",
+    cap2: "<b class='b'>B — arista de la cabeza del stub.</b> La cinta va entre las <b>esquinas exteriores (lomo/talón) del extremo superior</b> de los mismos stubs. El stub se inclina hacia dentro, por lo que arriba es más estrecho que W.",
+    cap3: "<b class='c'>BC — diagonal de la cabeza del stub.</b> Entre las esquinas exteriores de los extremos superiores de stubs opuestos (1–3 y 2–4): BC = √( (B_med·√2)² + ΔH² ).",
+  },
+  ku: {
+    title: 'Pîvanên sazkirina stubê — 3D', sub: 'Di 3D de nîşan dide ku her pîvan bi metreyê ji ku tê girtin. Heke dirêjkirinên lingan (LE) cuda bin, ΔH tê xêzkirin.', setup: 'Mîheng · hilbijartina stûnê / profîlê',
+    manual: 'Bi destî (her stûn)', projTab: 'Stûn ji projeyê', lblType: 'Cureyê stûnê', lblBody: 'Dirêjkirina laşê (m)',
+    chipFlat: 'Erdê rast (hemû wekhev)', chipOne: 'Yek ling +1,5', chipSlope: 'Teht: 0 / +1,5 / 0 / −1,5', chipSteep: 'Hûrgel tund: 0 / +3 / +4,5 / +1,5',
+    lblSlug: 'Proje (slug)', lblCode: 'Hejmara stûnê', btnFetch: 'Stûnê bar bike', lblProf: 'Profîla stubê',
+    play: '▶ Lê bide', st0: 'Profîla stubê', st2: 'Quncika stubê · B', st3: 'Xaçerê · BC', st1: 'Qul a jêrîn · W', free: '⏹ Rawestîne · kamera azad', speed: 'Lez', spdSlow: 'hêdî', spdNorm: 'asayî', spdFast: 'bilez',
+    hint: 'Ji bo zivirandinê kaş bike, ji bo mezinkirinê çerx an du tilî bi kar bîne. «Lê bide» anîmasyonê dest pê dike; di jêr de hûn dikarin pîvanek tenê jî hilbijêrin.', anim: 'Anîmasyon',
+    tower: 'Stûn', towerLine: 'Cure {t}, laş {b} m',
+    source: 'Çavkanî: tabloya stub_settings · tehtî tanα = {a}, YK = {y} · pîvan bi mm. Girêdana rasterast:',
+    grpB: 'Quncika stubê · B', subB: 'di navbera quncikên derve yên serê stubê de', grpBC: 'Xaçerê · BC', subBC: 'di navbera serê stubên hevrû de', grpW: 'Qul a jêrîn · W', subW: 'di navbera navendên qula yekem a li ser betonê de', all: 'hemû',
+    missing: 'Di tabloyê de tune: {l} — ev nirxa LE di tabloya stubê de ji bo vê dirêjkirina laşê nehatiye diyarkirin.',
+    srvErr: 'Çewtiya serverê ({x})', noProj: 'Proje nehat dîtin: {x}', noTower: 'Stûn nehat dîtin: {x}', noType: 'Cureyê stûnê nehat naskirin: {x}', noTable: 'Tabloya sazkirina stubê tune: {x}', noLeg: 'Daneyên dirêjkirina lingan kêm in: {x}',
+    fetching: 'Tê barkirin…', libFail: 'Pirtûkxaneya 3D nehat barkirin (girêdana înternetê pêwîst e): {x}', noData: 'Ji bo vê hilbijartinê di tabloya stubê de dane tune.',
+    model: 'Model: {t}, laş {b} m · profîl {p}. ', verify: 'Kontrola 3D: dûrahiyên modelê yên hemû {n} pîvanan bi tabloyê re yek in (mezintirîn cudahî {w} mm). Profîl û rêzkirina qulan şematîk in.',
+    datum: 'referansa navendî (LE = 0)', hudW: 'ji navenda qula yekem heta navenda qula yekem', hudB: 'ji quncikê derve heta quncikê derve li serê stubê', whatW: 'qula yekem a li ser betonê', whatB: 'quncikê derve yê serê stubê',
+    tapeStart: 'Destpêka metreyê li vir e', tapeEnd: 'Dawiya metreyê: {v} mm', dhTag: 'cudahiya LE → pîvana verêkirî', profHud: 'Profîla stubê {p}', profHud2: 'Stûba {z}: xalên pîvandinê li ku ne?',
+    tagTopT: 'Serê stubê', tagTopS: 'B û BC ji vir', tagHoleT: 'Qula yekem', tagHoleS: 'W ji vir',
+    leDiff: 'Dirêjkirinên lingan (LE) cuda ne: stub di bilindahiyên cuda de ne.', leSame: 'Dirêjkirina her çar lingan wekhev e.',
+    cap0: "<b style='color:var(--blue)'>Profîla stubê û xalên pîvandinê.</b> {le} Kamera li dora stubê {p} dizivire.",
+    cap1: "<b class='w'>W — di navbera qulên yekem de.</b> Her du serê metreyê li <b>navendên qulên yekem ên li ser betonê</b> yên du stubên ne. Heke LE cuda be, verêkirî tê pîvandin: √( ((W₁+W₂)/2)² + (ΔH·YK)² ), YK = {yk}.",
+    cap2: "<b class='b'>B — kêlekê serê stubê.</b> Metre di navbera <b>quncikên derve (pişt/pêlî) yên serê jorîn</b> yên heman stuban de ye. Stub ber bi hundir ve xwar e, ji ber vê li jor ji W teng e.",
+    cap3: "<b class='c'>BC — xaçerê serê stubê.</b> Di navbera quncikên derve yên serên jorîn ên stubên hevrû (1–3 û 2–4) de: BC = √( (B_navîn·√2)² + ΔH² ).",
+  },
+};
+const LANG = (() => { const q = new URLSearchParams(location.search).get('dil'); let l = q; try { if (!l) l = localStorage.getItem('app_language'); } catch (e) { /* storage blocked */ } return I18N[l] ? l : 'tr'; })();
+const NUMLOC = { tr: 'tr-TR', en: 'en-US', ar: 'ar-EG', ru: 'ru-RU', ka: 'ka-GE', fr: 'fr-FR', de: 'de-DE', es: 'es-ES', ku: 'tr-TR' }[LANG];
+const tx = (k, p = {}) => String(I18N[LANG][k] ?? I18N.tr[k] ?? k).replace(/\{(\w+)\}/g, (m, n) => (p[n] != null ? p[n] : m));
+function applyStatic() {
+  document.documentElement.lang = LANG; document.documentElement.dir = LANG === 'ar' ? 'rtl' : 'ltr'; document.title = tx('title');
+  document.querySelectorAll('[data-i]').forEach((el) => { el.textContent = tx(el.dataset.i); });
+}
 
 // ---- core: pairwise dimensions from that diagonal table (reproduces the manufacturer workbook, verified to 0.007 mm) ----
 function slopeTan(table) {
@@ -168,8 +388,8 @@ function pairDims(tanA, ei, ek) {
 
 const $ = (id) => document.getElementById(id), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const fmt = (v, d = 1) => v.toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d });
-const sgn = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + String(Math.abs(v)).replace('.', ',');
+const fmt = (v, d = 1) => v.toLocaleString(NUMLOC, { minimumFractionDigits: d, maximumFractionDigits: d });
+const sgn = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v), Math.abs(v) % 1 ? 1 : 0);
 const Z = ['Z41', 'Z42', 'Z43', 'Z44'];
 // leg order matches the app's excavation geometry: 1 = geri-sağ, 2 = geri-sol, 3 = ileri-sol, 4 = ileri-sağ (hat yönü yukarı)
 const EDGES = [[0, 1, 'Arka'], [1, 2, 'Sol'], [2, 3, 'İleri'], [3, 0, 'Sağ']];
@@ -210,27 +430,27 @@ function measList(R) {
 // ------------------------------------------------------------------ table + notes
 // animation tabs, grouped by what is measured: lower hole (W), stub top (B), stub-top diagonal (BC); one tab per leg pair
 const GROUPS = [
-  { kind: 'B', title: 'Stub köşesi · B', sub: 'üst uçtaki dış köşeler arası', ids: ['B0', 'B1', 'B2', 'B3'] },
-  { kind: 'BC', title: 'Köşegen · BC', sub: 'karşılıklı stub üstleri arası', ids: ['C0', 'C1'] },
-  { kind: 'W', title: 'Alt delik · W', sub: 'betonun üstündeki ilk delik merkezleri arası', ids: ['W0', 'W1', 'W2', 'W3'] },
+  { kind: 'B', t: 'grpB', s: 'subB', ids: ['B0', 'B1', 'B2', 'B3'] },
+  { kind: 'BC', t: 'grpBC', s: 'subBC', ids: ['C0', 'C1'] },
+  { kind: 'W', t: 'grpW', s: 'subW', ids: ['W0', 'W1', 'W2', 'W3'] },
 ];
 function renderPicker() {
   const P = $('pairs');
   if (!R || !R.edges) { P.innerHTML = ''; return; }
-  P.innerHTML = GROUPS.map((g) => `<div class="pgrp"><div class="ptitle"><b style="color:${KCOL[g.kind]}">${g.title}</b> <span>${g.sub}</span><button class="btn small" data-g="${g.kind}">▶ hepsi</button></div><div class="row">` +
+  P.innerHTML = GROUPS.map((g) => `<div class="pgrp"><div class="ptitle"><b style="color:${KCOL[g.kind]}">${tx(g.t)}</b> <span>${tx(g.s)}</span><button class="btn small" data-g="${g.kind}">▶ ${tx('all')}</button></div><div class="row">` +
     g.ids.map((id) => { const m = MEAS.find((x) => x.id === id); return `<button class="chip mbtn" data-m="${id}"><b>${Z[m.a]} – ${Z[m.b]}</b><small><span style="color:${KCOL[m.kind]}">${fmt(m.val)} mm</span>${Math.abs(m.d.dH) > 1e-6 ? ` · <span style="color:var(--blue)">ΔH ${dHm(m.d)} m</span>` : ''}</small></button>`; }).join('') + '</div></div>').join('');
   $$('#pairs .mbtn').forEach((c) => c.addEventListener('click', () => { $$('#pairs .mbtn').forEach((x) => x.classList.toggle('on', x === c)); $('stage3').scrollIntoView({ block: 'nearest' }); playOne3(c.dataset.m); }));
   $$('#pairs [data-g]').forEach((c) => c.addEventListener('click', () => { const g = GROUPS.find((x) => x.kind === c.dataset.g); $('stage3').scrollIntoView({ block: 'nearest' }); playMany3(g.ids); }));
 }
 function renderNote() {
-  const t = S.src === 'project' ? S.label : `Tip ${S.type}, gövde ${sgn(S.body)} m`;
+  const t = S.src === 'project' ? S.label : tx('towerLine', { t: S.type, b: sgn(S.body) });
   $('towerLine').innerHTML = `<span class="tt"><b>${esc(t)}</b></span>` + S.le.map((l, i) => `<span class="tt">${Z[i]} <b style="color:${leColor(l)}">LE ${sgn(l)} m</b></span>`).join('');
-  $('note').innerHTML = `Kaynak: stub_settings tablosu · eğim tanα = ${R && R.tanA != null ? fmt(R.tanA, 5) : '—'}, YK = ${R && R.YK ? fmt(R.YK, 5) : '—'} · ölçüler mm. Doğrudan bağlantı: <code>?tip=${S.type}&amp;govde=${S.body}&amp;le=${S.le.join(',')}</code>`;
+  $('note').innerHTML = `${tx('source', { a: R && R.tanA != null ? fmt(R.tanA, 5) : '—', y: R && R.YK ? fmt(R.YK, 5) : '—' })} <code>?tip=${S.type}&amp;govde=${S.body}&amp;le=${S.le.join(',')}</code>`;
 }
 function render() {
   R = compute();
   if (R.miss && R.miss.length) {
-    $('caption').innerHTML = `<span class="err">Tabloda yok: ${R.miss.map((i) => `${Z[i]} (LE ${sgn(S.le[i])} m)`).join(', ')} — bu gövde uzantısı için bu LE değeri stub tablosunda tanımlı değil.</span>`;
+    $('caption').innerHTML = `<span class="err">${tx('missing', { l: R.miss.map((i) => `${Z[i]} (LE ${sgn(S.le[i])} m)`).join(', ') })}</span>`;
     MEAS = []; renderPicker(); if (g3.ok) clearModel(); return;
   }
   MEAS = measList(R); renderPicker(); renderNote();
@@ -261,18 +481,18 @@ $('btnPlay').addEventListener('click', () => playAll3());
 $$('.step').forEach((b) => b.addEventListener('click', () => playStep3(+b.dataset.s)));
 // ------------------------------------------------------------------ project mode (same Supabase read the AR page uses; anon key is public, RLS applies)
 const SB_URL = 'https://dgwposrzxzycoownpcdk.supabase.co', SB_KEY = 'sb_publishable_vrRcFEJadOB1BlYa32ZkvA_fQ1wy_5s';
-async function sbGet(path) { const r = await fetch(SB_URL + '/rest/v1/' + path, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } }); if (!r.ok) throw new Error('Sunucu hatası (' + r.status + ')'); return r.json(); }
+async function sbGet(path) { const r = await fetch(SB_URL + '/rest/v1/' + path, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } }); if (!r.ok) throw new Error(tx('srvErr', { x: r.status })); return r.json(); }
 const TOWER_TYPES = ['B90C', 'BNS', 'B30', 'B60', 'B90', 'BLC', 'BLS'], ALIAS = { B90C: 'B90' };
 async function fetchTower(slug, code) {
-  const st = $('status'); st.className = ''; st.textContent = 'Getiriliyor…';
+  const st = $('status'); st.className = ''; st.textContent = tx('fetching');
   try {
-    const projs = await sbGet(`projects?select=id,name&slug=eq.${encodeURIComponent(slug)}`); if (!projs.length) throw new Error('Proje bulunamadı: ' + slug);
-    const a = (await sbGet(`assets?select=asset_code,asset_type,leg1_ext_m,leg2_ext_m,leg3_ext_m,leg4_ext_m&project_id=eq.${projs[0].id}&asset_code=eq.${encodeURIComponent(code)}`))[0]; if (!a) throw new Error('Direk bulunamadı: ' + code);
-    const type = TOWER_TYPES.find((t) => (a.asset_type || '').startsWith(t)); if (!type) throw new Error('Direk tipi tanınamadı: ' + a.asset_type);
+    const projs = await sbGet(`projects?select=id,name&slug=eq.${encodeURIComponent(slug)}`); if (!projs.length) throw new Error(tx('noProj', { x: slug }));
+    const a = (await sbGet(`assets?select=asset_code,asset_type,leg1_ext_m,leg2_ext_m,leg3_ext_m,leg4_ext_m&project_id=eq.${projs[0].id}&asset_code=eq.${encodeURIComponent(code)}`))[0]; if (!a) throw new Error(tx('noTower', { x: code }));
+    const type = TOWER_TYPES.find((t) => (a.asset_type || '').startsWith(t)); if (!type) throw new Error(tx('noType', { x: a.asset_type }));
     const m = a.asset_type.slice(type.length).match(/^([+-]\d+(?:\.\d+)?)/), body = m ? Number(m[1]) : 0, look = ALIAS[type] || type;
-    const cfg = (await sbGet(`project_config?select=value&project_id=eq.${projs[0].id}&key=eq.stub_settings`))[0]; const st1 = ((cfg && cfg.value) || []).find((t) => t.type === look); if (!st1) throw new Error('Stub ayar tablosu yok: ' + look);
-    const le = [a.leg1_ext_m, a.leg2_ext_m, a.leg3_ext_m, a.leg4_ext_m]; if (le.some((v) => v == null)) throw new Error('Bacak uzatma verisi eksik: ' + code);
-    S.src = 'project'; S.type = look; S.table = st1.table; S.body = body; S.le = le; S.label = `${projs[0].name} · Direk ${a.asset_code} (${a.asset_type})`;
+    const cfg = (await sbGet(`project_config?select=value&project_id=eq.${projs[0].id}&key=eq.stub_settings`))[0]; const st1 = ((cfg && cfg.value) || []).find((t) => t.type === look); if (!st1) throw new Error(tx('noTable', { x: look }));
+    const le = [a.leg1_ext_m, a.leg2_ext_m, a.leg3_ext_m, a.leg4_ext_m]; if (le.some((v) => v == null)) throw new Error(tx('noLeg', { x: code }));
+    S.src = 'project'; S.type = look; S.table = st1.table; S.body = body; S.le = le; S.label = `${projs[0].name} · ${tx('tower')} ${a.asset_code} (${a.asset_type})`;
     syncControls(); st.textContent = '✓ ' + S.label; render();
   } catch (e) { st.className = 'err'; st.textContent = '⚠ ' + e.message; $('caption').innerHTML = `<span class="err">⚠ ${esc(e.message)}</span>`; console.error(e); }
 }
@@ -328,7 +548,7 @@ function noiseTex(base, amp, rep) {
 function clearModel() { if (g3.model) { g3.root.remove(g3.model); g3.model = null; } g3.data = null; clearGhost(); clearTape(); clearTags(); }
 function buildModel() {
   clearModel();
-  if (!R || !R.edges) { $('note3').textContent = 'Bu seçim için stub tablosunda veri yok.'; return; }
+  if (!R || !R.edges) { $('note3').textContent = tx('noData'); return; }
   const prof = PROFILES[$('selProf').value] || PROFILES['L150×12'], tp = prof.t * 1e-3, bp = prof.b * 1e-3;
   const axis = AXIS[S.type] || 85, holeH = 0.145, concH = 0.4;
   const tA = R.tanA, YK = R.YK, tanB = tA / YK, cosB = 1 / Math.sqrt(1 + tanB * tanB), axisH = (axis / cosB) * 1e-3;
@@ -387,7 +607,7 @@ function buildModel() {
   };
   let worst = 0; model.meas = MEAS.map((m) => { const p = pts(m); worst = Math.max(worst, Math.abs(p.A.distanceTo(p.B) * 1000 - m.val)); return { ...m, ...p }; });
   model.worst = worst; model.K = Math.max(...Am); model.ymean = (-S.le.reduce((a, b) => a + b, 0) / 4) + 0.3;
-  $('note3').innerHTML = `Model: ${S.type}, gövde ${S.body >= 0 ? '+' : ''}${S.body} m · profil ${$('selProf').value}. <span style="color:var(--teal)">3B doğrulama: ${model.meas.length} ölçünün model mesafesi tabloyla aynı (en büyük sapma ${fmt(worst, 3)} mm).</span> Profil ve delik düzeni şematiktir.`;
+  $('note3').innerHTML = tx('model', { t: S.type, b: (S.body >= 0 ? '+' : '') + S.body, p: $('selProf').value }) + `<span style="color:var(--teal)">${tx('verify', { n: model.meas.length, w: fmt(worst, 3) })}</span>`;
   overviewNow();
 }
 const af = () => clamp(1.5 / (g3.cam ? g3.cam.aspect : 1.6), 1, 2);   // narrower screens (phones) need the camera further back
@@ -471,7 +691,7 @@ function updateTags() {
       if (t.off) { const m = Math.abs(t.off[0]), want = sx > w * 0.6 ? -m : sx < w * 0.4 ? m : t.off[0]; if (want !== t.curX) placeOff(t, want); } }
   }
 }
-function legTags() { const d = g3.data; clearTags(); if (!d) return; for (let i = 0; i < 4; i++) addTag(d.top[i], `<b>${Z[i]}</b> · LE ${sgn(S.le[i])} m`, 'small'); addTag(V(d.legs[1].heel.x, 0, d.legs[1].heel.z), 'merkez referansı (LE = 0)', 'g small', [-70, -18]); }
+function legTags() { const d = g3.data; clearTags(); if (!d) return; for (let i = 0; i < 4; i++) addTag(d.top[i], `<b>${Z[i]}</b> · LE ${sgn(S.le[i])} m`, 'small'); addTag(V(d.legs[1].heel.x, 0, d.legs[1].heel.z), tx('datum'), 'g small', [-70, -18]); }
 
 // ------------------------------------------------------------------ camera director
 function camTo(pos, tgt, ms, id) {
@@ -492,14 +712,14 @@ function poses(m) {
     follow: (e) => { const hp = m.A.clone().addScaledVector(dir, len * e); return { pos: hp.clone().addScaledVector(nMid, 2.3).add(V(0, 0.9, 0)).addScaledVector(dir, 0.25), tgt: hp.clone().addScaledVector(dir, -0.75) }; },
     wide: { pos: mid.clone().addScaledVector(nMid, (len * 0.95 + 1.5) * af()).add(V(0, (len * 0.28 + 1.0) * af(), 0)), tgt: mid } };
 }
-const WHAT = { W: 'betonun üstündeki ilk delik', B: 'stub üstü dış köşe', BC: 'stub üstü dış köşe' };
+const WHAT = () => ({ W: tx('whatW'), B: tx('whatB'), BC: tx('whatB') });
 async function measure3(m, id, first = true) {
   const { dir, len, cA, cB, follow, wide } = poses(m), col = hex6(KCOL3[m.kind]);
-  setHud(`<b style="color:${col}">${m.name}</b> · ${Z[m.a]} ⟷ ${Z[m.b]}<br><span class="sub2">${m.kind === 'W' ? 'ilk delik merkezinden ilk delik merkezine' : 'stub üstü dış köşeden dış köşeye'}</span>`);
+  setHud(`<b style="color:${col}">${m.name}</b> · ${Z[m.a]} ⟷ ${Z[m.b]}<br><span class="sub2">${m.kind === 'W' ? tx('hudW') : tx('hudB')}</span>`);
   makeTape(m); setRead(m, '0,0', false); clearTags(); g3.tape.rB.visible = g3.tape.dB.visible = false;
   if (first) { const ov = overviewPose(); await camTo(ov.pos, ov.tgt, 500, id); }
   if (!(await camTo(cA.pos, cA.tgt, first ? 2200 : 1700, id))) return false;
-  addTag(m.A, `<b>Şeridin ucu burada</b><br>${Z[m.a]} · ${WHAT[m.kind]}`, m.kind === 'W' ? 'w' : 'b', [-130, -40]);
+  addTag(m.A, `<b>${tx('tapeStart')}</b><br>${Z[m.a]} · ${WHAT()[m.kind]}`, m.kind === 'W' ? 'w' : 'b', [-130, -40]);
   await sleep3(1000 * speed3()); if (id !== g3.run) return false;
   // pull the tape out; the camera rides alongside and the reading runs on the hook
   clearTags(); const hookTag = addTag(g3.tape.hp, '0,0 mm', 'rd', null, true), dur = clamp(len / 2.8, 2.2, 7) * 1000 * speed3(), st = performance.now(); setRead(m, '0,0', true);
@@ -514,14 +734,14 @@ async function measure3(m, id, first = true) {
   });
   if (id !== g3.run) return false;
   updateTape(1); setRead(m, fmt(m.val, 1), true);
-  clearTags(); addTag(m.B, `<b>Şeridin sonu: ${fmt(m.val, 1)} mm</b><br>${Z[m.b]} · ${WHAT[m.kind]}`, m.kind === 'W' ? 'w' : 'b', [130, -44]);
+  clearTags(); addTag(m.B, `<b>${tx('tapeEnd', { v: fmt(m.val, 1) })}</b><br>${Z[m.b]} · ${WHAT()[m.kind]}`, m.kind === 'W' ? 'w' : 'b', [130, -44]);
   if (!(await camTo(cB.pos, cB.tgt, 1500, id))) return false;
   await sleep3(1100 * speed3()); if (id !== g3.run) return false;
   const dim = dhDim(m);   // LE difference shown in 3D
   if (dim.length) {
     clearTags();
     if (!(await camTo(wide.pos, wide.tgt, 1600, id))) return false;
-    addTag(dim.mid, `<b>ΔH = ${dHm(m.d)} m</b><br><span class="sub2">LE farkı → eğik ölçü</span>`, 'h', [70, -30]);
+    addTag(dim.mid, `<b>ΔH = ${dHm(m.d)} m</b><br><span class="sub2">${tx('dhTag')}</span>`, 'h', [70, -30]);
     addTag(m.A.clone().lerp(m.B, 0.5), `<b style="color:${col}">${fmt(m.val, 1)} mm</b>`, 'rd', [0, 22]);
     await sleep3(2200 * speed3());
     if (id !== g3.run) { for (const o of dim) g3.root.remove(o); return false; }
@@ -534,15 +754,15 @@ async function measure3(m, id, first = true) {
 async function orbitStub(id) {
   const d = g3.data, L0 = d.legs[0], top = d.top[0], hole = d.hole[0][0], sx = SX[0], sz = SZ[0];
   const c = hole.clone().lerp(top, 0.4).add(V(0, -0.25, 0)), a0 = Math.atan2(sz, sx) - 1.0;
-  clearTags(); setHud(`<b>Stub profili ${$('selProf').value}</b><br><span class="sub2">${Z[0]} stub’ı: ölçü noktaları nerede?</span>`);
+  clearTags(); setHud(`<b>${tx('profHud', { p: $('selProf').value })}</b><br><span class="sub2">${tx('profHud2', { z: Z[0] })}</span>`);
   const ov = overviewPose(); await camTo(ov.pos, ov.tgt, 400, id);
   const r = 2.0, at = (a, h = 0.75) => V(c.x + Math.cos(a) * r, c.y + h, c.z + Math.sin(a) * r);
   if (!(await camTo(at(a0, 0.75), c, 2400, id))) return false;
   const prof = d.prof;
   const flangeTip = L0.heel.clone().addScaledVector(L0.ex, d.prof.b * 1e-3).addScaledVector(L0.ez, 0.62);
   addTag(flangeTip, `<b>${$('selProf').value}</b>`, 'p', [-110, -20]);
-  addTag(top, `<b>Stub üstü</b><br><span class="sub2">B ve BC buradan</span>`, 'b', [-120, -10]);
-  addTag(hole, `<b>İlk delik</b><br><span class="sub2">W buradan</span>`, 'w', [130, -30]);
+  addTag(top, `<b>${tx('tagTopT')}</b><br><span class="sub2">${tx('tagTopS')}</span>`, 'b', [-120, -10]);
+  addTag(hole, `<b>${tx('tagHoleT')}</b><br><span class="sub2">${tx('tagHoleS')}</span>`, 'w', [130, -30]);
   const t0 = performance.now(), dur = 8500 * speed3(), a1 = a0 + 2.0;
   await new Promise((res) => { const step = (now) => { if (id !== g3.run) { res(false); return; } const k = clamp((now - t0) / dur, 0, 1), a = a0 + (a1 - a0) * ease(k); g3.cam.position.copy(at(a, 0.75 - 0.2 * Math.sin(k * Math.PI))); g3.ctrl.target.copy(c); g3.cam.lookAt(c); if (k < 1) requestAnimationFrame(step); else res(true); }; requestAnimationFrame(step); });
   return id === g3.run;
@@ -552,10 +772,10 @@ function end3(id) { if (id !== g3.run) return; g3.anim = false; g3.ctrl.enabled 
 function stop3() { g3.run++; g3.anim = false; if (g3.ctrl) g3.ctrl.enabled = true; clearTape(); setRead({ kind: 'W', name: '' }, '', false); setHud(''); legTags(); }
 function backToOverview(id) { const o = overviewPose(); return camTo(o.pos, o.tgt, 1400, id); }
 const CAP = [
-  () => `<b style="color:var(--blue)">Stub profili ve ölçüm noktaları.</b> ${S.le.some((l) => l !== S.le[0]) ? 'Bacak uzantıları (LE) farklı: stub’lar farklı yüksekliklerde.' : 'Dört bacağın uzantısı aynı.'} Kamera ${$('selProf').value} stub’ının etrafında dönüyor.`,
-  () => `<b class="w">W — ilk delik arası.</b> Şerit metrenin iki ucu iki stub’un <b>betonun üstündeki ilk delik merkezindedir</b>. LE farkı varsa eğik ölçülür: √( ((W₁+W₂)/2)² + (ΔH·YK)² ), YK = ${fmt(R.YK, 4)}.`,
-  () => `<b class="b">B — stub üstü kenar.</b> Şerit, aynı stub’ların <b>üst ucundaki dış (sırt/topuk) köşeleri</b> arasında. Stub içeri eğimli olduğu için üstte W’ye göre daralır.`,
-  () => `<b class="c">BC — stub üstü köşegen.</b> Karşılıklı stub’ların (1–3 ve 2–4) üst uçlarındaki dış köşeler arası: BC = √( (B_ort·√2)² + ΔH² ).`,
+  () => tx('cap0', { le: S.le.some((l) => l !== S.le[0]) ? tx('leDiff') : tx('leSame'), p: $('selProf').value }),
+  () => tx('cap1', { yk: fmt(R.YK, 4) }),
+  () => tx('cap2'),
+  () => tx('cap3'),
 ];
 function setStep(ph) { $$('.step').forEach((b) => b.classList.toggle('on', +b.dataset.s === ph)); $('caption').innerHTML = R && R.edges ? CAP[ph]() : ''; }
 async function playAll3() {
@@ -596,13 +816,14 @@ window.__g3t = { frame(mid, ph, k = 0.5) {
   let pos = ph === 'A' ? P.cA : ph === 'B' ? P.cB : ph === 'W' ? P.wide : P.follow(k);
   g3.cam.position.copy(pos.pos); g3.ctrl.target.copy(pos.tgt); g3.cam.lookAt(pos.tgt); const kk = ph === 'A' ? 0 : ph === 'F' ? k : 1; const L = updateTape(kk); setRead(m, fmt(L, 1), true);
   if (ph === 'F') addTag(g3.tape.hp, `<b style="color:${hex6(KCOL3[m.kind])}">${fmt(L, 1)}</b> mm`, 'rd', null, true);
-  if (ph === 'W' || ph === 'B') { const dim = dhDim(m); if (dim.length) addTag(dim.mid, `<b>ΔH = ${dHm(m.d)} m</b><br><span class="sub2">LE farkı → eğik ölçü</span>`, 'h', [70, -30]); } return L; } };
+  if (ph === 'W' || ph === 'B') { const dim = dhDim(m); if (dim.length) addTag(dim.mid, `<b>ΔH = ${dHm(m.d)} m</b><br><span class="sub2">${tx('dhTag')}</span>`, 'h', [70, -30]); } return L; } };
 
 // ------------------------------------------------------------------ boot (optional deep link: ?tip=B30&govde=12&le=0,1.5,0,-1.5  or  ?slug=...&kod=...)
 (async function () {
+  applyStatic();
   const q = new URLSearchParams(location.search);
   if ((q.get('slug') && q.get('kod')) || q.get('tip')) document.body.classList.add('deeplink');
-  try { await ensureThree(); } catch (e) { $('note3').textContent = '3B kütüphanesi yüklenemedi (internet bağlantısı gerekir): ' + e.message; }
+  try { await ensureThree(); } catch (e) { $('note3').textContent = tx('libFail', { x: e.message }); }
   if (q.get('slug') && q.get('kod')) { $('tabProject').click(); $('inSlug').value = q.get('slug'); $('inCode').value = q.get('kod'); syncControls(); fetchTower(q.get('slug'), q.get('kod')); return; }
   if (q.get('tip') && TABLES[q.get('tip')]) S.type = q.get('tip');
   if (q.get('govde') != null) S.body = Number(q.get('govde'));

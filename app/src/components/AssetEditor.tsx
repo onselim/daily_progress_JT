@@ -188,7 +188,7 @@ export function AssetEditor({
   onDeleted,
 }: AssetEditorProps) {
   const { user } = useAuth();
-  const { t, tLabel, n } = useLanguage();
+  const { t, tLabel, n, language } = useLanguage();
   const { workItems, loading: workItemsLoading } = useWorkItemsConfig(projectId);
   const { foundationTypes } = useFoundationTypesConfig(projectId);
   const { photos, loading: photosLoading, refresh: refreshPhotos } = useAssetPhotos(assetId);
@@ -792,7 +792,7 @@ export function AssetEditor({
                       {isFoundationItem && item.label.trim().toLowerCase() === 'stub settings' && assetCode.trim() && (
                         <a
                           className="photo-toggle-btn"
-                          href={stubSettingsUrl(projectSlug, assetCode.trim())}
+                          href={stubSettingsUrl(projectSlug, assetCode.trim(), language)}
                           target="_blank"
                           rel="noreferrer"
                           title={t('assetEditor.openStubSettings3d')}
