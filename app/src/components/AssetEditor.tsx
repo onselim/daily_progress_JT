@@ -18,7 +18,7 @@ import { RenamableText } from './RenamableText';
 import { WindyPopup } from './WindyPopup';
 import { DeleteAssetDialog } from './DeleteAssetDialog';
 import { utmToLatLng } from '../lib/utmToLatLng';
-import { arExcavationUrl, arStringingUrl } from '../lib/arPayload';
+import { arExcavationUrl, arStringingUrl, stubSettingsUrl } from '../lib/arPayload';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 import type { TranslationKey } from '../lib/i18n/translations/en';
 
@@ -788,6 +788,17 @@ export function AssetEditor({
                         >
                           📄 {itemDocs.length > 0 ? n(itemDocs.length) : ''}
                         </button>
+                      )}
+                      {isFoundationItem && item.label.trim().toLowerCase() === 'stub settings' && assetCode.trim() && (
+                        <a
+                          className="photo-toggle-btn"
+                          href={stubSettingsUrl(projectSlug, assetCode.trim())}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={t('assetEditor.openStubSettings3d')}
+                        >
+                          📏 3D
+                        </a>
                       )}
                       {isFoundationItem && item.label.trim().toLowerCase() === 'excavation' && assetCode.trim() && (
                         <a

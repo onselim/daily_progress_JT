@@ -94,3 +94,11 @@ export function arStringingUrl(assetCode: string, kmz: { url: string; name: stri
   }
   return `/ar-demo/geo/index.html?${qs.toString()}`;
 }
+
+/** Link to the standalone 3D "stub ayar" measurement page (public/stub-ayar/index.html): it reads this one tower
+ * (type, body extension, per-leg extensions) and the project's stub_settings table from Supabase by project slug +
+ * asset code, then animates where each stub-setting dimension (W, B, BC) is taken with a tape measure. */
+export function stubSettingsUrl(projectSlug: string, assetCode: string): string {
+  const qs = new URLSearchParams({ slug: projectSlug, kod: assetCode });
+  return `/stub-ayar/index.html?${qs.toString()}`;
+}

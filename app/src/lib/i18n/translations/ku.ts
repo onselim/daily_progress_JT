@@ -132,6 +132,7 @@ export const ku: Record<TranslationKey, string> = {
   'assetEditor.concrete': 'Beton',
   'assetEditor.excavation': 'Kolan',
   'assetEditor.openArExcavation': 'Kolana vê stûnê di AR de bibîne',
+  'assetEditor.openStubSettings3d': 'Nîşan bide ku pîvanên sazkirina stubê ji ku têne girtin (3D)',
   'assetEditor.openArStringingBtn': 'Valahiyê di AR de bibîne',
   'assetEditor.openArStringingHint': 'Têla rastîn bi xeta PLS-CADD a hatî import kirin re berawird dike: li cihê xebatê veke, ji navenda valahiyê 50-100 m dûr bikeve, kamerayê ber bi wê ve bide û AR dest pê bike.',
   'assetEditor.reinforcement': 'Hesinkarî',

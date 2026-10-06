@@ -138,6 +138,7 @@ export const en = {
   'assetEditor.concrete': 'Concrete',
   'assetEditor.excavation': 'Excavation',
   'assetEditor.openArExcavation': "View this tower's excavation pit in AR",
+  'assetEditor.openStubSettings3d': 'Show how the stub-setting dimensions are measured (3D)',
   'assetEditor.openArStringingBtn': 'View span in AR',
   'assetEditor.openArStringingHint': 'Compares the real conductor against the imported PLS-CADD line: open on site, walk roughly 50-100 m out from the midpoint of the span, point the camera back at it, and start AR.',
   'assetEditor.reinforcement': 'Reinforcement',

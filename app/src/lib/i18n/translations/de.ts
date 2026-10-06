@@ -129,6 +129,7 @@ export const de: Record<TranslationKey, string> = {
   'assetEditor.concrete': 'Beton',
   'assetEditor.excavation': 'Aushub',
   'assetEditor.openArExcavation': 'Baugrube dieses Mastes in AR ansehen',
+  'assetEditor.openStubSettings3d': 'Zeigen, wo die Stub-Einstellmaße gemessen werden (3D)',
   'assetEditor.openArStringingBtn': 'Spannfeld in AR ansehen',
   'assetEditor.openArStringingHint': 'Vergleicht den echten Leiter mit der importierten PLS-CADD-Linie: vor Ort öffnen, etwa 50-100 m von der Feldmitte weggehen, die Kamera darauf richten und AR starten.',
   'assetEditor.reinforcement': 'Bewehrung',

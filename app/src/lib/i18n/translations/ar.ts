@@ -129,6 +129,7 @@ export const ar: Record<TranslationKey, string> = {
   'assetEditor.concrete': 'خرسانة',
   'assetEditor.excavation': 'حفر',
   'assetEditor.openArExcavation': 'عرض حفرة أساس هذا العمود بالواقع المعزز',
+  'assetEditor.openStubSettings3d': 'عرض كيفية قياس أبعاد ضبط الستَب (ثلاثي الأبعاد)',
   'assetEditor.openArStringingBtn': 'عرض الفتحة بالواقع المعزز',
   'assetEditor.openArStringingHint': 'يقارن الموصل الحقيقي بخط PLS-CADD المستورد: افتح في الموقع، ابتعد حوالي 50-100 م من منتصف الفتحة، وجّه الكاميرا نحوها وابدأ الواقع المعزز.',
   'assetEditor.reinforcement': 'تسليح',

@@ -129,6 +129,7 @@ export const es: Record<TranslationKey, string> = {
   'assetEditor.concrete': 'Hormigón',
   'assetEditor.excavation': 'Excavación',
   'assetEditor.openArExcavation': 'Ver la excavación de esta torre en RA',
+  'assetEditor.openStubSettings3d': 'Ver dónde se toman las cotas de ajuste de los stubs (3D)',
   'assetEditor.openArStringingBtn': 'Ver el vano en RA',
   'assetEditor.openArStringingHint': 'Compara el conductor real con la línea PLS-CADD importada: ábrelo en el sitio, aléjate unos 50-100 m del punto medio del vano, apunta la cámara hacia él e inicia la RA.',
   'assetEditor.reinforcement': 'Armadura',
