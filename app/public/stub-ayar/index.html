@@ -50,6 +50,7 @@
     .chip { font-size:13px; }
   }
   body.deeplink #setup { display:none; }
+  body.embedded h1 { padding-right:58px; min-height:42px; display:flex; align-items:center; margin:0 0 6px; }
   #cv3 { position:absolute; inset:0; width:100%; height:100%; display:block; }
   #hud3 { position:absolute; left:10px; top:10px; background:rgba(13,20,32,.82); border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-size:13px; max-width:70%; pointer-events:none; display:none; }
   #read3 { position:absolute; left:50%; bottom:12px; transform:translateX(-50%); background:rgba(13,20,32,.88); border:1px solid var(--line); border-radius:10px; padding:6px 16px; font-size:20px; display:none; pointer-events:none; white-space:nowrap; }
@@ -821,6 +822,7 @@ window.__g3t = { frame(mid, ph, k = 0.5) {
 // ------------------------------------------------------------------ boot (optional deep link: ?tip=B30&govde=12&le=0,1.5,0,-1.5  or  ?slug=...&kod=...)
 (async function () {
   applyStatic();
+  try { if (window.self !== window.top) document.body.classList.add('embedded'); } catch (e) { document.body.classList.add('embedded'); }
   const q = new URLSearchParams(location.search);
   if ((q.get('slug') && q.get('kod')) || q.get('tip')) document.body.classList.add('deeplink');
   try { await ensureThree(); } catch (e) { $('note3').textContent = tx('libFail', { x: e.message }); }

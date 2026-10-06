@@ -17,6 +17,7 @@ import { renameAssetDocument } from '../lib/renameDocument';
 import { RenamableText } from './RenamableText';
 import { WindyPopup } from './WindyPopup';
 import { DeleteAssetDialog } from './DeleteAssetDialog';
+import { Stub3dModal } from './Stub3dModal';
 import { utmToLatLng } from '../lib/utmToLatLng';
 import { arExcavationUrl, arStringingUrl, stubSettingsUrl } from '../lib/arPayload';
 import { useLanguage } from '../lib/i18n/LanguageContext';
@@ -203,6 +204,7 @@ export function AssetEditor({
   const [savingDetails, setSavingDetails] = useState(false);
   const [detailsMessage, setDetailsMessage] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showStub3d, setShowStub3d] = useState(false);
   const [showTowerDetails, setShowTowerDetails] = useState(false);
   const [notes, setNotes] = useState('');
   const [assetLatLng, setAssetLatLng] = useState<[number, number] | null>(null);
@@ -790,15 +792,14 @@ export function AssetEditor({
                         </button>
                       )}
                       {isFoundationItem && item.label.trim().toLowerCase() === 'stub settings' && assetCode.trim() && (
-                        <a
+                        <button
+                          type="button"
                           className="photo-toggle-btn"
-                          href={stubSettingsUrl(projectSlug, assetCode.trim(), language)}
-                          target="_blank"
-                          rel="noreferrer"
+                          onClick={() => setShowStub3d(true)}
                           title={t('assetEditor.openStubSettings3d')}
                         >
                           📏 3D
-                        </a>
+                        </button>
                       )}
                       {isFoundationItem && item.label.trim().toLowerCase() === 'excavation' && assetCode.trim() && (
                         <a
@@ -1070,6 +1071,13 @@ export function AssetEditor({
         </button>
       )}
 
+      {showStub3d && (
+        <Stub3dModal
+          url={stubSettingsUrl(projectSlug, assetCode.trim(), language)}
+          title={t('assetEditor.openStubSettings3d')}
+          onClose={() => setShowStub3d(false)}
+        />
+      )}
       {message && <p className="form-message">{message}</p>}
     </form>
   );

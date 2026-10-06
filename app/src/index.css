@@ -3974,3 +3974,41 @@ a.pw-edit-items-link {
 .ar-launch-btn:hover {
   background: var(--accent-h);
 }
+
+/* Full-screen pop-up with the 3D stub-setting page (closed by the X at the top right) */
+.stub3d-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: #0b0f17;
+}
+.stub3d-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #0b0f17;
+}
+.stub3d-close {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(13, 20, 32, 0.92);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.stub3d-close:hover {
+  border-color: #00d4aa;
+  color: #00d4aa;
+}
