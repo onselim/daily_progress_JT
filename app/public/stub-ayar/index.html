@@ -122,7 +122,7 @@
     </div>
     <p id="status"></p>
     <div class="row" style="margin-top:6px">
-      <label><span data-i="lblProf"></span><select id="selProf"><option>L100×8</option><option>L120×10</option><option selected>L150×12</option><option>L150×15</option><option>L180×16</option><option>L200×16</option><option>L200×20</option></select></label>
+      <label><span data-i="lblProf"></span><select id="selProf"></select></label>
     </div>
   </details>
 
@@ -450,6 +450,7 @@ function renderNote() {
 }
 function render() {
   R = compute();
+  if (S.type !== profType) { profType = S.type; $('selProf').value = STUB_PROFILE[S.type] || 'L150×12'; }
   if (R.miss && R.miss.length) {
     $('caption').innerHTML = `<span class="err">${tx('missing', { l: R.miss.map((i) => `${Z[i]} (LE ${sgn(S.le[i])} m)`).join(', ') })}</span>`;
     MEAS = []; renderPicker(); if (g3.ok) clearModel(); return;
@@ -509,7 +510,11 @@ $('btnFetch').addEventListener('click', () => fetchTower($('inSlug').value.trim(
 //   W points  = bolt holes (first hole above the concrete) on the flange that lies in the shared face, `axis` in from the heel
 //   B / BC    = outer heel corners at the stub top
 let T = null, OC = null, RB = null;
-const PROFILES = { 'L100×8': { b: 100, t: 8 }, 'L120×10': { b: 120, t: 10 }, 'L150×12': { b: 150, t: 12 }, 'L150×15': { b: 150, t: 15 }, 'L180×16': { b: 180, t: 16 }, 'L200×16': { b: 200, t: 16 }, 'L200×20': { b: 200, t: 20 } };
+// stub angle size per tower type, from the foundation design calculation reports ("Size of Ang." in the stub-angle check; BNS also the
+// STUB 3000/3600 drawing: L150x150x10). B90C has no report of its own and uses B90's foundation, so B90's angle is assumed.
+const STUB_PROFILE = { B30: 'L180×16', B60: 'L200×22', B90: 'L200×22', B90C: 'L200×22', BLC: 'L150×14', BLS: 'L200×18', BNS: 'L150×10' };
+const PROFILES = { 'L100×8': { b: 100, t: 8 }, 'L120×10': { b: 120, t: 10 }, 'L150×10': { b: 150, t: 10 }, 'L150×12': { b: 150, t: 12 }, 'L150×14': { b: 150, t: 14 }, 'L150×15': { b: 150, t: 15 }, 'L180×16': { b: 180, t: 16 }, 'L200×16': { b: 200, t: 16 }, 'L200×18': { b: 200, t: 18 }, 'L200×20': { b: 200, t: 20 }, 'L200×22': { b: 200, t: 22 } };
+let profType = null;   // the profile follows the tower type until the user overrides it in the settings
 const AXIS = { B30: 70, B60: 80, B90: 80, B90C: 80, BLS: 85, BNS: 55 };
 const SX = [1, -1, -1, 1], SZ = [1, 1, -1, -1];           // leg 1 = geri-sağ, 2 = geri-sol, 3 = ileri-sol, 4 = ileri-sağ (hat yönü = -z)
 const EDGE_N = [[0, 0, 1], [-1, 0, 0], [0, 0, -1], [1, 0, 0]];   // outward normal of the face of edge i
@@ -822,6 +827,7 @@ window.__g3t = { frame(mid, ph, k = 0.5) {
 // ------------------------------------------------------------------ boot (optional deep link: ?tip=B30&govde=12&le=0,1.5,0,-1.5  or  ?slug=...&kod=...)
 (async function () {
   applyStatic();
+  $('selProf').innerHTML = Object.keys(PROFILES).map((k) => `<option>${k}</option>`).join('');
   try { if (window.self !== window.top) document.body.classList.add('embedded'); } catch (e) { document.body.classList.add('embedded'); }
   const q = new URLSearchParams(location.search);
   if ((q.get('slug') && q.get('kod')) || q.get('tip')) document.body.classList.add('deeplink');
