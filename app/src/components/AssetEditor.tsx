@@ -484,12 +484,19 @@ export function AssetEditor({
   // -> Foundation -> Erection -> Stringing, and sequential within each group too, e.g.
   // Excavation before Lean Concrete, Ground Erection before Tower Erection). An item can't
   // move past "Not started" until the item immediately before it is Completed.
+  // Exception to "the item right before it": Soil Investigation doesn't wait for Tree Cutting
+  // (it only needs the Access Road), but Excavation still needs both Tree Cutting and the
+  // Soil Investigation. Falls back to the previous item when a project doesn't have those keys.
+  const PREREQ_OVERRIDES: Record<string, string[]> = { si_sw: ['ar'], fn_ex: ['pc_tc', 'si_sw'] };
   function lockInfo(key: string): { locked: boolean; blockingLabel?: string } {
     const idx = workItems.findIndex((w) => w.key === key);
     if (idx <= 0) return { locked: false };
-    const prev = workItems[idx - 1];
-    const prevStatus = statusByKey[prev.key] ?? 'not_started';
-    return prevStatus === 'completed' ? { locked: false } : { locked: true, blockingLabel: prev.label };
+    const over = (PREREQ_OVERRIDES[key] ?? [])
+      .map((k) => workItems.find((w) => w.key === k))
+      .filter((w): w is WorkItemConfig => !!w);
+    const prereqs = over.length > 0 ? over : [workItems[idx - 1]];
+    const blocking = prereqs.find((p) => (statusByKey[p.key] ?? 'not_started') !== 'completed');
+    return blocking ? { locked: true, blockingLabel: blocking.label } : { locked: false };
   }
 
   const groups: { name: string; items: WorkItemConfig[] }[] = [];
