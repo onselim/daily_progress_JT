@@ -15,6 +15,8 @@ import EditSupplyItemsPage from './pages/admin/EditSupplyItemsPage';
 import ReportSettingsPage from './pages/admin/ReportSettingsPage';
 import TeamPage from './pages/admin/TeamPage';
 import FieldProjectPage from './pages/field/FieldProjectPage';
+import ChecklistPage from './pages/field/ChecklistPage';
+import ChecklistDemoPage from './pages/ChecklistDemoPage';
 import PublicViewerPage from './pages/PublicViewerPage';
 import PrintReportPage from './pages/PrintReportPage';
 import ArLaunchPage from './pages/ArLaunchPage';
@@ -59,9 +61,11 @@ export default function App() {
 
           <Route element={<RequireProjectRole allowedRoles={['admin', 'field_engineer']} />}>
             <Route path="/field/:slug" element={<FieldProjectPage />} />
+            <Route path="/field/:slug/checklists/:templateKey/:assetCode" element={<ChecklistPage />} />
           </Route>
         </Route>
 
+        {import.meta.env.DEV && <Route path="/checklist-demo" element={<ChecklistDemoPage />} />}
         <Route path="/print/:slug" element={<PrintReportPage />} />
         <Route path="/ar/:slug" element={<ArLaunchPage />} />
         <Route path="/reports/:slug" element={<PublicViewerPage />} />

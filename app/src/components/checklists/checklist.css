@@ -1,0 +1,114 @@
+/* ---------- checklist page (screen) ---------- */
+.ck-page { max-width: 1100px; margin: 0 auto; padding: 12px 14px 48px; color: var(--text); }
+.ck-topbar { display: flex; align-items: center; gap: 16px; padding: 8px 0 12px; border-bottom: 1px solid var(--border); }
+.ck-topbar h1 { font-size: 1.15rem; margin: 0; color: var(--text-h); }
+.ck-topbar p { margin: 0; font-size: 0.85rem; opacity: 0.75; }
+.ck-topbar-title { flex: 1; }
+.ck-toolbar { display: grid; gap: 10px; padding: 12px 0; position: sticky; top: 0; background: var(--bg); z-index: 5; border-bottom: 1px solid var(--border); }
+.ck-overall { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+.ck-gates { display: grid; gap: 4px; }
+.ck-gate-line { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 0.9rem; }
+.ck-gate-line > span:first-child { min-width: 230px; }
+.ck-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.ck-actions button, .ck-submit { padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel-bg); color: var(--text-h); cursor: pointer; font: inherit; }
+.ck-actions .ck-save, .ck-submit { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ck-actions button:disabled, .ck-submit:disabled { opacity: 0.5; cursor: default; }
+.ck-seg { display: inline-flex; }
+.ck-seg button { border-radius: 0; }
+.ck-seg button:first-child { border-radius: 6px 0 0 6px; }
+.ck-seg button:last-child { border-radius: 0 6px 6px 0; border-left: 0; }
+.ck-seg button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.ck-printlang { display: inline-flex; gap: 6px; align-items: center; font-size: 0.85rem; }
+.ck-printlang select, .ck-input { font: inherit; padding: 5px 7px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--text-h); min-width: 0; width: 100%; }
+.ck-printlang select { width: auto; }
+.ck-msg { font-size: 0.85rem; opacity: 0.8; }
+.ck-hint { margin: 0; font-size: 0.8rem; opacity: 0.7; }
+.ck-error { margin: 0; color: var(--danger); font-size: 0.85rem; }
+.ck-pill-row { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ck-pill, .ck-chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+.ck-chip { font-weight: 500; padding: 2px 8px; }
+.ck-pill-draft { background: #e5e7eb; color: #374151; }
+.ck-pill-inReview { background: #fef3c7; color: #92400e; }
+.ck-pill-approved { background: #d1fae5; color: #065f46; }
+.ck-docrow { display: flex; gap: 14px; align-items: end; flex-wrap: wrap; padding: 14px 0 4px; }
+.ck-docrow label { display: grid; gap: 3px; font-size: 0.85rem; }
+.ck-prefill { margin: 0; font-size: 0.78rem; opacity: 0.65; }
+
+.ck-section { margin-top: 18px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-bg); }
+.ck-section h3 { margin: 0 0 10px; font-size: 0.98rem; color: var(--text-h); }
+.ck-fields { display: grid; grid-template-columns: repeat(var(--ck-cols, 3), minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
+.ck-field { display: grid; gap: 3px; font-size: 0.82rem; }
+.ck-field.ck-wide { margin-top: 10px; }
+.ck-field em, .ck-matrix em { font-style: normal; opacity: 0.6; }
+.ck-matrix-wrap { overflow-x: auto; margin: 8px 0; }
+.ck-matrix { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 0.82rem; }
+.ck-matrix th, .ck-matrix td { border: 1px solid var(--border); padding: 3px 4px; text-align: center; }
+.ck-matrix th { background: var(--bg); font-weight: 600; }
+.ck-matrix th[scope='row'] { text-align: left; }
+.ck-rowhead-wide { min-width: 190px; }
+.ck-matrix .ck-input { border: 0; background: transparent; padding: 3px 2px; text-align: center; }
+.ck-derived { background: rgba(37, 99, 235, 0.08); font-weight: 600; }
+.ck-gate { margin-top: 12px; padding: 10px 12px; border: 1px dashed var(--accent); border-radius: 8px; display: grid; gap: 8px; }
+.ck-gate-head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.ck-locked { margin: 0; font-size: 0.8rem; opacity: 0.7; }
+@media (max-width: 720px) {
+  .ck-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ck-topbar { flex-wrap: wrap; }
+  .ck-gate-line > span:first-child { min-width: 0; }
+}
+
+/* ---------- printed sheet (A4 portrait, English + chosen language) ---------- */
+.ck-sheet-hidden { display: none; }
+.ck-sheet-wrap { margin-top: 14px; overflow-x: auto; }
+.sh-root { color: #000; background: #fff; font-family: Arial, 'Segoe UI', 'Noto Sans', 'Noto Sans Georgian', sans-serif; font-size: 6.2pt; line-height: 1.02; }
+.sh-page { width: 194mm; margin: 0 auto 10mm; background: #fff; padding: 0; page-break-after: always; border: 1px solid #ddd; }
+.sh-page:last-child { page-break-after: auto; }
+.sh-table { width: 100%; border-collapse: collapse; table-layout: auto; margin: 0; }
+.sh-table tr { break-inside: avoid; }
+.sh-table th, .sh-table td { border: 0.6px solid #000; padding: 0.3px 2.5px; vertical-align: middle; font-weight: normal; }
+.sh-table th { font-weight: normal; }
+.sh-c { text-align: center; }
+.sh-rowhead { text-align: left; width: 38%; }
+.sh-en { display: block; }
+.sh-2 { display: block; font-size: 0.95em; color: #111; }
+.sh-title { font-weight: bold; }
+.sh-head td { height: 7mm; }
+.sh-sectitle { border: 0.6px solid #000; border-top-width: 1.2px; padding: 0.6px 2.5px; font-weight: bold; background: #f2f2f2; margin-top: -1px; }
+.sh-section { break-inside: auto; }
+.sh-val { min-height: 3.2mm; height: 3.2mm; }
+.sh-comment { height: 6.5mm; vertical-align: top; }
+.sh-comment .sh-val { display: block; white-space: pre-wrap; }
+.sh-sign th { text-align: center; font-weight: bold; }
+.sh-sign td { height: 3.6mm; }
+.sh-signlbl { display: inline-block; width: 24mm; font-size: 0.9em; }
+.sh-signlbl .sh-en, .sh-signlbl .sh-2 { display: inline; }
+.sh-signlbl .sh-2::before { content: ' / '; }
+.sh-signval { font-weight: bold; }
+.sh-who { font-weight: bold; }
+.sh-accepted td { background: #e6f6ec; }
+.sh-stamp { color: #087f3f; }
+.sh-approved { text-align: center; font-weight: bold; font-size: 11pt; color: #087f3f; border: 2px solid #087f3f; padding: 2px; margin: 3px 0; letter-spacing: 1px; }
+
+@media print {
+  @page { size: A4 portrait; margin: 7mm; }
+  html, body { background: #fff !important; }
+  .ck-noprint { display: none !important; }
+  .ck-sheet-hidden { display: block !important; }
+  .ck-page { max-width: none; padding: 0; margin: 0; }
+  .ck-sheet-wrap { margin: 0; overflow: visible; }
+  .sh-page { width: 100%; margin: 0; border: 0; }
+  .sh-page:not(:last-child) { page-break-after: always; }
+}
+
+/* ---------- tower panel entry ---------- */
+.ck-asset-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.ck-open { color: var(--accent); font-weight: 600; text-decoration: none; }
+.ck-open:hover { text-decoration: underline; }
+.ck-asset-gates { display: grid; gap: 4px; margin-top: 8px; }
+
+/* ---------- party strip (printed header) + pre-filled tint ---------- */
+.sh-strip td { width: 33.33%; vertical-align: middle; padding: 0.6mm 1.5mm; }
+.sh-strip-logos { display: flex; align-items: center; gap: 2mm; height: 5.6mm; }
+.sh-strip-logos img { max-height: 5.6mm; max-width: 26mm; object-fit: contain; }
+.sh-strip-name { font-size: 5.4pt; line-height: 1.05; margin-top: 0.3mm; }
+.ck-prefilled { background: rgba(37, 99, 235, 0.09) !important; }

@@ -18,6 +18,8 @@ import { RenamableText } from './RenamableText';
 import { WindyPopup } from './WindyPopup';
 import { DeleteAssetDialog } from './DeleteAssetDialog';
 import { Stub3dModal } from './Stub3dModal';
+import { ChecklistLink } from './checklists/ChecklistLink';
+import './checklists/checklist.css';
 import { utmToLatLng } from '../lib/utmToLatLng';
 import { arExcavationUrl, arStringingUrl, stubSettingsUrl } from '../lib/arPayload';
 import { useLanguage } from '../lib/i18n/LanguageContext';
@@ -1071,6 +1073,8 @@ export function AssetEditor({
           </div>
         )}
       </fieldset>
+
+      <ChecklistLink projectSlug={projectSlug} assetId={assetId} assetCode={assetCode} templateKey="foundation" />
 
       {editable && (
         <button type="submit" disabled={saving}>
