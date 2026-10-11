@@ -45,10 +45,11 @@ export function useChecklist(projectId: string | undefined, assetId: string | un
     };
   }, [projectId, assetId, templateKey]);
 
-  /** Creates the row on first save, updates it afterwards. */
+  /** Creates the row on first save, updates it afterwards. Approval state (`gates`) is never sent from here: only the
+   * approval workflow (Edge Functions, service role) may change it, so saving can never overwrite an approval. */
   const save = useCallback(
-    async (payload: { data: ChecklistData; gates: GatesState; doc_no: string; rev: string }, event: { action: string; detail?: Record<string, unknown> }) => {
-      if (!projectId || !assetId) return { error: 'No tower' };
+    async (payload: { data: ChecklistData; doc_no: string; rev: string }, event: { action: string; detail?: Record<string, unknown> }) => {
+      if (!projectId || !assetId) return { error: 'No tower', id: null as string | null };
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id ?? null;
       const row = {
@@ -59,7 +60,6 @@ export function useChecklist(projectId: string | undefined, assetId: string | un
         doc_no: payload.doc_no || null,
         rev: payload.rev || null,
         data: payload.data,
-        gates: payload.gates,
         ...(instance ? {} : { created_by: userId }),
       };
       const { data, error: err } = await supabase
@@ -67,13 +67,39 @@ export function useChecklist(projectId: string | undefined, assetId: string | un
         .upsert(row, { onConflict: 'asset_id,template_key' })
         .select(COLUMNS)
         .single();
-      if (err || !data) return { error: err?.message ?? 'Save failed' };
+      if (err || !data) return { error: err?.message ?? 'Save failed', id: null as string | null };
       setInstance(data as ChecklistInstance);
       await supabase.from('checklist_events').insert({ instance_id: data.id, user_id: userId, action: event.action, detail: event.detail ?? {} });
-      return { error: null };
+      return { error: null, id: data.id as string };
     },
     [projectId, assetId, templateKey, templateVersion, instance],
   );
 
-  return { instance, loading, error, save };
+  /** Re-reads the row (approvals made through the e-mail links show up here). */
+  const reload = useCallback(async () => {
+    if (!assetId) return;
+    const { data } = await supabase.from('checklist_instances').select(COLUMNS).eq('asset_id', assetId).eq('template_key', templateKey).maybeSingle();
+    if (data) setInstance(data as ChecklistInstance);
+  }, [assetId, templateKey]);
+
+  /** Submits (or re-sends) one approval stage: the Edge Function marks it submitted and e-mails the Consultant / Employer contacts. */
+  const notifyGate = useCallback(async (instanceId: string, gate: string): Promise<{ error: string | null; sent: string[]; missing: string[] }> => {
+    const { data, error: err } = await supabase.functions.invoke('checklist-notify', { body: { instanceId, gate } });
+    if (err) {
+      let msg = err.message;
+      const ctx = (err as { context?: Response }).context;
+      if (ctx && typeof ctx.json === 'function') {
+        try {
+          const body = await ctx.json();
+          if (body?.error) msg = String(body.error);
+        } catch {
+          /* keep the generic message */
+        }
+      }
+      return { error: msg, sent: [], missing: [] };
+    }
+    return { error: null, sent: (data?.sent as string[]) ?? [], missing: (data?.missing as string[]) ?? [] };
+  }, []);
+
+  return { instance, loading, error, save, reload, notifyGate };
 }

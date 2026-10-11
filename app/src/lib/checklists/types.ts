@@ -78,13 +78,26 @@ export interface PartyApproval {
   name?: string;
   at?: string;
   comment?: string;
+  /** Addresses the approval request was sent to. */
+  emails?: string[];
+}
+
+/** Set when a reviewer sent the stage back with a comment. */
+export interface GateComment {
+  party: Party;
+  name?: string | null;
+  email?: string;
+  text: string;
+  at: string;
 }
 
 export interface GateState {
   status: GateStatus;
   submitted_at?: string;
   submitted_by?: string;
+  approved_at?: string;
   approvals?: Partial<Record<Party, PartyApproval>>;
+  last_comment?: GateComment;
 }
 
 export type GatesState = Record<string, GateState>;

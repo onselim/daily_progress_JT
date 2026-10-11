@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import type { LanguageCode } from '../../lib/i18n/languages';
 import { lab } from '../../lib/checklists/labels';
 import { cellKey, cellTypeOf, derivedValue } from '../../lib/checklists/data';
-import { effectiveGateStatus, type Block, type CellType, type ChecklistData, type ChecklistTemplate, type GatesState } from '../../lib/checklists/types';
+import { PARTIES, effectiveGateStatus, type Block, type CellType, type ChecklistData, type ChecklistTemplate, type GatesState } from '../../lib/checklists/types';
 import { GateStatusPill } from './GateStatusPill';
 
 interface Props {
@@ -13,6 +13,7 @@ interface Props {
   editable: boolean;
   onChange: (key: string, value: string) => void;
   onSubmitGate: (gateKey: string) => void;
+  onResend?: (gateKey: string) => void;
   submitting: string | null;
   /** Keys filled from the tower record and not yet edited by the user (shown tinted). */
   prefilled?: ReadonlySet<string>;
@@ -44,7 +45,7 @@ function CellInput({ type, value, disabled, onChange, tint }: { type: CellType; 
   );
 }
 
-export function ChecklistForm({ template, data, gates, lang, editable, onChange, onSubmitGate, submitting, prefilled }: Props) {
+export function ChecklistForm({ template, data, gates, lang, editable, onChange, onSubmitGate, onResend, submitting, prefilled }: Props) {
   const lockedSections = new Set<string>();
   for (const g of template.gates) if (effectiveGateStatus(gates[g.key]) !== 'draft') g.sectionIds.forEach((id) => lockedSections.add(id));
 
@@ -88,7 +89,29 @@ export function ChecklistForm({ template, data, gates, lang, editable, onChange,
               {submitting === gate.key ? lab('ui.saving', lang) : lab('ui.submitGate', lang)}
             </button>
           )}
+          {state?.last_comment && status === 'draft' && (
+            <p className="ck-comment">
+              <b>
+                {lab('ui.commentFrom', lang)} {lab(state.last_comment.party, lang)}
+                {state.last_comment.name ? ` (${state.last_comment.name})` : ''}:
+              </b>{' '}
+              {state.last_comment.text}
+            </p>
+          )}
           {status !== 'draft' && <p className="ck-locked">{lab('ui.locked', lang)}</p>}
+          {status === 'submitted' && (
+            <>
+              <p className="ck-locked">
+                {lab('ui.sentTo', lang)}:{' '}
+                {PARTIES.map((p) => `${lab(p, lang)}: ${(state?.approvals?.[p]?.emails ?? []).join(', ') || '—'}`).join(' · ')}
+              </p>
+              {editable && onResend && (
+                <button type="button" className="ck-resend" disabled={submitting === gate.key} onClick={() => onResend(gate.key)}>
+                  {lab('ui.resend', lang)}
+                </button>
+              )}
+            </>
+          )}
         </div>
       );
     }

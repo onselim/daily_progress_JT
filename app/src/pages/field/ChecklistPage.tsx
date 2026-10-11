@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useAuth } from '../../lib/AuthContext';
 import { useProjectBySlug } from '../../lib/useProject';
 import { useAssets } from '../../lib/useAssets';
 import { LANGUAGES, type LanguageCode } from '../../lib/i18n/languages';
@@ -20,13 +19,12 @@ import '../../components/checklists/checklist.css';
 /** One tower's checklist: fill in (form), preview / print the paper-style sheet in English + a chosen language. */
 export default function ChecklistPage() {
   const { slug, templateKey = 'foundation', assetCode = '' } = useParams<{ slug: string; templateKey: string; assetCode: string }>();
-  const { user } = useAuth();
   const { language } = useLanguage();
   const template = TEMPLATES[templateKey];
   const { project, loading: projectLoading } = useProjectBySlug(slug);
   const { assets, loading: assetsLoading } = useAssets(project?.id);
   const asset = useMemo(() => assets.find((a) => a.asset_code === assetCode), [assets, assetCode]);
-  const { instance, loading, error, save } = useChecklist(project?.id, asset?.id, templateKey, template?.version ?? 1);
+  const { instance, loading, error, save, reload, notifyGate } = useChecklist(project?.id, asset?.id, templateKey, template?.version ?? 1);
 
   const [data, setData] = useState<ChecklistData>({});
   const [gates, setGates] = useState<GatesState>({});
@@ -48,11 +46,22 @@ export default function ChecklistPage() {
     const filled = prefillFromAsset(template, asset, saved, project?.slug ?? '');
     setData({ ...filled, ...saved });
     setPrefilledKeys(new Set(Object.keys(filled)));
-    setGates(instance?.gates ?? {});
     setDocNo(instance?.doc_no ?? '');
     setRev(instance?.rev ?? '');
     setDirty(false);
-  }, [instance?.id, instance?.updated_at, asset?.id, loading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [instance?.id, asset?.id, loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Approval state changes on the server side (reviewers answer through their e-mail links): follow it without touching typed values.
+  useEffect(() => {
+    setGates(instance?.gates ?? {});
+  }, [instance?.gates, instance?.updated_at]);
+
+  // Coming back to the tab (e.g. after a reviewer answered) refreshes the approval status.
+  useEffect(() => {
+    const onFocus = () => void reload();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [reload]);
 
   if (!template) return <div className="page-loading">Unknown checklist: {templateKey}</div>;
   if (projectLoading || assetsLoading || loading || !branding) return <div className="page-loading">…</div>;
@@ -72,33 +81,49 @@ export default function ChecklistPage() {
     setDirty(true);
   }
 
-  async function doSave(nextGates: GatesState, action: string, detail?: Record<string, unknown>) {
-    const { error: err } = await save({ data, gates: nextGates, doc_no: docNo, rev }, { action, detail });
+  async function doSave(action: string, detail?: Record<string, unknown>) {
+    const { error: err, id } = await save({ data, doc_no: docNo, rev }, { action, detail });
     if (err) setMessage(err);
     else {
       setMessage(lab('ui.saved', language));
       setDirty(false);
     }
-    return !err;
+    return err ? null : id;
   }
 
   async function handleSave() {
     setSaving(true);
     setMessage('');
-    await doSave(gates, 'save');
+    await doSave('save');
     setSaving(false);
   }
 
-  async function handleSubmitGate(gateKey: string) {
+  /** Saves the current values, then asks the server to submit the stage and e-mail the approval requests. */
+  async function submitOrResend(gateKey: string, confirmText: string) {
     const gate = template.gates.find((g) => g.key === gateKey);
-    if (!gate || !window.confirm(`${lab(gate.label, language)}: ${lab('ui.submitGate', language)}?`)) return;
+    if (!gate || !window.confirm(confirmText)) return;
     setSubmitting(gateKey);
-    const next: GatesState = {
-      ...gates,
-      [gateKey]: { status: 'submitted', submitted_at: new Date().toISOString(), submitted_by: user?.email ?? '', approvals: { consultant: { status: 'pending' }, employer: { status: 'pending' } } },
-    };
-    if (await doSave(next, 'submit_gate', { gate: gateKey })) setGates(next);
+    setMessage('');
+    const id = await doSave('save', { before: 'submit_gate', gate: gateKey });
+    if (id) {
+      const res = await notifyGate(id, gateKey);
+      if (res.error) setMessage(res.error);
+      else {
+        setMessage(`${lab('ui.submitted', language)} ${res.sent.join(', ')}` + (res.missing.length ? ` — no address configured for: ${res.missing.join(', ')}` : ''));
+        await reload();
+      }
+    }
     setSubmitting(null);
+  }
+
+  function handleSubmitGate(gateKey: string) {
+    const gate = template.gates.find((g) => g.key === gateKey);
+    if (gate) void submitOrResend(gateKey, `${lab(gate.label, language)}: ${lab('ui.submitGate', language)}?`);
+  }
+
+  function handleResend(gateKey: string) {
+    const gate = template.gates.find((g) => g.key === gateKey);
+    if (gate) void submitOrResend(gateKey, `${lab(gate.label, language)}: ${lab('ui.resend', language)}?`);
   }
 
   const second = printLang === 'en' ? null : printLang;
@@ -155,6 +180,9 @@ export default function ChecklistPage() {
           <button type="button" className="ck-save" onClick={handleSave} disabled={saving || !dirty}>
             {saving ? lab('ui.saving', language) : lab('ui.saveDraft', language)}
           </button>
+          <button type="button" onClick={() => void reload()}>
+            ↻ {lab('ui.refresh', language)}
+          </button>
           <span className="ck-msg">{dirty ? lab('ui.unsaved', language) : message}</span>
         </div>
         <p className="ck-hint">{lab('ui.approvalNote', language)}</p>
@@ -174,7 +202,7 @@ export default function ChecklistPage() {
             </label>
             <p className="ck-prefill">{lab('ui.prefilled', language)}</p>
           </div>
-          <ChecklistForm template={template} data={data} gates={gates} lang={language} editable onChange={onChange} onSubmitGate={handleSubmitGate} submitting={submitting} prefilled={prefilledKeys} />
+          <ChecklistForm template={template} data={data} gates={gates} lang={language} editable onChange={onChange} onSubmitGate={handleSubmitGate} onResend={handleResend} submitting={submitting} prefilled={prefilledKeys} />
         </div>
       )}
 

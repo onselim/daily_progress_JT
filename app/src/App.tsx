@@ -17,6 +17,7 @@ import TeamPage from './pages/admin/TeamPage';
 import FieldProjectPage from './pages/field/FieldProjectPage';
 import ChecklistPage from './pages/field/ChecklistPage';
 import ChecklistDemoPage from './pages/ChecklistDemoPage';
+import ChecklistReviewPage from './pages/ChecklistReviewPage';
 import PublicViewerPage from './pages/PublicViewerPage';
 import PrintReportPage from './pages/PrintReportPage';
 import ArLaunchPage from './pages/ArLaunchPage';
@@ -66,6 +67,7 @@ export default function App() {
         </Route>
 
         {import.meta.env.DEV && <Route path="/checklist-demo" element={<ChecklistDemoPage />} />}
+        <Route path="/review/:token" element={<ChecklistReviewPage />} />
         <Route path="/print/:slug" element={<PrintReportPage />} />
         <Route path="/ar/:slug" element={<ArLaunchPage />} />
         <Route path="/reports/:slug" element={<PublicViewerPage />} />
