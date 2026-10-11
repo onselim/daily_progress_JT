@@ -122,9 +122,11 @@ export function ChecklistSheet({ template, data, gates, second, header, branding
             <td rowSpan={2} className="sh-c">
               <B id="line" second={second} />
               <span className="sh-en">
-                <b>{lab('lineName', 'en')}</b>
+                <b>{branding.lineName?.en ?? ''}</b>
               </span>
-              {second && second !== 'en' && <span className="sh-2" dir={RTL_LANGUAGES.has(second) ? 'rtl' : undefined}>{lab('lineName', second)}</span>}
+              {second && second !== 'en' && branding.lineName?.[second] && branding.lineName[second] !== branding.lineName.en && (
+                <span className="sh-2" dir={RTL_LANGUAGES.has(second) ? 'rtl' : undefined}>{branding.lineName[second]}</span>
+              )}
             </td>
             <td rowSpan={2} className="sh-c sh-title">
               <B id={template.title} second={second} />

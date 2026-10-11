@@ -11,6 +11,7 @@ import { lab } from '../../lib/checklists/labels';
 import { prefillFromAsset } from '../../lib/checklists/data';
 import { useChecklist } from '../../lib/checklists/useChecklist';
 import { useChecklistBranding } from '../../lib/checklists/branding';
+import { useProjectModules } from '../../lib/modules';
 import { effectiveGateStatus, overallStatus, type ChecklistData, type GatesState } from '../../lib/checklists/types';
 import { ChecklistForm } from '../../components/checklists/ChecklistForm';
 import { ChecklistSheet } from '../../components/checklists/ChecklistSheet';
@@ -42,6 +43,7 @@ export default function ChecklistPage() {
   const [printLang, setPrintLang] = useState<LanguageCode | 'en'>(language === 'en' ? 'en' : language);
   const [prefilledKeys, setPrefilledKeys] = useState<ReadonlySet<string>>(new Set());
   const branding = useChecklistBranding(project);
+  const modules = useProjectModules(project?.id);
 
   // Load saved values, then fill still-empty fields from the tower record (type, setting level, leg extensions).
   useEffect(() => {
@@ -68,8 +70,9 @@ export default function ChecklistPage() {
   }, [reload]);
 
   if (!template) return <div className="page-loading">Unknown checklist: {templateKey}</div>;
-  if (projectLoading || assetsLoading || loading || !branding) return <div className="page-loading">…</div>;
+  if (projectLoading || assetsLoading || loading || modules.loading || !branding) return <div className="page-loading">…</div>;
   if (!project || !asset) return <div className="page-loading">Tower {assetCode} not found.</div>;
+  if (!modules.isEnabled(`checklist.${templateKey}`)) return <div className="page-loading">This checklist module is not enabled for this project (Admin → Modules &amp; lists).</div>;
 
   const overall = overallStatus(template, gates);
   const backTo = `/field/${project.slug}`;

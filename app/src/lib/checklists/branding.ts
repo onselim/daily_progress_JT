@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import type { ProjectRow } from '../useProject';
+import { LANGUAGES, type LanguageCode } from '../i18n/languages';
+import { lab } from './labels';
 
 export interface PartyBranding {
   name: string;
@@ -9,6 +11,8 @@ export interface PartyBranding {
 }
 
 export interface Branding {
+  /** Name of the line / works printed in the "Line" cell, per language (English is always shown). */
+  lineName?: Partial<Record<LanguageCode, string>>;
   employer: PartyBranding;
   contractor: PartyBranding;
   consultant: PartyBranding;
@@ -18,6 +22,7 @@ export interface Branding {
  * Used until a project stores its own `checklist_branding` in project_config (same shape as Branding). */
 const DEFAULTS_BY_SLUG: Record<string, Branding> = {
   'jvari-tskaltubo': {
+    lineName: Object.fromEntries(LANGUAGES.map((l) => [l.code, lab('lineName', l.code)])) as Partial<Record<LanguageCode, string>>,
     employer: { name: 'Georgian State Electrosystem, GSE', logos: ['gse.png'] },
     contractor: { name: 'Bozlar Yapı', logos: ['bozlar.png'] },
     consultant: { name: 'DECON Int. Consulting', logos: ['decon.png', 'consulectra.png', 'afry.png'] },
@@ -27,6 +32,7 @@ const DEFAULTS_BY_SLUG: Record<string, Branding> = {
 function fallback(project: ProjectRow): Branding {
   return (
     DEFAULTS_BY_SLUG[project.slug] ?? {
+      lineName: { en: project.name },
       employer: { name: project.client ?? '', logos: [] },
       contractor: { name: project.contractor ?? '', logos: [] },
       consultant: { name: '', logos: [] },
@@ -62,6 +68,7 @@ export function useChecklistBranding(project: ProjectRow | null | undefined): Br
   if (!project || !ready) return null;
   const base = fallback(project);
   return {
+    lineName: { ...base.lineName, ...override?.lineName },
     employer: { ...base.employer, ...override?.employer },
     contractor: { ...base.contractor, ...override?.contractor },
     consultant: { ...base.consultant, ...override?.consultant },

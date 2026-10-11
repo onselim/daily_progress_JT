@@ -1074,7 +1074,7 @@ export function AssetEditor({
         )}
       </fieldset>
 
-      <ChecklistLink projectSlug={projectSlug} assetId={assetId} assetCode={assetCode} templateKey="foundation" />
+      <ChecklistLink projectId={projectId} projectSlug={projectSlug} assetId={assetId} assetCode={assetCode} templateKey="foundation" />
 
       {editable && (
         <button type="submit" disabled={saving}>

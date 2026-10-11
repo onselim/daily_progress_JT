@@ -6,10 +6,12 @@ import { lab } from '../../lib/checklists/labels';
 import { TEMPLATES } from '../../lib/checklists/foundation';
 import { effectiveGateStatus, overallStatus, type GatesState } from '../../lib/checklists/types';
 import { GateStatusPill } from './GateStatusPill';
+import { useProjectModules } from '../../lib/modules';
 
 /** Tower panel entry for a checklist: opens the form and shows the staged approval state (class / concreting / backfill). */
-export function ChecklistLink({ projectSlug, assetId, assetCode, templateKey }: { projectSlug: string; assetId: string; assetCode: string; templateKey: string }) {
+export function ChecklistLink({ projectId, projectSlug, assetId, assetCode, templateKey }: { projectId: string; projectSlug: string; assetId: string; assetCode: string; templateKey: string }) {
   const { language } = useLanguage();
+  const { isEnabled } = useProjectModules(projectId);
   const template = TEMPLATES[templateKey];
   const [gates, setGates] = useState<GatesState | null>(null);
 
@@ -30,7 +32,7 @@ export function ChecklistLink({ projectSlug, assetId, assetCode, templateKey }: 
     };
   }, [assetId, templateKey]);
 
-  if (!template || !assetCode.trim()) return null;
+  if (!template || !assetCode.trim() || !isEnabled(`checklist.${templateKey}`)) return null;
   const overall = gates ? overallStatus(template, gates) : 'draft';
   return (
     <fieldset className="ck-asset-link">

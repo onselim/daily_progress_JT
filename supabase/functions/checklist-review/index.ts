@@ -140,6 +140,25 @@ Deno.serve(async (req: Request) => {
         `[${project?.name ?? ''}] ${towerLabel}: ${PARTY_LABEL[party]} approved — ${template.gates[gate] ?? gate}`,
         `<div style="font-family:Arial,sans-serif;font-size:14px;color:#1f2937;max-width:560px"><p><b>${esc(where)}</b></p><p>${esc(PARTY_LABEL[party])} approved this stage (${esc(name)}, ${esc(reqRow.email)}).</p>${comment ? `<p>Remark: ${esc(comment)}</p>` : ''}<p>${esc(headline)}</p><p><a href="${openLink}">Open the checklist</a></p></div>`,
       );
+      if (bothApproved) {
+        // Information (cc) list of the project: the stage (or the whole checklist) is now fully approved.
+        const dlRows = (await rest(`project_config?select=key,value&project_id=eq.${inst.project_id}&key=eq.distribution_lists`)) as { value: any }[];
+        const dl = dlRows?.[0]?.value as { default?: Record<string, { name?: string; email: string }[]>; byType?: Record<string, Record<string, { name?: string; email: string }[]>> } | undefined;
+        const typeKey = `checklist.${inst.template_key}`;
+        const own = dl?.byType?.[typeKey]?.info;
+        const infoList = own && own.length > 0 ? own : dl?.default?.info ?? [];
+        const seen = new Set<string>();
+        for (const person of infoList) {
+          const email = String(person.email ?? '').trim().toLowerCase();
+          if (!email || seen.has(email)) continue;
+          seen.add(email);
+          await mail(
+            email,
+            `[${project?.name ?? ''}] ${towerLabel}: ${allDone ? 'checklist fully APPROVED' : 'stage approved'} — ${template.gates[gate] ?? gate}`,
+            `<div style="font-family:Arial,sans-serif;font-size:14px;color:#1f2937;max-width:560px"><p>Dear ${esc(person.name || 'Sirs')},</p><p>For your information: <b>${esc(where)}</b> has been approved by both the Consultant and the Employer.${allDone ? ' <b>All stages of this checklist are now approved.</b>' : ''}</p></div>`,
+          );
+        }
+      }
       return json({ success: true, result: 'approved', bothApproved, allDone });
     }
 

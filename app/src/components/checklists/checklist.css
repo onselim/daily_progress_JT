@@ -135,3 +135,9 @@
 .ck-danger:hover { background: rgba(220, 38, 38, 0.1); }
 .ck-danger:disabled { opacity: 0.5; cursor: default; }
 .ck-adminzone { display: flex; justify-content: flex-end; padding-top: 10px; }
+
+/* ---------- admin: modules and lists ---------- */
+.ck-module-row { display: flex; gap: 10px; align-items: center; padding: 6px 0; }
+.ck-person-row { display: grid; grid-template-columns: 1fr 1.3fr 1fr auto; gap: 8px; margin-bottom: 6px; }
+.ck-person-row input { font: inherit; padding: 5px 7px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--text-h); min-width: 0; }
+@media (max-width: 720px) { .ck-person-row { grid-template-columns: 1fr; } }
