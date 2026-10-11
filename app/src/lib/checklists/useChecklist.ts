@@ -101,5 +101,19 @@ export function useChecklist(projectId: string | undefined, assetId: string | un
     return { error: null, sent: (data?.sent as string[]) ?? [], missing: (data?.missing as string[]) ?? [] };
   }, []);
 
-  return { instance, loading, error, save, reload, notifyGate };
+  /** Admin only: reopens an approval stage (approvals and pending e-mail links are voided). */
+  const resetGate = useCallback(async (instanceId: string, gate: string): Promise<string | null> => {
+    const { error: err } = await supabase.rpc('checklist_reset_gate', { p_instance_id: instanceId, p_gate: gate });
+    return err ? err.message : null;
+  }, []);
+
+  /** Admin only (database policy): deletes the whole checklist with its approvals and audit trail. */
+  const deleteChecklist = useCallback(async (instanceId: string): Promise<string | null> => {
+    const { error: err } = await supabase.from('checklist_instances').delete().eq('id', instanceId);
+    if (err) return err.message;
+    setInstance(null);
+    return null;
+  }, []);
+
+  return { instance, loading, error, save, reload, notifyGate, resetGate, deleteChecklist };
 }

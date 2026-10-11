@@ -96,6 +96,7 @@ export interface GateState {
   submitted_at?: string;
   submitted_by?: string;
   approved_at?: string;
+  reset_at?: string;
   approvals?: Partial<Record<Party, PartyApproval>>;
   last_comment?: GateComment;
 }

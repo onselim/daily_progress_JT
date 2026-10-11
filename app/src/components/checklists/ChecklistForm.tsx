@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import type { LanguageCode } from '../../lib/i18n/languages';
 import { lab } from '../../lib/checklists/labels';
 import { cellKey, cellTypeOf, derivedValue } from '../../lib/checklists/data';
+import type { MatrixCol, MatrixRow } from '../../lib/checklists/types';
 import { PARTIES, effectiveGateStatus, type Block, type CellType, type ChecklistData, type ChecklistTemplate, type GatesState } from '../../lib/checklists/types';
 import { GateStatusPill } from './GateStatusPill';
 
@@ -11,9 +12,12 @@ interface Props {
   gates: GatesState;
   lang: LanguageCode; // app language (screen labels)
   editable: boolean;
-  onChange: (key: string, value: string) => void;
+  /** `auto` = the value was filled by the form itself (today's date), so it is shown tinted like other pre-filled values. */
+  onChange: (key: string, value: string, opts?: { auto?: boolean }) => void;
   onSubmitGate: (gateKey: string) => void;
   onResend?: (gateKey: string) => void;
+  /** Admin only: reopen the stage (two-step confirmation is handled by the page). */
+  onReset?: (gateKey: string) => void;
   submitting: string | null;
   /** Keys filled from the tower record and not yet edited by the user (shown tinted). */
   prefilled?: ReadonlySet<string>;
@@ -45,7 +49,23 @@ function CellInput({ type, value, disabled, onChange, tint }: { type: CellType; 
   );
 }
 
-export function ChecklistForm({ template, data, gates, lang, editable, onChange, onSubmitGate, onResend, submitting, prefilled }: Props) {
+/** Today's date in the user's own time zone, as yyyy-mm-dd (what <input type="date"> uses). */
+function todayLocalIso() {
+  return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
+export function ChecklistForm({ template, data, gates, lang, editable, onChange, onSubmitGate, onResend, onReset, submitting, prefilled }: Props) {
+  /** Typing anything in a row that also has a date cell (same cube set for the cubes table) stamps today's date into
+   * that date cell if it is still empty -- the engineer never has to pick dates by hand. Dates stay editable. */
+  function handleCell(block: Extract<Block, { kind: 'matrix' }>, row: MatrixRow, col: MatrixCol, key: string, value: string) {
+    onChange(key, value);
+    if (!value || cellTypeOf(block, row, col) === 'date') return;
+    const dateCol = block.cols.find((c) => c.key !== col.key && cellTypeOf(block, row, c) === 'date' && (c.group ?? '') === (col.group ?? ''));
+    if (!dateCol) return;
+    const dateKey = cellKey(block.id, row.key, dateCol.key);
+    if (!data[dateKey]) onChange(dateKey, todayLocalIso(), { auto: true });
+  }
+
   const lockedSections = new Set<string>();
   for (const g of template.gates) if (effectiveGateStatus(gates[g.key]) !== 'draft') g.sectionIds.forEach((id) => lockedSections.add(id));
 
@@ -99,6 +119,11 @@ export function ChecklistForm({ template, data, gates, lang, editable, onChange,
             </p>
           )}
           {status !== 'draft' && <p className="ck-locked">{lab('ui.locked', lang)}</p>}
+          {status !== 'draft' && onReset && (
+            <button type="button" className="ck-danger" disabled={submitting === gate.key} onClick={() => onReset(gate.key)}>
+              {lab('ui.resetGate', lang)}
+            </button>
+          )}
           {status === 'submitted' && (
             <>
               <p className="ck-locked">
@@ -177,7 +202,7 @@ export function ChecklistForm({ template, data, gates, lang, editable, onChange,
                   if (r.derive) return <td key={c.key} className="ck-derived">{derivedValue(data, block.id, r, c)}</td>;
                   return (
                     <td key={c.key}>
-                      <CellInput type={cellTypeOf(block, r, c)} value={data[key] ?? ''} disabled={disabled} tint={prefilled?.has(key)} onChange={(v) => onChange(key, v)} />
+                      <CellInput type={cellTypeOf(block, r, c)} value={data[key] ?? ''} disabled={disabled} tint={prefilled?.has(key)} onChange={(v) => handleCell(block, r, c, key, v)} />
                     </td>
                   );
                 })}

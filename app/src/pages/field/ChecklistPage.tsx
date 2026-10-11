@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useProjectRoles } from '../../lib/useProjectRoles';
 import { useProjectBySlug } from '../../lib/useProject';
 import { useAssets } from '../../lib/useAssets';
 import { LANGUAGES, type LanguageCode } from '../../lib/i18n/languages';
@@ -24,7 +25,10 @@ export default function ChecklistPage() {
   const { project, loading: projectLoading } = useProjectBySlug(slug);
   const { assets, loading: assetsLoading } = useAssets(project?.id);
   const asset = useMemo(() => assets.find((a) => a.asset_code === assetCode), [assets, assetCode]);
-  const { instance, loading, error, save, reload, notifyGate } = useChecklist(project?.id, asset?.id, templateKey, template?.version ?? 1);
+  const navigate = useNavigate();
+  const { roles } = useProjectRoles();
+  const isAdmin = roles.some((r) => r.project.slug === slug && r.role === 'admin');
+  const { instance, loading, error, save, reload, notifyGate, resetGate, deleteChecklist } = useChecklist(project?.id, asset?.id, templateKey, template?.version ?? 1);
 
   const [data, setData] = useState<ChecklistData>({});
   const [gates, setGates] = useState<GatesState>({});
@@ -70,9 +74,10 @@ export default function ChecklistPage() {
   const overall = overallStatus(template, gates);
   const backTo = `/field/${project.slug}`;
 
-  function onChange(key: string, value: string) {
+  function onChange(key: string, value: string, opts?: { auto?: boolean }) {
     setData((d) => ({ ...d, [key]: value }));
     setPrefilledKeys((p) => {
+      if (opts?.auto) return new Set(p).add(key);
       if (!p.has(key)) return p;
       const n = new Set(p);
       n.delete(key);
@@ -124,6 +129,34 @@ export default function ChecklistPage() {
   function handleResend(gateKey: string) {
     const gate = template.gates.find((g) => g.key === gateKey);
     if (gate) void submitOrResend(gateKey, `${lab(gate.label, language)}: ${lab('ui.resend', language)}?`);
+  }
+
+  /** Two-step confirmation for destructive admin actions: a confirm dialog, then the tower number has to be typed. */
+  function confirmTwice(warning: string): boolean {
+    if (!window.confirm(warning)) return false;
+    const typed = window.prompt(`${lab('ui.typeTower', language)}: ${asset!.asset_code}`);
+    if (typed == null || typed.trim() !== asset!.asset_code) {
+      setMessage(lab('ui.cancelled', language));
+      return false;
+    }
+    return true;
+  }
+
+  async function handleReset(gateKey: string) {
+    const gate = template.gates.find((g) => g.key === gateKey);
+    if (!gate || !instance || !confirmTwice(`${lab(gate.label, language)}\n\n${lab('ui.resetWarn', language)}`)) return;
+    setSubmitting(gateKey);
+    const err = await resetGate(instance.id, gateKey);
+    setMessage(err ?? lab('ui.saved', language));
+    await reload();
+    setSubmitting(null);
+  }
+
+  async function handleDelete() {
+    if (!instance || !confirmTwice(lab('ui.deleteWarn', language))) return;
+    const err = await deleteChecklist(instance.id);
+    if (err) setMessage(err);
+    else navigate(backTo);
   }
 
   const second = printLang === 'en' ? null : printLang;
@@ -202,7 +235,14 @@ export default function ChecklistPage() {
             </label>
             <p className="ck-prefill">{lab('ui.prefilled', language)}</p>
           </div>
-          <ChecklistForm template={template} data={data} gates={gates} lang={language} editable onChange={onChange} onSubmitGate={handleSubmitGate} onResend={handleResend} submitting={submitting} prefilled={prefilledKeys} />
+          {isAdmin && instance && (
+            <div className="ck-adminzone">
+              <button type="button" className="ck-danger" onClick={() => void handleDelete()}>
+                {lab('ui.deleteChecklist', language)}
+              </button>
+            </div>
+          )}
+          <ChecklistForm template={template} data={data} gates={gates} lang={language} editable onChange={onChange} onSubmitGate={handleSubmitGate} onResend={handleResend} onReset={isAdmin ? handleReset : undefined} submitting={submitting} prefilled={prefilledKeys} />
         </div>
       )}
 

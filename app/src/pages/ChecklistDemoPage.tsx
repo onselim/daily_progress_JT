@@ -34,7 +34,7 @@ export default function ChecklistDemoPage() {
       </div>
       {view === 'form' ? (
         <div className="ck-noprint">
-          <ChecklistForm template={foundationTemplate} data={data} gates={gates} lang={lang} editable onChange={(k, v) => setData({ ...data, [k]: v })} onSubmitGate={() => {}} submitting={null} />
+          <ChecklistForm template={foundationTemplate} data={data} gates={gates} lang={lang} editable onChange={(k, v) => setData((d) => ({ ...d, [k]: v }))} onSubmitGate={() => {}} submitting={null} />
         </div>
       ) : (
         <div className="ck-sheet-wrap">

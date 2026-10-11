@@ -129,3 +129,9 @@
 .ck-banner-warn { background: #fef3c7; color: #92400e; }
 .ck-banner-info { background: #e5e7eb; color: #374151; }
 @media (max-width: 720px) { .ck-decide-row { grid-template-columns: 1fr; } }
+
+/* ---------- admin danger actions ---------- */
+.ck-danger { justify-self: start; padding: 4px 10px; border: 1px solid #dc2626; border-radius: 6px; background: transparent; color: #dc2626; cursor: pointer; font: inherit; font-size: 0.82rem; }
+.ck-danger:hover { background: rgba(220, 38, 38, 0.1); }
+.ck-danger:disabled { opacity: 0.5; cursor: default; }
+.ck-adminzone { display: flex; justify-content: flex-end; padding-top: 10px; }
