@@ -9,6 +9,8 @@ export interface LayerStyle {
   fillColor?: string;
   fillOpacity?: number;
   radius?: number;
+  /** Point layers: show each point's label permanently from this map zoom level on. */
+  labelZoom?: number;
 }
 
 export interface StaticLayer {

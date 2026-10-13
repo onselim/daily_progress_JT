@@ -38,7 +38,7 @@ STYLES = {
     'Buffer': dict(color='#ffffff', weight=1.5, dashArray='6 4', opacity=0.9),
     'Center Line': dict(color='#facc15', weight=3),
     'Combined KMZ': dict(color='#94a3b8', weight=2, fillColor='#94a3b8', fillOpacity=0.2),
-    'Leg Extensions': dict(color='#ffffff', weight=1, fillColor='#a3e635', fillOpacity=0.95, radius=4),
+    'Leg Extensions': dict(color='#111827', weight=1.5, fillColor='#a3e635', fillOpacity=0.95, radius=6, labelZoom=17),
     'Tower Area': dict(color='#22d3ee', weight=1.5, fillColor='#22d3ee', fillOpacity=0.25),
     'Tower Centers': dict(color='#ffffff', weight=1.5, fillColor='#f43f5e', fillOpacity=1, radius=5),
     'Tree Cutting': dict(color='#22c55e', weight=2.5, fillColor='#22c55e', fillOpacity=0.3),

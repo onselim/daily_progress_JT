@@ -363,6 +363,11 @@ export function MapView({
     if (!map) return;
     let cancelled = false;
 
+    if (!map.getPane('projectPoints')) map.createPane('projectPoints').style.zIndex = '650';
+    const updateLabelZoom = () => map.getContainer().classList.toggle('shp-labels-on', map.getZoom() >= 17);
+    updateLabelZoom();
+    map.on('zoomend', updateLabelZoom);
+
     const activeIds = new Set(geoLayers.map((l) => l.id));
     for (const [id, layer] of Object.entries(geoLayersRef.current)) {
       if (!activeIds.has(id)) {
@@ -385,8 +390,9 @@ export function MapView({
           const layerStyle = geoLayer.style;
           const layer = L.geoJSON(undefined, {
             style: (feature) => (layerStyle ? projectLayerStyle(layerStyle, feature?.properties) : geoLayerStyle(feature?.properties?.category)),
+            // Points go to their own pane above the tower markers, otherwise the four legs of a tower hide under its icon.
             pointToLayer: layerStyle
-              ? (feature, latlng) => L.circleMarker(latlng, { ...projectLayerStyle(layerStyle, feature.properties), radius: layerStyle.radius ?? 5, fillOpacity: layerStyle.fillOpacity ?? 0.9 })
+              ? (feature, latlng) => L.circleMarker(latlng, { ...projectLayerStyle(layerStyle, feature.properties), radius: layerStyle.radius ?? 5, fillOpacity: layerStyle.fillOpacity ?? 0.9, pane: 'projectPoints' })
               : undefined,
             onEachFeature: (feature, featureLayer) => {
               const p = feature.properties ?? {};
@@ -394,6 +400,19 @@ export function MapView({
                 // Project shapefile layers: tower / area name, plus the few details kept from the source.
                 const text = [p.label, p.info].filter(Boolean).join(' — ');
                 featureLayer.bindTooltip(text ? `${geoLayer.name}: ${text}` : geoLayer.name, { sticky: true });
+                if (layerStyle.labelZoom && p.label) {
+                  // Short permanent label ("T66 L1 +0") that shows once the map is zoomed in far enough to tell the legs apart.
+                  const m = /^(T\d+)\s*-\s*(L\d)\s*\/\s*([+-]?\d+(?:\.\d+)?)\s*LE$/i.exec(p.label);
+                  const short = m ? `${m[1]} ${m[2]} ${Number(m[3]) > 0 ? '+' : ''}${m[3]}` : p.label;
+                  if (feature.geometry.type === 'Point') {
+                    const [lng, lat] = feature.geometry.coordinates;
+                    L.marker([lat, lng], {
+                      icon: L.divIcon({ className: 'shp-point-label-icon', html: `<span>${short}</span>`, iconSize: [0, 0], iconAnchor: [-9, 7] }),
+                      interactive: false,
+                      pane: 'projectPoints',
+                    }).addTo(layer);
+                  }
+                }
                 return;
               }
               if (p.category === 'excavation_pit') {
@@ -438,6 +457,7 @@ export function MapView({
 
     return () => {
       cancelled = true;
+      map.off('zoomend', updateLabelZoom);
     };
   }, [geoLayers, onLayerError]);
 

@@ -311,11 +311,12 @@
        "name": "Leg Extensions",
        "file": "part-2/leg-extensions/leg-extensions.geojson",
        "style": {
-        "color": "#ffffff",
-        "weight": 1,
+        "color": "#111827",
+        "weight": 1.5,
         "fillColor": "#a3e635",
         "fillOpacity": 0.95,
-        "radius": 4
+        "radius": 6,
+        "labelZoom": 17
        },
        "count": 164,
        "kb": 20
