@@ -1,8 +1,11 @@
-import { useEffect, useRef, type ReactElement, type ReactNode } from 'react';
+import { useEffect, useRef, type CSSProperties, type ReactElement, type ReactNode } from 'react';
 import type { Branding } from '../../lib/checklists/branding';
 import { RTL_LANGUAGES, type LanguageCode } from '../../lib/i18n/languages';
 import { bilingual, lab } from '../../lib/checklists/labels';
-import { cellKey, derivedValue } from '../../lib/checklists/data';
+import '@fontsource/caveat/latin-500.css';
+import '@fontsource/caveat/latin-ext-500.css';
+import '@fontsource/caveat/cyrillic-500.css';
+import { cellKey, cellTypeOf, derivedValue } from '../../lib/checklists/data';
 import { effectiveGateStatus, overallStatus, type Block, type ChecklistData, type ChecklistTemplate, type GatesState } from '../../lib/checklists/types';
 
 export interface SheetHeader {
@@ -20,6 +23,8 @@ interface Props {
   second: LanguageCode | null; // printed under the English line; null = English only
   header: SheetHeader;
   branding: Branding;
+  /** Show the typed-in values like blue-pen handwriting (the system-generated texts stay printed). */
+  handwriting?: boolean;
 }
 
 /** English line + (optionally) the chosen language underneath, like the paper form -- but the second language is
@@ -80,7 +85,30 @@ function PartyStrip({ branding, second }: { branding: Branding; second: Language
   );
 }
 
-export function ChecklistSheet({ template, data, gates, second, header, branding }: Props) {
+/** Small, stable "hand" variations per value (tilt, size, baseline) so the same text always looks the same on screen and on paper. */
+function handStyle(text: string): CSSProperties {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  const u = (shift: number) => (((h >>> shift) & 255) / 255) * 2 - 1; // -1..1
+  return { ['--hw-rot' as string]: `${(u(0) * 1.4).toFixed(2)}deg`, ['--hw-dy' as string]: `${(u(8) * 0.35).toFixed(2)}px`, ['--hw-size' as string]: (1 + u(16) * 0.07).toFixed(3), ['--hw-ls' as string]: `${(u(24) * 0.02).toFixed(3)}em` };
+}
+
+/** dd.mm.yy for the date cells; anything else unchanged. */
+function showDate(v: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+  return m ? `${m[3]}.${m[2]}.${m[1].slice(2)}` : v;
+}
+
+export function ChecklistSheet({ template, data, gates, second, header, branding, handwriting = false }: Props) {
+  /** A value the engineer typed in: plain text, or blue-pen handwriting when switched on. */
+  const hw = (text: string | undefined): ReactNode =>
+    handwriting && text ? (
+      <span className="hw" style={handStyle(text)}>
+        {text}
+      </span>
+    ) : (
+      text ?? ''
+    );
   const rootRef = useRef<HTMLDivElement>(null);
   const parties = { contractor: branding.contractor.name, consultant: branding.consultant.name, employer: branding.employer.name };
 
@@ -132,8 +160,8 @@ export function ChecklistSheet({ template, data, gates, second, header, branding
               <B id={template.title} second={second} />
             </td>
             <td>
-              <B id="docNo" second={second} /> <b>{header.docNo}</b>
-              {header.rev ? <span className="sh-en">{lab('rev', 'en')} <b>{header.rev}</b></span> : null}
+              <B id="docNo" second={second} /> <b>{hw(header.docNo)}</b>
+              {header.rev ? <span className="sh-en">{lab('rev', 'en')} <b>{hw(header.rev)}</b></span> : null}
             </td>
             <td>
               {lab('page', 'en')} {page} {lab('of', 'en')} {total}
@@ -141,7 +169,7 @@ export function ChecklistSheet({ template, data, gates, second, header, branding
           </tr>
           <tr>
             <td>
-              <B id="towerNo" second={second} /> <b>{header.towerNo}</b>
+              <B id="towerNo" second={second} /> <b>{hw(header.towerNo)}</b>
             </td>
             <td>
               <B id="date" second={second} />
@@ -237,7 +265,7 @@ export function ChecklistSheet({ template, data, gates, second, header, branding
               <tr key={`v${ri}`}>
                 {r.map((f) => (
                   <td key={f.key} className="sh-c sh-val">
-                    {data[f.key] ?? ''}
+                    {hw(f.type === 'date' ? showDate(data[f.key] ?? '') : data[f.key])}
                   </td>
                 ))}
               </tr>,
@@ -253,7 +281,7 @@ export function ChecklistSheet({ template, data, gates, second, header, branding
             <tr>
               <td className="sh-comment">
                 <B id={b.label} second={second} />
-                <span className="sh-val">{data[b.key] ?? ''}</span>
+                <span className="sh-val">{hw(data[b.key])}</span>
               </td>
             </tr>
           </tbody>
@@ -327,7 +355,7 @@ export function ChecklistSheet({ template, data, gates, second, header, branding
               <th className={b.rowHeaderWide ? 'sh-rowhead' : 'sh-c'}>{r.label ? <B id={r.label} second={second} unit={r.unit} /> : <span className="sh-en">{r.text}{r.suffix}</span>}</th>
               {b.cols.map((c) => (
                 <td key={c.key} className="sh-c sh-val">
-                  {r.derive ? derivedValue(data, b.id, r, c) : data[cellKey(b.id, r.key, c.key)] ?? ''}
+                  {hw(r.derive ? derivedValue(data, b.id, r, c) : cellTypeOf(b, r, c) === 'date' ? showDate(data[cellKey(b.id, r.key, c.key)] ?? '') : data[cellKey(b.id, r.key, c.key)])}
                 </td>
               ))}
             </tr>
@@ -338,7 +366,7 @@ export function ChecklistSheet({ template, data, gates, second, header, branding
   }
 
   return (
-    <div className="sh-root" dir="ltr" ref={rootRef}>
+    <div className={handwriting ? 'sh-root sh-hand' : 'sh-root'} dir="ltr" ref={rootRef}>
       {pageSections.map((secs, pi) => (
         <div className="sh-page" key={pi}>
           <PartyStrip branding={branding} second={second} />

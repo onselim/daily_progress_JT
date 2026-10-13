@@ -141,3 +141,9 @@
 .ck-person-row { display: grid; grid-template-columns: 1fr 1.3fr 1fr auto; gap: 8px; margin-bottom: 6px; }
 .ck-person-row input { font: inherit; padding: 5px 7px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--text-h); min-width: 0; }
 @media (max-width: 720px) { .ck-person-row { grid-template-columns: 1fr; } }
+
+/* ---------- handwriting look for typed-in values (blue ballpoint) ---------- */
+.sh-hand .hw { font-family: 'Caveat', 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive; font-weight: 500; font-size: calc(1.85em * var(--hw-size, 1)); line-height: 0.75; color: #1c3fb5;
+  display: inline-block; transform: rotate(var(--hw-rot, 0deg)) translateY(var(--hw-dy, 0)); letter-spacing: var(--hw-ls, 0); white-space: pre-wrap; text-shadow: 0 0 0.4px rgba(28, 63, 181, 0.6); }
+.sh-hand .sh-comment .hw { line-height: 0.95; }
+.sh-hand .sh-val b { font-weight: normal; }

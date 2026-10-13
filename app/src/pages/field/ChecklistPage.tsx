@@ -40,6 +40,13 @@ export default function ChecklistPage() {
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [view, setView] = useState<'form' | 'sheet'>('form');
+  const [handwriting, setHandwriting] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('checklist_handwriting') !== '0';
+    } catch {
+      return true;
+    }
+  });
   const [printLang, setPrintLang] = useState<LanguageCode | 'en'>(language === 'en' ? 'en' : language);
   const [prefilledKeys, setPrefilledKeys] = useState<ReadonlySet<string>>(new Set());
   const branding = useChecklistBranding(project);
@@ -210,6 +217,21 @@ export default function ChecklistPage() {
               ))}
             </select>
           </label>
+          <label className="ck-printlang">
+            <input
+              type="checkbox"
+              checked={handwriting}
+              onChange={(e) => {
+                setHandwriting(e.target.checked);
+                try {
+                  localStorage.setItem('checklist_handwriting', e.target.checked ? '1' : '0');
+                } catch {
+                  /* not remembered */
+                }
+              }}
+            />
+            ✍ {lab('ui.handwriting', language)}
+          </label>
           <button type="button" onClick={() => window.print()}>
             🖨 {lab('ui.print', language)}
           </button>
@@ -257,6 +279,7 @@ export default function ChecklistPage() {
           second={second}
           header={{ docNo, rev, towerNo: asset.asset_code }}
           branding={branding}
+          handwriting={handwriting}
         />
       </div>
     </div>

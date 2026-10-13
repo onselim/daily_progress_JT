@@ -38,7 +38,7 @@ export default function ChecklistDemoPage() {
         </div>
       ) : (
         <div className="ck-sheet-wrap">
-          <ChecklistSheet template={foundationTemplate} data={data} gates={gates} second={second} header={{ docNo: 'FW-T8', rev: 'R0', towerNo: '8' }} branding={{ lineName: { en: '500 kV Jvari-Tskaltubo OHL', ka: '500 კვ ეგხ ჯვარი წყალტუბო' }, employer: { name: 'Georgian State Electrosystem, GSE', logos: ['gse.png'] }, contractor: { name: 'Bozlar Yapı', logos: ['bozlar.png'] }, consultant: { name: 'DECON Int. Consulting', logos: ['decon.png', 'consulectra.png', 'afry.png'] } }} />
+          <ChecklistSheet template={foundationTemplate} data={data} gates={gates} second={second} handwriting={params.get('hand') !== '0'} header={{ docNo: 'FW-T8', rev: 'R0', towerNo: '8' }} branding={{ lineName: { en: '500 kV Jvari-Tskaltubo OHL', ka: '500 კვ ეგხ ჯვარი წყალტუბო' }, employer: { name: 'Georgian State Electrosystem, GSE', logos: ['gse.png'] }, contractor: { name: 'Bozlar Yapı', logos: ['bozlar.png'] }, consultant: { name: 'DECON Int. Consulting', logos: ['decon.png', 'consulectra.png', 'afry.png'] } }} />
         </div>
       )}
     </div>

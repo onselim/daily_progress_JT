@@ -48,6 +48,7 @@ export default function ChecklistReviewPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [second, setSecond] = useState<LanguageCode | 'en'>('en');
+  const [handwriting, setHandwriting] = useState(true);
 
   const load = useCallback(async () => {
     const { data, error } = await callReview({ action: 'get', token });
@@ -135,6 +136,10 @@ export default function ChecklistReviewPage() {
               ))}
             </select>
           </label>
+          <label className="ck-printlang">
+            <input type="checkbox" checked={handwriting} onChange={(e) => setHandwriting(e.target.checked)} />
+            ✍ Handwritten look
+          </label>
           <button type="button" onClick={() => window.print()}>
             🖨 Print
           </button>
@@ -149,6 +154,7 @@ export default function ChecklistReviewPage() {
           second={second === 'en' ? null : second}
           header={{ docNo: instance.docNo ?? '', rev: instance.rev ?? '', towerNo: asset.code }}
           branding={branding}
+          handwriting={handwriting}
         />
       </div>
     </div>
