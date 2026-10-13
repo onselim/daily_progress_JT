@@ -1,5 +1,7 @@
 import { AccordionPanel } from './AccordionPanel';
 import { ProjectDocumentsPanel } from './ProjectDocumentsPanel';
+import { ProjectLayersTree } from './ProjectLayersTree';
+import type { LayerPart } from '../lib/useProjectLayers';
 import { WeatherPanel } from './WeatherPanel';
 import { LineSummaryPanel } from './LineSummaryPanel';
 import { HeatMapPanel, type HeatMetric, type MetricTotals } from './HeatMapPanel';
@@ -24,6 +26,8 @@ interface RightPanelStackProps {
   metricTotals: MetricTotals;
   enabledLayerIds: Set<string>;
   onToggleLayer: (layerId: string) => void;
+  layerParts: LayerPart[];
+  onSetLayers: (ids: string[], on: boolean) => void;
   layerErrors: Record<string, string>;
   assets: AssetListItem[];
   foundationTypes: FoundationTypeConfig[];
@@ -50,6 +54,8 @@ export function RightPanelStack({
   metricTotals,
   enabledLayerIds,
   onToggleLayer,
+  layerParts,
+  onSetLayers,
   layerErrors,
   assets,
   foundationTypes,
@@ -84,6 +90,7 @@ export function RightPanelStack({
       </AccordionPanel>
 
       <AccordionPanel title={t('panels.layers')}>
+        <ProjectLayersTree parts={layerParts} enabledLayerIds={enabledLayerIds} onSetLayers={onSetLayers} layerErrors={layerErrors} />
         <div className="osm-fetch-row">
           <button
             type="button"

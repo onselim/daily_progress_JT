@@ -1,3 +1,4 @@
+import type { LayerStyle } from '../lib/useProjectLayers';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -169,6 +170,20 @@ function geoLayerStyle(category?: string): L.PathOptions {
   return { color: '#f59e0b', weight: 3, dashArray: '6 4', opacity: 0.85 };
 }
 
+/** Look of a project shapefile layer: the layer's own style, overridden per feature by the colours stored in a KMZ. */
+function projectLayerStyle(style: LayerStyle, p: Record<string, any> | null | undefined): L.PathOptions {
+  const stroke = p?._stroke ?? style.color;
+  const fillOpacity = typeof p?._fo === 'number' ? p._fo : style.fillOpacity ?? 0;
+  return {
+    color: stroke,
+    weight: p?._w ?? style.weight ?? 2,
+    opacity: style.opacity ?? 0.95,
+    dashArray: style.dashArray,
+    fillColor: p?._fill ?? style.fillColor ?? stroke,
+    fillOpacity,
+  };
+}
+
 function plainIconHtml(size: number, color: string, code: string, selected: boolean): string {
   return `<div style="width:${size}px;height:${size}px;background:${color};border:2px solid ${
     selected ? '#2563eb' : 'rgba(255,255,255,.85)'
@@ -193,7 +208,7 @@ interface MapViewProps {
   heatmapEnabled?: boolean;
   heatPoints?: [number, number, number][];
   heatCentroid?: [number, number] | null;
-  geoLayers?: { id: string; name: string; url: string }[];
+  geoLayers?: { id: string; name: string; url: string; style?: LayerStyle; ownColors?: boolean }[];
   onLayerError?: (layerId: string, message: string) => void;
   photoLocations?: PhotoLocation[];
   photosLayerEnabled?: boolean;
@@ -367,10 +382,20 @@ export function MapView({
             onLayerError?.(geoLayer.id, `Not a GeoJSON file (found "${data?.type ?? typeof data}" instead)`);
             return;
           }
+          const layerStyle = geoLayer.style;
           const layer = L.geoJSON(undefined, {
-            style: (feature) => geoLayerStyle(feature?.properties?.category),
+            style: (feature) => (layerStyle ? projectLayerStyle(layerStyle, feature?.properties) : geoLayerStyle(feature?.properties?.category)),
+            pointToLayer: layerStyle
+              ? (feature, latlng) => L.circleMarker(latlng, { ...projectLayerStyle(layerStyle, feature.properties), radius: layerStyle.radius ?? 5, fillOpacity: layerStyle.fillOpacity ?? 0.9 })
+              : undefined,
             onEachFeature: (feature, featureLayer) => {
               const p = feature.properties ?? {};
+              if (layerStyle) {
+                // Project shapefile layers: tower / area name, plus the few details kept from the source.
+                const text = [p.label, p.info].filter(Boolean).join(' — ');
+                featureLayer.bindTooltip(text ? `${geoLayer.name}: ${text}` : geoLayer.name, { sticky: true });
+                return;
+              }
               if (p.category === 'excavation_pit') {
                 const bWidth = p.b_width_m ?? p.excavation_side_m;
                 const legExt = typeof p.leg_ext_m === 'number' ? `Leg Ext: ${p.leg_ext_m > 0 ? `+${p.leg_ext_m}` : p.leg_ext_m}` : null;

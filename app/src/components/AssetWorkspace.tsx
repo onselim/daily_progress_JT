@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AssetList } from './AssetList';
 import { AssetEditor } from './AssetEditor';
 import { MapView } from './MapView';
@@ -19,6 +19,7 @@ import { useLineConductorTypes, type LineConductorTypes } from '../lib/useLineCo
 import { useLineSummary } from '../lib/useLineSummary';
 import { useFoundationTypesConfig, getFoundationTypeForAsset } from '../lib/useFoundationTypesConfig';
 import { useTowerWeightsConfig, getTowerWeightForAsset } from '../lib/useTowerWeightsConfig';
+import { useProjectLayers } from '../lib/useProjectLayers';
 import { useMapLayers } from '../lib/useMapLayers';
 import { useProjectDocuments } from '../lib/useProjectDocuments';
 import { utmToLatLng } from '../lib/utmToLatLng';
@@ -74,7 +75,17 @@ export function AssetWorkspace({
   const [heatmapRangeFrom, setHeatmapRangeFrom] = useState('');
   const [heatmapRangeTo, setHeatmapRangeTo] = useState('');
   const { layers: mapLayers, refresh: refreshMapLayers } = useMapLayers(projectId);
-  const [enabledLayerIds, setEnabledLayerIds] = useState<Set<string>>(new Set());
+  const { parts: layerParts, layers: staticLayers } = useProjectLayers(projectSlug);
+  // The project's shapefile layers (Part > Group > Layer): their on/off choice is remembered per project on this device.
+  const layerStorageKey = `project_layers:${projectSlug}`;
+  const [enabledLayerIds, setEnabledLayerIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(`project_layers:${projectSlug}`);
+      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      return new Set();
+    }
+  });
   const [layerErrors, setLayerErrors] = useState<Record<string, string>>({});
 
   // The line's PLS-CADD export (if the admin has uploaded one to the Layers documents, e.g.
@@ -104,9 +115,28 @@ export function AssetWorkspace({
     });
   }
 
+  function setLayers(ids: string[], on: boolean) {
+    setEnabledLayerIds((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (on) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  }
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(layerStorageKey, JSON.stringify(Array.from(enabledLayerIds).filter((id) => id.startsWith('static:'))));
+    } catch {
+      /* storage unavailable: the choice just isn't remembered */
+    }
+  }, [enabledLayerIds, layerStorageKey]);
+
   const activeMapLayers = useMemo(
-    () => mapLayers.filter((l) => enabledLayerIds.has(l.id)),
-    [mapLayers, enabledLayerIds],
+    () => [...mapLayers.filter((l) => enabledLayerIds.has(l.id)), ...staticLayers.filter((l) => enabledLayerIds.has(l.id))],
+    [mapLayers, staticLayers, enabledLayerIds],
   );
 
   function handleAssetSaved() {
@@ -342,6 +372,8 @@ export function AssetWorkspace({
           metricTotals={metricTotals}
           enabledLayerIds={enabledLayerIds}
           onToggleLayer={toggleLayer}
+          layerParts={layerParts}
+          onSetLayers={setLayers}
           layerErrors={layerErrors}
           assets={assets}
           foundationTypes={foundationTypes}

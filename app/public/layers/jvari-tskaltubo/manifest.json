@@ -1,0 +1,589 @@
+{
+ "version": 1,
+ "slug": "jvari-tskaltubo",
+ "parts": [
+  {
+   "id": "part-1",
+   "name": "Part-1",
+   "groups": [
+    {
+     "id": "access-roads-arrangement-plan",
+     "name": "Access Roads Arrangement Plan",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-1/access-roads-arrangement-plan/access-roads",
+       "name": "Access Roads",
+       "file": "part-1/access-roads-arrangement-plan/access-roads.geojson",
+       "style": {
+        "color": "#f97316",
+        "weight": 1.5,
+        "fillColor": "#f97316",
+        "fillOpacity": 0.35
+       },
+       "count": 54,
+       "kb": 45
+      },
+      {
+       "id": "static:jvari-tskaltubo/part-1/access-roads-arrangement-plan/existing-roads",
+       "name": "Existing Roads",
+       "file": "part-1/access-roads-arrangement-plan/existing-roads.geojson",
+       "style": {
+        "color": "#38bdf8",
+        "weight": 1.5,
+        "fillColor": "#38bdf8",
+        "fillOpacity": 0.35
+       },
+       "count": 23,
+       "kb": 102
+      },
+      {
+       "id": "static:jvari-tskaltubo/part-1/access-roads-arrangement-plan/modification-roads",
+       "name": "Modification Roads",
+       "file": "part-1/access-roads-arrangement-plan/modification-roads.geojson",
+       "style": {
+        "color": "#ef4444",
+        "weight": 1.5,
+        "fillColor": "#ef4444",
+        "fillOpacity": 0.35
+       },
+       "count": 18,
+       "kb": 32
+      }
+     ]
+    },
+    {
+     "id": "buffer",
+     "name": "Buffer",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-1/buffer/buffer",
+       "name": "Buffer",
+       "file": "part-1/buffer/buffer.geojson",
+       "style": {
+        "color": "#ffffff",
+        "weight": 1.5,
+        "dashArray": "6 4",
+        "opacity": 0.9
+       },
+       "count": 2,
+       "kb": 3
+      }
+     ]
+    },
+    {
+     "id": "center-line",
+     "name": "Center Line",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-1/center-line/center-line",
+       "name": "Center Line",
+       "file": "part-1/center-line/center-line.geojson",
+       "style": {
+        "color": "#facc15",
+        "weight": 3
+       },
+       "count": 1,
+       "kb": 2
+      }
+     ]
+    },
+    {
+     "id": "combined-kmz-files",
+     "name": "Combined KMZ Files",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-1/combined-kmz-files/combined-kmz",
+       "name": "Combined KMZ",
+       "file": "part-1/combined-kmz-files/combined-kmz.geojson",
+       "style": {
+        "color": "#94a3b8",
+        "weight": 2,
+        "fillColor": "#94a3b8",
+        "fillOpacity": 0.2
+       },
+       "count": 562,
+       "kb": 337,
+       "ownColors": true
+      }
+     ]
+    },
+    {
+     "id": "tower-area",
+     "name": "Tower Area",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-1/tower-area/tower-area",
+       "name": "Tower Area",
+       "file": "part-1/tower-area/tower-area.geojson",
+       "style": {
+        "color": "#22d3ee",
+        "weight": 1.5,
+        "fillColor": "#22d3ee",
+        "fillOpacity": 0.25
+       },
+       "count": 65,
+       "kb": 13
+      }
+     ]
+    },
+    {
+     "id": "tower-centers",
+     "name": "Tower Centers",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-1/tower-centers/tower-centers",
+       "name": "Tower Centers",
+       "file": "part-1/tower-centers/tower-centers.geojson",
+       "style": {
+        "color": "#ffffff",
+        "weight": 1.5,
+        "fillColor": "#f43f5e",
+        "fillOpacity": 1,
+        "radius": 5
+       },
+       "count": 66,
+       "kb": 7
+      }
+     ]
+    },
+    {
+     "id": "tree-cutting",
+     "name": "Tree Cutting",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-1/tree-cutting/tree-cutting",
+       "name": "Tree Cutting",
+       "file": "part-1/tree-cutting/tree-cutting.geojson",
+       "style": {
+        "color": "#22c55e",
+        "weight": 2.5,
+        "fillColor": "#22c55e",
+        "fillOpacity": 0.3
+       },
+       "count": 247,
+       "kb": 94
+      }
+     ]
+    },
+    {
+     "id": "working-area",
+     "name": "Working Area",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-1/working-area/working-area",
+       "name": "Working Area",
+       "file": "part-1/working-area/working-area.geojson",
+       "style": {
+        "color": "#d946ef",
+        "weight": 1.5,
+        "fillColor": "#d946ef",
+        "fillOpacity": 0.2
+       },
+       "count": 83,
+       "kb": 25
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "part-2",
+   "name": "Part-2",
+   "groups": [
+    {
+     "id": "access-roads-arrangement-plan",
+     "name": "Access Roads Arrangement Plan",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-2/access-roads-arrangement-plan/access-roads",
+       "name": "Access Roads",
+       "file": "part-2/access-roads-arrangement-plan/access-roads.geojson",
+       "style": {
+        "color": "#f97316",
+        "weight": 1.5,
+        "fillColor": "#f97316",
+        "fillOpacity": 0.35
+       },
+       "count": 26,
+       "kb": 36
+      },
+      {
+       "id": "static:jvari-tskaltubo/part-2/access-roads-arrangement-plan/centerline-roads",
+       "name": "Centerline Roads",
+       "file": "part-2/access-roads-arrangement-plan/centerline-roads.geojson",
+       "style": {
+        "color": "#fde047",
+        "weight": 3
+       },
+       "count": 1,
+       "kb": 1
+      },
+      {
+       "id": "static:jvari-tskaltubo/part-2/access-roads-arrangement-plan/existing-roads",
+       "name": "Existing Roads",
+       "file": "part-2/access-roads-arrangement-plan/existing-roads.geojson",
+       "style": {
+        "color": "#38bdf8",
+        "weight": 1.5,
+        "fillColor": "#38bdf8",
+        "fillOpacity": 0.35
+       },
+       "count": 2,
+       "kb": 2
+      },
+      {
+       "id": "static:jvari-tskaltubo/part-2/access-roads-arrangement-plan/modification-roads",
+       "name": "Modification Roads",
+       "file": "part-2/access-roads-arrangement-plan/modification-roads.geojson",
+       "style": {
+        "color": "#ef4444",
+        "weight": 1.5,
+        "fillColor": "#ef4444",
+        "fillOpacity": 0.35
+       },
+       "count": 13,
+       "kb": 24
+      }
+     ]
+    },
+    {
+     "id": "buffer",
+     "name": "Buffer",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-2/buffer/buffer",
+       "name": "Buffer",
+       "file": "part-2/buffer/buffer.geojson",
+       "style": {
+        "color": "#ffffff",
+        "weight": 1.5,
+        "dashArray": "6 4",
+        "opacity": 0.9
+       },
+       "count": 170,
+       "kb": 21
+      }
+     ]
+    },
+    {
+     "id": "center-line",
+     "name": "Center Line",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-2/center-line/center-line",
+       "name": "Center Line",
+       "file": "part-2/center-line/center-line.geojson",
+       "style": {
+        "color": "#facc15",
+        "weight": 3
+       },
+       "count": 1,
+       "kb": 1
+      }
+     ]
+    },
+    {
+     "id": "combined-kmz-files",
+     "name": "Combined KMZ Files",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-2/combined-kmz-files/combined-kmz",
+       "name": "Combined KMZ",
+       "file": "part-2/combined-kmz-files/combined-kmz.geojson",
+       "style": {
+        "color": "#94a3b8",
+        "weight": 2,
+        "fillColor": "#94a3b8",
+        "fillOpacity": 0.2
+       },
+       "count": 1101,
+       "kb": 366,
+       "ownColors": true
+      }
+     ]
+    },
+    {
+     "id": "leg-extensions",
+     "name": "Leg Extensions",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-2/leg-extensions/leg-extensions",
+       "name": "Leg Extensions",
+       "file": "part-2/leg-extensions/leg-extensions.geojson",
+       "style": {
+        "color": "#ffffff",
+        "weight": 1,
+        "fillColor": "#a3e635",
+        "fillOpacity": 0.95,
+        "radius": 4
+       },
+       "count": 164,
+       "kb": 20
+      }
+     ]
+    },
+    {
+     "id": "tower-area",
+     "name": "Tower Area",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-2/tower-area/tower-area",
+       "name": "Tower Area",
+       "file": "part-2/tower-area/tower-area.geojson",
+       "style": {
+        "color": "#22d3ee",
+        "weight": 1.5,
+        "fillColor": "#22d3ee",
+        "fillOpacity": 0.25
+       },
+       "count": 190,
+       "kb": 38
+      }
+     ]
+    },
+    {
+     "id": "tower-centers",
+     "name": "Tower Centers",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-2/tower-centers/tower-centers",
+       "name": "Tower Centers",
+       "file": "part-2/tower-centers/tower-centers.geojson",
+       "style": {
+        "color": "#ffffff",
+        "weight": 1.5,
+        "fillColor": "#f43f5e",
+        "fillOpacity": 1,
+        "radius": 5
+       },
+       "count": 43,
+       "kb": 7
+      }
+     ]
+    },
+    {
+     "id": "tree-cutting",
+     "name": "Tree Cutting",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-2/tree-cutting/tree-cutting",
+       "name": "Tree Cutting",
+       "file": "part-2/tree-cutting/tree-cutting.geojson",
+       "style": {
+        "color": "#22c55e",
+        "weight": 2.5,
+        "fillColor": "#22c55e",
+        "fillOpacity": 0.3
+       },
+       "count": 29,
+       "kb": 25
+      }
+     ]
+    },
+    {
+     "id": "working-area",
+     "name": "Working Area",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-2/working-area/working-area",
+       "name": "Working Area",
+       "file": "part-2/working-area/working-area.geojson",
+       "style": {
+        "color": "#d946ef",
+        "weight": 1.5,
+        "fillColor": "#d946ef",
+        "fillOpacity": 0.2
+       },
+       "count": 224,
+       "kb": 57
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "part-3",
+   "name": "Part-3",
+   "groups": [
+    {
+     "id": "access-roads-arrangement-plan",
+     "name": "Access Roads Arrangement Plan",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-3/access-roads-arrangement-plan/access-roads",
+       "name": "Access Roads",
+       "file": "part-3/access-roads-arrangement-plan/access-roads.geojson",
+       "style": {
+        "color": "#f97316",
+        "weight": 1.5,
+        "fillColor": "#f97316",
+        "fillOpacity": 0.35
+       },
+       "count": 65,
+       "kb": 34
+      },
+      {
+       "id": "static:jvari-tskaltubo/part-3/access-roads-arrangement-plan/existing-roads",
+       "name": "Existing Roads",
+       "file": "part-3/access-roads-arrangement-plan/existing-roads.geojson",
+       "style": {
+        "color": "#38bdf8",
+        "weight": 1.5,
+        "fillColor": "#38bdf8",
+        "fillOpacity": 0.35
+       },
+       "count": 17,
+       "kb": 83
+      },
+      {
+       "id": "static:jvari-tskaltubo/part-3/access-roads-arrangement-plan/modification-roads",
+       "name": "Modification Roads",
+       "file": "part-3/access-roads-arrangement-plan/modification-roads.geojson",
+       "style": {
+        "color": "#ef4444",
+        "weight": 1.5,
+        "fillColor": "#ef4444",
+        "fillOpacity": 0.35
+       },
+       "count": 32,
+       "kb": 107
+      }
+     ]
+    },
+    {
+     "id": "buffer",
+     "name": "Buffer",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-3/buffer/buffer",
+       "name": "Buffer",
+       "file": "part-3/buffer/buffer.geojson",
+       "style": {
+        "color": "#ffffff",
+        "weight": 1.5,
+        "dashArray": "6 4",
+        "opacity": 0.9
+       },
+       "count": 384,
+       "kb": 56
+      }
+     ]
+    },
+    {
+     "id": "center-line",
+     "name": "Center Line",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-3/center-line/center-line",
+       "name": "Center Line",
+       "file": "part-3/center-line/center-line.geojson",
+       "style": {
+        "color": "#facc15",
+        "weight": 3
+       },
+       "count": 97,
+       "kb": 14
+      }
+     ]
+    },
+    {
+     "id": "combined-kmz-files",
+     "name": "Combined KMZ Files",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-3/combined-kmz-files/combined-kmz",
+       "name": "Combined KMZ",
+       "file": "part-3/combined-kmz-files/combined-kmz.geojson",
+       "style": {
+        "color": "#94a3b8",
+        "weight": 2,
+        "fillColor": "#94a3b8",
+        "fillOpacity": 0.2
+       },
+       "count": 1003,
+       "kb": 569,
+       "ownColors": true
+      }
+     ]
+    },
+    {
+     "id": "tower-area",
+     "name": "Tower Area",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-3/tower-area/tower-area",
+       "name": "Tower Area",
+       "file": "part-3/tower-area/tower-area.geojson",
+       "style": {
+        "color": "#22d3ee",
+        "weight": 1.5,
+        "fillColor": "#22d3ee",
+        "fillOpacity": 0.25
+       },
+       "count": 95,
+       "kb": 22
+      }
+     ]
+    },
+    {
+     "id": "tower-centers",
+     "name": "Tower Centers",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-3/tower-centers/tower-centers",
+       "name": "Tower Centers",
+       "file": "part-3/tower-centers/tower-centers.geojson",
+       "style": {
+        "color": "#ffffff",
+        "weight": 1.5,
+        "fillColor": "#f43f5e",
+        "fillOpacity": 1,
+        "radius": 5
+       },
+       "count": 95,
+       "kb": 10
+      }
+     ]
+    },
+    {
+     "id": "tree-cutting",
+     "name": "Tree Cutting",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-3/tree-cutting/tree-cutting",
+       "name": "Tree Cutting",
+       "file": "part-3/tree-cutting/tree-cutting.geojson",
+       "style": {
+        "color": "#22c55e",
+        "weight": 2.5,
+        "fillColor": "#22c55e",
+        "fillOpacity": 0.3
+       },
+       "count": 121,
+       "kb": 205
+      }
+     ]
+    },
+    {
+     "id": "working-area",
+     "name": "Working Area",
+     "layers": [
+      {
+       "id": "static:jvari-tskaltubo/part-3/working-area/working-area",
+       "name": "Working Area",
+       "file": "part-3/working-area/working-area.geojson",
+       "style": {
+        "color": "#d946ef",
+        "weight": 1.5,
+        "fillColor": "#d946ef",
+        "fillOpacity": 0.2
+       },
+       "count": 96,
+       "kb": 29
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

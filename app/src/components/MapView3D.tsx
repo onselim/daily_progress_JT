@@ -77,7 +77,7 @@ interface MapView3DProps {
   groundWireConfig: GroundWireConfig;
   isAdmin?: boolean;
   onEditConductorType?: (channel: keyof LineConductorTypes) => void;
-  geoLayers?: { id: string; name: string; url: string }[];
+  geoLayers?: { id: string; name: string; url: string; style?: { color: string; fillColor?: string } }[];
   onLayerError?: (layerId: string, message: string) => void;
 }
 
@@ -365,7 +365,7 @@ export function MapView3D({
           for (const feature of features) {
             const geom = feature?.geometry;
             if (!geom) continue;
-            const { stroke, fill } = geoLayerColors(feature?.properties?.category);
+            const { stroke, fill } = geoLayer.style ? { stroke: geoLayer.style.color, fill: geoLayer.style.fillColor ?? null } : geoLayerColors(feature?.properties?.category);
 
             if (geom.type === 'Polygon') addPolygon(geom.coordinates[0], stroke, fill);
             else if (geom.type === 'MultiPolygon') for (const poly of geom.coordinates) addPolygon(poly[0], stroke, fill);
