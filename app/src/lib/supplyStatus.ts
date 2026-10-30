@@ -2,7 +2,9 @@ import { getTowerWeightForAsset, parseTowerType, type TowerWeightConfig } from '
 
 /** Where a tower's steel (or its stub set) is in the supply chain. 'erected' is not stored: it follows the Construction item er_te. */
 export type SupplyStage = 'not_ordered' | 'ordered' | 'manufacturing' | 'manufactured' | 'shipped' | 'delivered';
-export type SupplyComponent = 'tower' | 'stub';
+export type SupplyComponent = 'tower' | 'stub' | 'leg1' | 'leg2' | 'leg3' | 'leg4';
+/** Leg extensions A..D of a tower; they are made and shipped separately from the tower body. They do not count in the supply %. */
+export const LEG_COMPONENTS = ['leg1', 'leg2', 'leg3', 'leg4'] as const;
 export type SupplyDisplayStage = SupplyStage | 'erected';
 
 export const SUPPLY_STAGES: SupplyStage[] = ['not_ordered', 'ordered', 'manufacturing', 'manufactured', 'shipped', 'delivered'];
@@ -125,4 +127,16 @@ export function groupByType(assets: SupplyAssetInput[], statuses: SupplyByAsset,
     row.counts[statuses[a.id]?.[component] ?? 'not_ordered'] += 1;
   }
   return [...map.values()].sort((a, b) => a.type.localeCompare(b.type, undefined, { numeric: true }));
+}
+
+const MADE: SupplyStage[] = ['manufactured', 'shipped', 'delivered'];
+
+/** How many of a tower's four leg extensions are made, and which ones are still missing (1..4). */
+export function legsSummary(status: SupplyByAsset[string] | undefined): { made: number; missing: number[]; stages: (SupplyStage | undefined)[] } {
+  const stages = LEG_COMPONENTS.map((c) => status?.[c]);
+  const missing: number[] = [];
+  stages.forEach((st, i) => {
+    if (!st || !MADE.includes(st)) missing.push(i + 1);
+  });
+  return { made: 4 - missing.length, missing, stages };
 }

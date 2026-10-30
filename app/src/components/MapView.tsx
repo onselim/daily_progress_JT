@@ -14,7 +14,7 @@ import type { AssetListItem } from '../lib/useAssets';
 import type { GroundWireConfig } from '../lib/useGroundWireConfig';
 import type { LineConductorTypes } from '../lib/useLineConductorTypes';
 import type { PhotoLocation } from '../lib/useProjectPhotoLocations';
-import { STAGE_META, SUPPLY_STAGES, stageLabel, type SupplyByAsset, type SupplyDisplayStage } from '../lib/supplyStatus';
+import { STAGE_META, SUPPLY_STAGES, legsSummary, stageLabel, type SupplyByAsset, type SupplyDisplayStage } from '../lib/supplyStatus';
 import type { TranslationKey } from '../lib/i18n/translations/en';
 
 const CONDUCTOR_LABEL_KEY: Record<keyof LineConductorTypes, TranslationKey> = {
@@ -228,6 +228,16 @@ interface MapViewProps {
   supplyByAsset?: SupplyByAsset;
   drumOverlay?: DrumOverlay | null;
   onDrumSegmentClick?: (segId: number) => void;
+}
+
+/** Tooltip line for the four leg extensions: "Legs: 4/4 made" or which ones are still missing. Empty until any leg has a status. */
+function legsLine(status: SupplyByAsset[string] | undefined, language: string): string {
+  if (!status || !(['leg1', 'leg2', 'leg3', 'leg4'] as const).some((c) => status[c])) return '';
+  const { made, missing } = legsSummary(status);
+  const label = language === 'tr' ? 'Ayaklar' : 'Legs';
+  if (missing.length === 0) return `<br/>${label}: 4/4 ${language === 'tr' ? 'üretildi' : 'made'}`;
+  const names = missing.map((i) => 'ABCD'[i - 1]).join(', ');
+  return `<br/>${label}: ${made}/4 ${language === 'tr' ? 'üretildi, eksik' : 'made, missing'} ${names}`;
 }
 
 export function MapView({
@@ -672,7 +682,7 @@ export function MapView({
       if (supplyStage) {
         const stub = supplyByAsset?.[asset.id]?.stub ?? 'not_ordered';
         marker.bindTooltip(
-          `<b>${asset.asset_code}</b> ${asset.asset_type ?? ''}<br/>${language === 'tr' ? 'Direk' : 'Tower'}: ${stageLabel(supplyStage, language)}<br/>${language === 'tr' ? 'Stub' : 'Stub'}: ${stageLabel(stub, language)}`,
+          `<b>${asset.asset_code}</b> ${asset.asset_type ?? ''}<br/>${language === 'tr' ? 'Direk' : 'Tower'}: ${stageLabel(supplyStage, language)}<br/>${language === 'tr' ? 'Stub' : 'Stub'}: ${stageLabel(stub, language)}${legsLine(supplyByAsset?.[asset.id], language)}`,
           { direction: 'top', offset: [0, -10] },
         );
       }
