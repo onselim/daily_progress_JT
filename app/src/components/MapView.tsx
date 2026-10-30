@@ -1,5 +1,5 @@
 import type { LayerStyle } from '../lib/useProjectLayers';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster';
@@ -271,6 +271,25 @@ export function MapView({
   const [basemap, setBasemap] = useState<keyof typeof BASEMAPS>('satellite');
   const [basemapMenuOpen, setBasemapMenuOpen] = useState(false);
   const [supplyMode, setSupplyMode] = useState(false);
+  // Default is the simple "here / on the way / not yet" view; the toggle shows all six stages. A legend item can be clicked to highlight it.
+  const [supplyDetail, setSupplyDetail] = useState(false);
+  const [supplyFocus, setSupplyFocus] = useState<string | null>(null);
+  const supplyLegend = useMemo(() => {
+    const tr = language === 'tr';
+    if (supplyDetail) {
+      return (['not_ordered', ...SUPPLY_STAGES.slice(1), 'erected'] as SupplyDisplayStage[]).map((st) => ({
+        key: st as string,
+        label: stageLabel(st, language),
+        color: STAGE_META[st].color,
+        stages: [st],
+      }));
+    }
+    return [
+      { key: 'site', label: tr ? 'Sahada (var)' : 'At site', color: '#22c55e', stages: ['delivered', 'erected'] as SupplyDisplayStage[] },
+      { key: 'coming', label: tr ? 'Yolda / sevke hazır' : 'On the way / ready', color: '#fb923c', stages: ['manufactured', 'shipped'] as SupplyDisplayStage[] },
+      { key: 'none', label: tr ? 'Henüz yok' : 'Not yet', color: '#6b7280', stages: ['not_ordered', 'ordered', 'manufacturing'] as SupplyDisplayStage[] },
+    ];
+  }, [supplyDetail, language]);
   const drumGroupRef = useRef<L.LayerGroup | null>(null);
   const drumFitKeyRef = useRef('');
 
@@ -615,7 +634,8 @@ export function MapView({
       if (supplyMode && supplyByAsset) {
         supplyStage = (percentByAssetAndKey[asset.id]?.er_te ?? 0) >= 100 ? 'erected' : supplyByAsset[asset.id]?.tower ?? 'not_ordered';
       }
-      const color = supplyStage ? STAGE_META[supplyStage].color : STATUS_COLOR[asset.status] ?? STATUS_COLOR.not_started;
+      const legendItem = supplyStage ? supplyLegend.find((it) => it.stages.includes(supplyStage as SupplyDisplayStage)) : undefined;
+      const color = legendItem ? legendItem.color : STATUS_COLOR[asset.status] ?? STATUS_COLOR.not_started;
       const baseSize = isSelected ? 30 : restricted ? 26 : isActive ? 26 : 20;
 
       let html: string;
@@ -650,6 +670,7 @@ export function MapView({
         onSelect(asset.id);
         map.flyTo([lat as number, lng as number], Math.max(map.getZoom(), 17));
       });
+      if (supplyFocus && legendItem && legendItem.key !== supplyFocus && !isSelected) marker.setOpacity(0.22);
       markersRef.current[asset.id] = marker;
     }
 
@@ -841,6 +862,8 @@ export function MapView({
     language,
     supplyMode,
     supplyByAsset,
+    supplyLegend,
+    supplyFocus,
   ]);
 
   function zoomToSelected() {
@@ -898,12 +921,27 @@ export function MapView({
       </div>
       {supplyMode && supplyByAsset && (
         <div className="supply-legend">
-          {(['not_ordered', ...SUPPLY_STAGES.slice(1), 'erected'] as SupplyDisplayStage[]).map((st) => (
-            <span key={st} className="supply-legend-item">
-              <i style={{ background: STAGE_META[st].color }} />
-              {stageLabel(st, language)}
-            </span>
+          {supplyLegend.map((it) => (
+            <button
+              type="button"
+              key={it.key}
+              className={`supply-legend-item${supplyFocus === it.key ? ' active' : ''}`}
+              onClick={() => setSupplyFocus((f) => (f === it.key ? null : it.key))}
+            >
+              <i style={{ background: it.color }} />
+              {it.label}
+            </button>
           ))}
+          <button
+            type="button"
+            className="supply-legend-item supply-legend-more"
+            onClick={() => {
+              setSupplyDetail((v) => !v);
+              setSupplyFocus(null);
+            }}
+          >
+            {supplyDetail ? (language === 'tr' ? '‹ Sade' : '‹ Simple') : language === 'tr' ? 'Detay ›' : 'Detail ›'}
+          </button>
         </div>
       )}
     </>
