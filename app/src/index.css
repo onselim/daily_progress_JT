@@ -4174,15 +4174,44 @@ a.pw-edit-items-link {
 @media (max-width: 1100px) { .supply-legend { bottom: 112px; } }
 
 /* Material status (shipment entry) admin page */
-.ss-page { max-width: 900px; display: flex; flex-direction: column; gap: 16px; }
-.ss-page .ss-apply { align-self: flex-start; background: #1d4ed8; border: 1px solid #3b82f6; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; color: #fff !important; }
-.ss-page .ss-apply:disabled { opacity: 0.4; cursor: default; }
-.ss-preview { font-size: 12px; color: var(--text); background: rgba(23, 27, 38, 0.95); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; word-break: break-word; }
-.ss-bad { color: #fca5a5; font-size: 12px; }
+.ss-page { max-width: 960px; display: flex; flex-direction: column; gap: 16px; }
+.ss-steps { margin: 0; padding-left: 20px; font-size: 13px; color: var(--text); display: flex; flex-direction: column; gap: 4px; }
+.ss-tabs { display: flex; gap: 8px; }
+.ss-tabs button { flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: rgba(23, 27, 38, 0.95); color: #e5e7eb !important; font-weight: 600; cursor: pointer; }
+.ss-tabs button.active { background: #1d4ed8; border-color: #3b82f6; color: #fff !important; }
+.ss-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; }
+.ss-legend-hint { color: var(--text); }
+.ss-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid; background: rgba(23, 27, 38, 0.95); color: #e5e7eb !important; cursor: pointer; font-size: 12px; }
+.ss-chip i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.ss-chip:disabled { opacity: 0.35; cursor: default; }
+.ss-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.ss-tools input { flex: 1 1 160px; min-width: 0; }
+.ss-tools button { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: rgba(23, 27, 38, 0.95); color: #e5e7eb !important; cursor: pointer; font-size: 12px; }
+.ss-tools button:disabled { opacity: 0.4; cursor: default; }
+.ss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 6px; }
+.ss-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 6px 2px; border-radius: 8px; border: 3px solid transparent; cursor: pointer; color: #0b0f19 !important; line-height: 1.1; }
+.ss-tile b { font-size: 15px; }
+.ss-tile small { font-size: 9px; opacity: 0.85; }
+.ss-tile.sel { border-color: #fff; box-shadow: 0 0 0 2px #1d4ed8, 0 0 10px rgba(255, 255, 255, 0.6); transform: scale(1.06); }
+.ss-bar { position: sticky; bottom: 0; background: var(--panel-bg); border: 1px solid #3b82f6; border-radius: 10px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.5); }
+.ss-bar-info { font-size: 13px; color: var(--text-h); }
+.ss-bar-stages { display: flex; flex-wrap: wrap; gap: 6px; }
+.ss-bar-stages .ss-stage-btn { flex: 1 1 110px; padding: 10px 8px; border-radius: 8px; border: 0; font-weight: 700; cursor: pointer; color: #0b0f19 !important; }
+.ss-bar-stages .ss-stage-btn:disabled { opacity: 0.35; cursor: default; }
+.ss-bad { color: #fca5a5; font-size: 13px; }
 .ss-msg { color: #86efac; font-size: 13px; }
-.ss-summary table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.ss-summary th, .ss-summary td { padding: 4px 8px; text-align: left; border-bottom: 1px solid var(--border); }
-.ss-summary td:not(:first-child), .ss-summary th:not(:first-child) { text-align: right; }
-.ss-list { max-height: 420px; overflow-y: auto; }
-.ss-list td:not(:first-child), .ss-list th:not(:first-child) { text-align: left; }
-.ss-list tr.ss-sel { background: rgba(147, 197, 253, 0.18); }
+
+/* Conductor drums (Supply panel card + Part-1 etap plan in the drum list panel) */
+.cd-card { margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: rgba(23, 27, 38, 0.6); font-size: 12px; display: flex; flex-direction: column; gap: 6px; }
+.cd-title { font-weight: 700; color: var(--text-h); }
+.cd-ok { color: #86efac; }
+.cd-muted { color: var(--text); opacity: 0.8; font-size: 11px; }
+.cd-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.cd-table th, .cd-table td { padding: 2px 6px; text-align: right; border-bottom: 1px solid var(--border); vertical-align: top; }
+.cd-table th:first-child, .cd-table td:first-child { text-align: left; }
+.cd-etaps .cd-table th:last-child, .cd-etaps .cd-table td:last-child { text-align: left; }
+.cd-table tr.cd-spare td { background: rgba(245, 158, 11, 0.16); }
+.cd-stock { font-size: 11px; color: #fcd34d; }
+.cd-note { font-size: 10px; color: #fcd34d; margin-top: 2px; }
+.cd-details summary { cursor: pointer; font-weight: 600; color: var(--text-h); padding: 2px 0; }
+.cd-details { display: flex; flex-direction: column; gap: 6px; }

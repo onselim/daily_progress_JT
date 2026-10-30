@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import * as XLSX from 'xlsx';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { Part1EtapPlan } from './ConductorDrumsView';
 import {
   buildDrumInput,
   computeDrumPlan,
@@ -23,6 +24,7 @@ import {
 type Towers = ReturnType<typeof lineTowers>;
 
 interface DrumListPanelProps {
+  projectId?: string;
   isAdmin: boolean;
   towers: Towers;
   baseCond: string;
@@ -53,7 +55,7 @@ const fmt = (v: number, d = 0) => v.toLocaleString('tr-TR', { minimumFractionDig
  * own towers on the map — pick the range, bundle / circuits / max drum length and which
  * tower types are tension; the result is listed here and drawn on the map. */
 export function DrumListPanel({
-  isAdmin, towers, baseCond, circuits, reportLang, lists, activeId, onSelectList, settings, result, onSave, onRemove,
+  projectId, isAdmin, towers, baseCond, circuits, reportLang, lists, activeId, onSelectList, settings, result, onSave, onRemove,
   spanInfo, onSaveSpanInfo, showOnMap, onToggleMap, printHref, selectedSeg, onSelectSeg,
 }: DrumListPanelProps) {
   const { language } = useLanguage();
@@ -811,6 +813,7 @@ export function DrumListPanel({
           </button>
         </div>
       )}
+      {projectId && <Part1EtapPlan projectId={projectId} />}
       {spanInfoBlock}
       {err && <div className="drum-err">{err}</div>}
     </div>

@@ -464,6 +464,7 @@ export function AssetWorkspace({
           drumPanel={
             isAdmin ? (
               <DrumListPanel
+                projectId={projectId}
                 isAdmin={isAdmin}
                 towers={drumTowers}
                 baseCond={conductorTypes.conductor}
