@@ -6,7 +6,6 @@ import { updateProjectWorkItem } from '../lib/updateProjectWorkItem';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 import { SUPPLY_STAGES, STAGE_META, stageLabel } from '../lib/supplyStatus';
 import { TOWER_SUPPLY_KEYS, type useSupplyFromTowers } from '../lib/useSupplyFromTowers';
-import { ConductorDrumsCard } from './ConductorDrumsView';
 
 type Stage = 'mfg' | 'del';
 
@@ -185,7 +184,6 @@ export function SupplyPanel({
         <span>{t('common.overall')}</span>
         <span>{n(overallPercent.toFixed(1))}%</span>
       </div>
-      <ConductorDrumsCard projectId={projectId} />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { useLanguage } from '../lib/i18n/LanguageContext';
 import type { HeatMetric, MetricTotals } from './HeatMapPanel';
 import { useAssets } from '../lib/useAssets';
 import { useAssetSupply } from '../lib/useAssetSupply';
+import { useConductorDrums } from '../lib/useConductorDrums';
 import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress';
 import { useRestrictedToday } from '../lib/useRestrictedToday';
 import { useActiveAssetIds } from '../lib/useActiveAssetIds';
@@ -60,6 +61,7 @@ export function AssetWorkspace({
   const { assets, loading: assetsLoading, refresh: refreshAssets } = useAssets(projectId);
   const { statuses: supplyStatuses } = useAssetSupply(projectId);
   // Bobin listesi (drum list): admin'e özel panel + harita katmanı
+  const conductorDrums = useConductorDrums(projectId);
   const drum = useDrumSettings(isAdmin ? projectId : undefined);
   const [drumShow, setDrumShow] = useState(false);
   const [drumSel, setDrumSel] = useState<number | null>(null);
@@ -420,6 +422,7 @@ export function AssetWorkspace({
               onEditConductorType={setEditingChannel}
               heatmapEnabled={heatMetric != null}
               supplyByAsset={supplyStatuses}
+              conductorDrums={conductorDrums}
               heatPoints={heatPoints}
               heatCentroid={heatCentroid}
               geoLayers={activeMapLayers}

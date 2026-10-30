@@ -16,6 +16,8 @@ import type { LineConductorTypes } from '../lib/useLineConductorTypes';
 import type { PhotoLocation } from '../lib/useProjectPhotoLocations';
 import { STAGE_META, SUPPLY_STAGES, legsSummary, stageLabel, type SupplyByAsset, type SupplyDisplayStage } from '../lib/supplyStatus';
 import type { TranslationKey } from '../lib/i18n/translations/en';
+import type { ConductorDrumData } from '../lib/useConductorDrums';
+import { conductorPopupHtml } from '../lib/conductorSummary';
 
 const CONDUCTOR_LABEL_KEY: Record<keyof LineConductorTypes, TranslationKey> = {
   conductor: 'wizard.conductorType',
@@ -228,6 +230,8 @@ interface MapViewProps {
   supplyByAsset?: SupplyByAsset;
   drumOverlay?: DrumOverlay | null;
   onDrumSegmentClick?: (segId: number) => void;
+  /** Conductor drums received per etap; in Supply mode the etaps are drawn as a thick green line along the route. */
+  conductorDrums?: ConductorDrumData | null;
 }
 
 /** Tooltip line for the four leg extensions: "Legs: 4/4 made" or which ones are still missing. Empty until any leg has a status. */
@@ -263,6 +267,7 @@ export function MapView({
   extraBottomLeftControls,
   supplyByAsset,
   drumOverlay = null,
+  conductorDrums = null,
   onDrumSegmentClick,
 }: MapViewProps) {
   const { t, language } = useLanguage();
@@ -418,6 +423,60 @@ export function MapView({
       if (pts.length > 1) map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 16 });
     }
   }, [drumOverlay, onDrumSegmentClick]);
+
+  // Supply mode: conductor along the route, coloured like the towers -- etaps whose drums are on site (green), the rest of the line not yet (grey)
+  const [conductorFocus, setConductorFocus] = useState<'site' | 'none' | null>(null);
+  const conductorLines = useMemo(() => {
+    if (!conductorDrums) return null;
+    const path = resolveLinePath(assets, coordinateSystem);
+    const index = new Map(path.map((p, i) => [p.asset_code, i]));
+    const km = (pts: [number, number][]) => pts.reduce((s, q, i) => (i ? s + L.latLng(pts[i - 1]).distanceTo(L.latLng(q)) : 0), 0) / 1000;
+    const site: { e: ConductorDrumData['etaps'][number]; pts: [number, number][] }[] = [];
+    let last = -1;
+    for (const e of conductorDrums.etaps) {
+      const [from, to] = e.name.split('–');
+      const a = index.get(from);
+      const b = index.get(to);
+      if (a == null || b == null) continue;
+      const pts = path.slice(Math.min(a, b), Math.max(a, b) + 1).map((p) => [p.lat, p.lng] as [number, number]);
+      if (pts.length < 2) continue;
+      site.push({ e, pts });
+      last = Math.max(last, a, b);
+    }
+    const rest = last >= 0 ? path.slice(last).map((p) => [p.lat, p.lng] as [number, number]) : [];
+    return { site, rest, siteKm: site.reduce((s, x) => s + km(x.pts), 0), restKm: km(rest) };
+  }, [conductorDrums, assets, coordinateSystem]);
+
+  const conductorGroupRef = useRef<L.LayerGroup | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (conductorGroupRef.current) {
+      map.removeLayer(conductorGroupRef.current);
+      conductorGroupRef.current = null;
+    }
+    if (!supplyMode || !conductorLines) return;
+    if (!map.getPane('conductorPane')) map.createPane('conductorPane').style.zIndex = '440';
+    const tr = language === 'tr';
+    const group = L.layerGroup();
+    const draw = (pts: [number, number][], color: string, dim: boolean, tip: string, popup?: string) => {
+      L.polyline(pts, { pane: 'conductorPane', color: '#0b0f17', weight: 11, opacity: dim ? 0.1 : 0.7, interactive: false, lineCap: 'butt' }).addTo(group);
+      const line = L.polyline(pts, { pane: 'conductorPane', color, weight: 6, opacity: dim ? 0.15 : 0.95, lineCap: 'butt' }).bindTooltip(tip, { sticky: true });
+      if (popup) line.bindPopup(popup, { maxWidth: 360, maxHeight: 320 });
+      line.addTo(group);
+    };
+    const dimSite = conductorFocus === 'none';
+    const dimRest = conductorFocus === 'site';
+    for (const { e, pts } of conductorLines.site) {
+      const drums = e.drums.length ? e.drums.map((x) => `${x.count} × ${x.len.toLocaleString('tr-TR')} m`).join(' + ') : tr ? 'artan bobinlerden' : 'from leftovers';
+      draw(pts, '#22c55e', dimSite, `<b>${tr ? 'İletken etabı' : 'Conductor section'} ${e.name}</b>${e.sec ? ` · ${e.sec.toLocaleString('tr-TR')} m` : ''}<br/>${drums} (${conductorDrums?.conductor})<br/>${tr ? 'Bobinler sahada' : 'Drums on site'}<br/><i>${tr ? 'Ayrıntı için tıklayın' : 'Click for details'}</i>`, conductorDrums ? conductorPopupHtml(conductorDrums, e.name, tr) : undefined);
+    }
+    if (conductorLines.rest.length > 1) {
+      draw(conductorLines.rest, '#6b7280', dimRest, tr ? '<b>İletken</b><br/>Henüz yok (sipariş edilmedi / sahaya gelmedi)' : '<b>Conductor</b><br/>Not yet (not ordered / not on site)');
+    }
+    group.addTo(map);
+    conductorGroupRef.current = group;
+  }, [supplyMode, conductorLines, conductorFocus, language, conductorDrums]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -955,6 +1014,7 @@ export function MapView({
             onClick={() => {
               setSupplyDetail((v) => !v);
               setSupplyFocus(null);
+              setConductorFocus(null);
             }}
           >
             {supplyDetail ? (language === 'tr' ? '‹ Sade' : '‹ Simple') : language === 'tr' ? 'Detay ›' : 'Detail ›'}
@@ -970,6 +1030,26 @@ export function MapView({
               {it.label} <b>{it.count}</b>
             </button>
           ))}
+          {conductorLines && supplyDetail && (
+            <>
+              <span className="supply-legend-break" />
+              <span className="supply-legend-sep">{language === 'tr' ? 'İletken' : 'Conductor'}</span>
+              {[
+                { key: 'site' as const, color: '#22c55e', label: language === 'tr' ? 'Sahada' : 'On site', km: conductorLines.siteKm },
+                { key: 'none' as const, color: '#6b7280', label: language === 'tr' ? 'Henüz yok' : 'Not yet', km: conductorLines.restKm },
+              ].map((it) => (
+                <button
+                  type="button"
+                  key={it.key}
+                  className={`supply-legend-item supply-legend-line${conductorFocus === it.key ? ' active' : ''}`}
+                  onClick={() => setConductorFocus((f) => (f === it.key ? null : it.key))}
+                >
+                  <i style={{ background: it.color }} />
+                  {it.label} <b>{it.km.toFixed(1)} km</b>
+                </button>
+              ))}
+            </>
+          )}
         </div>
       )}
     </>
