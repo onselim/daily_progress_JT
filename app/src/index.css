@@ -4044,10 +4044,10 @@ a.pw-edit-items-link {
 .pw-supply-chip i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 
 .basemap-btn.active { background: #1d4ed8; color: #fff; }
-.supply-legend { position: absolute; left: 10px; bottom: 54px; z-index: 500; display: flex; flex-wrap: wrap; gap: 6px 10px; max-width: min(520px, calc(100% - 20px)); padding: 6px 10px; border-radius: 8px; background: rgba(15, 17, 23, 0.88); border: 1px solid rgba(255, 255, 255, 0.15); font-size: 11px; color: #e5e7eb; }
+.supply-legend { position: absolute; left: 10px; bottom: 54px; z-index: 500; display: flex; flex-wrap: wrap; gap: 6px 10px; max-width: min(520px, calc(100% - 150px)); padding: 6px 10px; border-radius: 8px; background: rgba(15, 17, 23, 0.88); border: 1px solid rgba(255, 255, 255, 0.15); font-size: 11px; color: #e5e7eb; }
 .supply-legend-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; background: none; border: 1px solid transparent; border-radius: 6px; padding: 1px 6px; color: #e5e7eb; font-size: 11px; cursor: pointer; }
 .supply-legend-item.active { border-color: #93c5fd; background: rgba(147, 197, 253, 0.15); }
-.supply-legend-more { color: #93c5fd; margin-left: auto; }
+.supply-legend-more { color: #93c5fd; }
 .supply-legend-item i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.6); }
 
 /* ---------------------------------------------------------------- Bobin listesi (drum list) */
@@ -4169,3 +4169,6 @@ a.pw-edit-items-link {
 /* same dark-text override as the drum panel: paint the legend buttons explicitly */
 .supply-legend .supply-legend-item { color: #e5e7eb !important; }
 .supply-legend .supply-legend-more { color: #93c5fd !important; }
+.supply-legend .supply-legend-item b { font-weight: 700; color: #fff; }
+.supply-legend .supply-legend-item.active { border-color: #93c5fd; background: rgba(147, 197, 253, 0.28); }
+@media (max-width: 1100px) { .supply-legend { bottom: 112px; } }

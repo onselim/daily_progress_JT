@@ -274,6 +274,16 @@ export function MapView({
   // Default is the simple "here / on the way / not yet" view; the toggle shows all six stages. A legend item can be clicked to highlight it.
   const [supplyDetail, setSupplyDetail] = useState(false);
   const [supplyFocus, setSupplyFocus] = useState<string | null>(null);
+  const supplyStageCounts = useMemo(() => {
+    const counts: Partial<Record<SupplyDisplayStage, number>> = {};
+    if (!supplyByAsset) return counts;
+    for (const a of assets) {
+      if (a.asset_code.startsWith('G')) continue; // gantries are not supplied as a tower
+      const st: SupplyDisplayStage = (percentByAssetAndKey[a.id]?.er_te ?? 0) >= 100 ? 'erected' : supplyByAsset[a.id]?.tower ?? 'not_ordered';
+      counts[st] = (counts[st] ?? 0) + 1;
+    }
+    return counts;
+  }, [assets, percentByAssetAndKey, supplyByAsset]);
   const supplyLegend = useMemo(() => {
     const tr = language === 'tr';
     if (supplyDetail) {
@@ -282,14 +292,16 @@ export function MapView({
         label: stageLabel(st, language),
         color: STAGE_META[st].color,
         stages: [st],
+        count: supplyStageCounts[st] ?? 0,
       }));
     }
-    return [
+    const groups = [
       { key: 'site', label: tr ? 'Sahada (var)' : 'At site', color: '#22c55e', stages: ['delivered', 'erected'] as SupplyDisplayStage[] },
-      { key: 'coming', label: tr ? 'Yolda / sevke hazır' : 'On the way / ready', color: '#fb923c', stages: ['manufactured', 'shipped'] as SupplyDisplayStage[] },
+      { key: 'coming', label: tr ? 'Yolda / hazır' : 'On the way', color: '#fb923c', stages: ['manufactured', 'shipped'] as SupplyDisplayStage[] },
       { key: 'none', label: tr ? 'Henüz yok' : 'Not yet', color: '#6b7280', stages: ['not_ordered', 'ordered', 'manufacturing'] as SupplyDisplayStage[] },
     ];
-  }, [supplyDetail, language]);
+    return groups.map((g) => ({ ...g, count: g.stages.reduce((n, st) => n + (supplyStageCounts[st] ?? 0), 0) }));
+  }, [supplyDetail, language, supplyStageCounts]);
   const drumGroupRef = useRef<L.LayerGroup | null>(null);
   const drumFitKeyRef = useRef('');
 
@@ -670,7 +682,13 @@ export function MapView({
         onSelect(asset.id);
         map.flyTo([lat as number, lng as number], Math.max(map.getZoom(), 17));
       });
-      if (supplyFocus && legendItem && legendItem.key !== supplyFocus && !isSelected) marker.setOpacity(0.22);
+      if (supplyFocus && legendItem && !isSelected) {
+        if (legendItem.key === supplyFocus) marker.setZIndexOffset(1000);
+        else {
+          marker.setOpacity(0.12);
+          marker.setZIndexOffset(-1000);
+        }
+      }
       markersRef.current[asset.id] = marker;
     }
 
@@ -921,17 +939,6 @@ export function MapView({
       </div>
       {supplyMode && supplyByAsset && (
         <div className="supply-legend">
-          {supplyLegend.map((it) => (
-            <button
-              type="button"
-              key={it.key}
-              className={`supply-legend-item${supplyFocus === it.key ? ' active' : ''}`}
-              onClick={() => setSupplyFocus((f) => (f === it.key ? null : it.key))}
-            >
-              <i style={{ background: it.color }} />
-              {it.label}
-            </button>
-          ))}
           <button
             type="button"
             className="supply-legend-item supply-legend-more"
@@ -942,6 +949,17 @@ export function MapView({
           >
             {supplyDetail ? (language === 'tr' ? '‹ Sade' : '‹ Simple') : language === 'tr' ? 'Detay ›' : 'Detail ›'}
           </button>
+          {supplyLegend.map((it) => (
+            <button
+              type="button"
+              key={it.key}
+              className={`supply-legend-item${supplyFocus === it.key ? ' active' : ''}`}
+              onClick={() => setSupplyFocus((f) => (f === it.key ? null : it.key))}
+            >
+              <i style={{ background: it.color }} />
+              {it.label} <b>{it.count}</b>
+            </button>
+          ))}
         </div>
       )}
     </>
