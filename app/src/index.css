@@ -4172,3 +4172,17 @@ a.pw-edit-items-link {
 .supply-legend .supply-legend-item b { font-weight: 700; color: #fff; }
 .supply-legend .supply-legend-item.active { border-color: #93c5fd; background: rgba(147, 197, 253, 0.28); }
 @media (max-width: 1100px) { .supply-legend { bottom: 112px; } }
+
+/* Material status (shipment entry) admin page */
+.ss-page { max-width: 900px; display: flex; flex-direction: column; gap: 16px; }
+.ss-page .ss-apply { align-self: flex-start; background: #1d4ed8; border: 1px solid #3b82f6; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; color: #fff !important; }
+.ss-page .ss-apply:disabled { opacity: 0.4; cursor: default; }
+.ss-preview { font-size: 12px; color: var(--text); background: rgba(23, 27, 38, 0.95); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; word-break: break-word; }
+.ss-bad { color: #fca5a5; font-size: 12px; }
+.ss-msg { color: #86efac; font-size: 13px; }
+.ss-summary table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ss-summary th, .ss-summary td { padding: 4px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+.ss-summary td:not(:first-child), .ss-summary th:not(:first-child) { text-align: right; }
+.ss-list { max-height: 420px; overflow-y: auto; }
+.ss-list td:not(:first-child), .ss-list th:not(:first-child) { text-align: left; }
+.ss-list tr.ss-sel { background: rgba(147, 197, 253, 0.18); }

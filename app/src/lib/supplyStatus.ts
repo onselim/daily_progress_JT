@@ -5,7 +5,8 @@ export type SupplyStage = 'not_ordered' | 'ordered' | 'manufacturing' | 'manufac
 export type SupplyComponent = 'tower' | 'stub' | 'leg1' | 'leg2' | 'leg3' | 'leg4';
 /** Leg extensions A..D of a tower; they are made and shipped separately from the tower body. They do not count in the supply %. */
 export const LEG_COMPONENTS = ['leg1', 'leg2', 'leg3', 'leg4'] as const;
-export type SupplyDisplayStage = SupplyStage | 'erected';
+/** 'erected' (tower body up) and 'installed' (stub set in the foundation) are not stored: they follow the Construction items er_te / fn_ss. */
+export type SupplyDisplayStage = SupplyStage | 'erected' | 'installed';
 
 export const SUPPLY_STAGES: SupplyStage[] = ['not_ordered', 'ordered', 'manufacturing', 'manufactured', 'shipped', 'delivered'];
 
@@ -27,6 +28,7 @@ export const STAGE_META: Record<SupplyDisplayStage, StageMeta> = {
   shipped: { color: '#fb923c', en: 'Shipped', tr: 'Sevk edildi (yolda)', mfg: 1, del: 0 },
   delivered: { color: '#22c55e', en: 'At site', tr: 'Sahada', mfg: 1, del: 1 },
   erected: { color: '#14b8a6', en: 'Erected', tr: 'Montajlandı', mfg: 1, del: 1 },
+  installed: { color: '#14b8a6', en: 'Installed', tr: 'Temele yerleştirildi', mfg: 1, del: 1 },
 };
 
 export function stageLabel(stage: SupplyDisplayStage, lang: string): string {

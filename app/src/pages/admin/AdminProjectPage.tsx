@@ -94,6 +94,9 @@ export default function AdminProjectPage() {
             <button type="button" onClick={() => navigate(`/admin/${project.slug}/team`)}>
               {t('topbar.manageTeam')}
             </button>
+            <button type="button" onClick={() => navigate(`/admin/${project.slug}/supply-status`)}>
+              {language === 'tr' ? 'Malzeme durumu' : 'Material status'}
+            </button>
             <button type="button" onClick={() => navigate(`/admin/${project.slug}/modules`)}>
               {language === 'tr' ? 'Modüller ve listeler' : 'Modules & lists'}
             </button>

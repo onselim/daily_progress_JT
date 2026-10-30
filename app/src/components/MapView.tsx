@@ -680,7 +680,7 @@ export function MapView({
 
       const marker = L.marker([lat, lng], { icon }).addTo(map);
       if (supplyStage) {
-        const stub = supplyByAsset?.[asset.id]?.stub ?? 'not_ordered';
+        const stub: SupplyDisplayStage = (percentByAssetAndKey[asset.id]?.fn_ss ?? 0) >= 100 ? 'installed' : supplyByAsset?.[asset.id]?.stub ?? 'not_ordered';
         marker.bindTooltip(
           `<b>${asset.asset_code}</b> ${asset.asset_type ?? ''}<br/>${language === 'tr' ? 'Direk' : 'Tower'}: ${stageLabel(supplyStage, language)}<br/>${language === 'tr' ? 'Stub' : 'Stub'}: ${stageLabel(stub, language)}${legsLine(supplyByAsset?.[asset.id], language)}`,
           { direction: 'top', offset: [0, -10] },
