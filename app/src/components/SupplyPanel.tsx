@@ -4,6 +4,8 @@ import { useAuth } from '../lib/AuthContext';
 import type { SupplyItemBreakdown } from '../lib/useSupplyBreakdown';
 import { updateProjectWorkItem } from '../lib/updateProjectWorkItem';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { SUPPLY_STAGES, STAGE_META, stageLabel } from '../lib/supplyStatus';
+import { TOWER_SUPPLY_KEYS, type useSupplyFromTowers } from '../lib/useSupplyFromTowers';
 
 type Stage = 'mfg' | 'del';
 
@@ -16,6 +18,9 @@ interface SupplyPanelProps {
   overallPercent: number;
   loading: boolean;
   onSaved: () => void;
+  /** Items whose percentages come from the per-tower material status instead of manual input. */
+  computedKeys?: string[];
+  towerSupply?: ReturnType<typeof useSupplyFromTowers>;
 }
 
 export function SupplyPanel({
@@ -27,9 +32,11 @@ export function SupplyPanel({
   overallPercent,
   loading,
   onSaved,
+  computedKeys = [],
+  towerSupply,
 }: SupplyPanelProps) {
   const { user } = useAuth();
-  const { t, tLabel, n } = useLanguage();
+  const { t, tLabel, n, language } = useLanguage();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savedKey, setSavedKey] = useState<string | null>(null);
@@ -98,7 +105,27 @@ export function SupplyPanel({
               <span className="pw-item-label">{tLabel(item.label)}</span>
               <span className="pw-item-percent">{n(item.percentComplete.toFixed(1))}%</span>
             </div>
-            {editable ? (
+            {computedKeys.includes(item.key) && towerSupply ? (
+              <div className="pw-supply-computed">
+                <div className="pw-supply-chips">
+                  {SUPPLY_STAGES.map((st) => {
+                    const totals = item.key === TOWER_SUPPLY_KEYS.stub ? towerSupply.stubs : towerSupply.towers;
+                    const count = totals.counts[st];
+                    if (!count) return null;
+                    return (
+                      <span key={st} className="pw-supply-chip" style={{ borderColor: STAGE_META[st].color }}>
+                        <i style={{ background: STAGE_META[st].color }} />
+                        {stageLabel(st, language)} {n(String(count))}
+                      </span>
+                    );
+                  })}
+                </div>
+                <span className="pw-item-status">
+                  {t('progress.manufactured')} {n(item.manufacturedPercent.toFixed(0))}% · {t('progress.delivered')} {n(item.deliveredPercent.toFixed(0))}%
+                  {language === 'tr' ? ' — direk bazında hesaplandı (ağırlık)' : ' — computed per tower (by weight)'}
+                </span>
+              </div>
+            ) : editable ? (
               <div className="pw-supply-stages">
                 <label className="pw-supply-stage">
                   <span>{t('progress.manufactured')}</span>

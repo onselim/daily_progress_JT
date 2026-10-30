@@ -14,6 +14,7 @@ import type { AssetListItem } from '../lib/useAssets';
 import type { GroundWireConfig } from '../lib/useGroundWireConfig';
 import type { LineConductorTypes } from '../lib/useLineConductorTypes';
 import type { PhotoLocation } from '../lib/useProjectPhotoLocations';
+import { STAGE_META, SUPPLY_STAGES, stageLabel, type SupplyByAsset, type SupplyDisplayStage } from '../lib/supplyStatus';
 import type { TranslationKey } from '../lib/i18n/translations/en';
 
 const CONDUCTOR_LABEL_KEY: Record<keyof LineConductorTypes, TranslationKey> = {
@@ -192,6 +193,13 @@ function plainIconHtml(size: number, color: string, code: string, selected: bool
   }px;font-weight:600;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px ${color},0 2px 6px rgba(0,0,0,.5);font-family:ui-monospace,monospace;">${code}</div>`;
 }
 
+/** Conductor drum list drawn on the line: each drum section (etap) in its drum-length colour. */
+export interface DrumOverlay {
+  segments: { id: number; color: string; label: string; tip: string; pts: [number, number][] }[];
+  joints: { latlng: [number, number]; label: string }[];
+  selected: number | null;
+}
+
 interface MapViewProps {
   assets: AssetListItem[];
   coordinateSystem: string | null;
@@ -216,6 +224,10 @@ interface MapViewProps {
    * toggle) -- lets the parent share that row instead of floating its own separate
    * control group next to it. */
   extraBottomLeftControls?: ReactNode;
+  /** Per-tower material status. When given, a "Supply" toggle colors every tower by where its steel is (ordered / production / shipped / at site / erected). */
+  supplyByAsset?: SupplyByAsset;
+  drumOverlay?: DrumOverlay | null;
+  onDrumSegmentClick?: (segId: number) => void;
 }
 
 export function MapView({
@@ -239,6 +251,9 @@ export function MapView({
   geoLayers = [],
   onLayerError,
   extraBottomLeftControls,
+  supplyByAsset,
+  drumOverlay = null,
+  onDrumSegmentClick,
 }: MapViewProps) {
   const { t, language } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -255,6 +270,9 @@ export function MapView({
   const hasFitBounds = useRef(false);
   const [basemap, setBasemap] = useState<keyof typeof BASEMAPS>('satellite');
   const [basemapMenuOpen, setBasemapMenuOpen] = useState(false);
+  const [supplyMode, setSupplyMode] = useState(false);
+  const drumGroupRef = useRef<L.LayerGroup | null>(null);
+  const drumFitKeyRef = useRef('');
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -281,6 +299,84 @@ export function MapView({
       mapRef.current = null;
     };
   }, []);
+
+  // Bobin listesi katmanı: etaplar renkli kalın çizgi + etiket, ara ekler kırmızı nokta
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (drumGroupRef.current) {
+      map.removeLayer(drumGroupRef.current);
+      drumGroupRef.current = null;
+    }
+    if (!drumOverlay || !drumOverlay.segments.length) {
+      drumFitKeyRef.current = '';
+      return;
+    }
+    const group = L.layerGroup();
+    const sel = drumOverlay.selected;
+    // Kendi pane'i: hat/iletken çizgilerinin (overlayPane) üstünde, direk işaretlerinin altında —
+    // böylece her etap aynı kalınlıkta görünür, yer yer altta kalmaz.
+    if (!map.getPane('drumPane')) {
+      const pane = map.createPane('drumPane');
+      pane.style.zIndex = '450';
+    }
+    const pane = 'drumPane';
+    for (const sg of drumOverlay.segments) {
+      if (sg.pts.length < 2) continue;
+      const dim = sel != null && sel !== sg.id;
+      const on = sel === sg.id;
+      const haloBase: L.PolylineOptions = { pane, color: '#0b0f17', weight: on ? 14 : 11, opacity: dim ? 0.25 : 0.75, interactive: false, lineCap: 'butt' };
+      const lineBase: L.PolylineOptions = { pane, color: sg.color, weight: on ? 9 : 7, opacity: dim ? 0.35 : 1, interactive: false, lineCap: 'butt' };
+      const halo = L.polyline(sg.pts, haloBase).addTo(group);
+      const line = L.polyline(sg.pts, lineBase).addTo(group);
+      // geniş, görünmez dokunma şeridi: fare etabın herhangi bir yerine gelince tüm etap vurgulanır
+      const hit = L.polyline(sg.pts, { pane, color: '#000', weight: 22, opacity: 0, interactive: true });
+      hit.bindTooltip(sg.tip.replace(/\n/g, '<br>'), { sticky: true });
+      const mid = sg.pts[Math.floor(sg.pts.length / 2)];
+      const midPrev = sg.pts[Math.max(0, Math.floor(sg.pts.length / 2) - 1)];
+      const at: [number, number] = sg.pts.length % 2 === 0 ? [(mid[0] + midPrev[0]) / 2, (mid[1] + midPrev[1]) / 2] : mid;
+      const lbl = L.marker(at, {
+        icon: L.divIcon({
+          className: 'drum-label-icon',
+          html: `<span class="drum-map-label${on ? ' on' : ''}" style="border-color:${sg.color};opacity:${dim ? 0.45 : 1}"><i style="background:${sg.color}"></i>${sg.label}</span>`,
+          iconSize: [0, 0],
+        }),
+        zIndexOffset: on ? 2000 : 1000,
+      });
+      const hover = (onHover: boolean) => {
+        halo.setStyle(onHover ? { weight: 17, opacity: 0.95, color: '#ffffff' } : haloBase);
+        line.setStyle(onHover ? { weight: 11, opacity: 1 } : lineBase);
+        if (onHover) {
+          halo.bringToFront();
+          line.bringToFront();
+          hit.bringToFront();
+        }
+        lbl.getElement()?.querySelector('.drum-map-label')?.classList.toggle('hover', onHover);
+        lbl.setZIndexOffset(onHover ? 3000 : on ? 2000 : 1000);
+      };
+      for (const t of [hit, lbl]) {
+        t.on('mouseover', () => hover(true));
+        t.on('mouseout', () => hover(false));
+        if (onDrumSegmentClick) t.on('click', () => onDrumSegmentClick(sg.id));
+      }
+      hit.addTo(group);
+      lbl.addTo(group);
+    }
+    for (const j of drumOverlay.joints) {
+      L.circleMarker(j.latlng, { pane: 'drumPane', radius: 6, color: '#fff', weight: 2, fillColor: '#ef4444', fillOpacity: 1 })
+        .bindTooltip(j.label)
+        .addTo(group);
+    }
+    group.addTo(map);
+    drumGroupRef.current = group;
+    // ilk açılışta tüm etaplara, bir etap seçilince o etaba yaklaş
+    const key = sel != null ? `s${sel}` : 'all';
+    if (drumFitKeyRef.current !== key) {
+      drumFitKeyRef.current = key;
+      const pts = sel != null ? drumOverlay.segments.find((x) => x.id === sel)?.pts ?? [] : drumOverlay.segments.flatMap((x) => x.pts);
+      if (pts.length > 1) map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 16 });
+    }
+  }, [drumOverlay, onDrumSegmentClick]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -515,7 +611,11 @@ export function MapView({
       const restricted = restrictedAssetIds.has(asset.id);
       const isSelected = asset.id === selectedAssetId;
       const isActive = activeAssetIds.has(asset.id);
-      const color = STATUS_COLOR[asset.status] ?? STATUS_COLOR.not_started;
+      let supplyStage: SupplyDisplayStage | null = null;
+      if (supplyMode && supplyByAsset) {
+        supplyStage = (percentByAssetAndKey[asset.id]?.er_te ?? 0) >= 100 ? 'erected' : supplyByAsset[asset.id]?.tower ?? 'not_ordered';
+      }
+      const color = supplyStage ? STAGE_META[supplyStage].color : STATUS_COLOR[asset.status] ?? STATUS_COLOR.not_started;
       const baseSize = isSelected ? 30 : restricted ? 26 : isActive ? 26 : 20;
 
       let html: string;
@@ -537,6 +637,13 @@ export function MapView({
       });
 
       const marker = L.marker([lat, lng], { icon }).addTo(map);
+      if (supplyStage) {
+        const stub = supplyByAsset?.[asset.id]?.stub ?? 'not_ordered';
+        marker.bindTooltip(
+          `<b>${asset.asset_code}</b> ${asset.asset_type ?? ''}<br/>${language === 'tr' ? 'Direk' : 'Tower'}: ${stageLabel(supplyStage, language)}<br/>${language === 'tr' ? 'Stub' : 'Stub'}: ${stageLabel(stub, language)}`,
+          { direction: 'top', offset: [0, -10] },
+        );
+      }
       marker.on('click', () => onSelect(asset.id));
       marker.on('contextmenu', (e) => {
         L.DomEvent.preventDefault(e.originalEvent);
@@ -732,6 +839,8 @@ export function MapView({
     isAdmin,
     onEditConductorType,
     language,
+    supplyMode,
+    supplyByAsset,
   ]);
 
   function zoomToSelected() {
@@ -780,8 +889,23 @@ export function MapView({
             🗺 {t('map.baseMap')} ▾
           </button>
         </div>
+        {supplyByAsset && (
+          <button type="button" className={`basemap-btn${supplyMode ? ' active' : ''}`} onClick={() => setSupplyMode((v) => !v)}>
+            📦 {language === 'tr' ? 'Malzeme' : 'Supply'}
+          </button>
+        )}
         {extraBottomLeftControls}
       </div>
+      {supplyMode && supplyByAsset && (
+        <div className="supply-legend">
+          {(['not_ordered', ...SUPPLY_STAGES.slice(1), 'erected'] as SupplyDisplayStage[]).map((st) => (
+            <span key={st} className="supply-legend-item">
+              <i style={{ background: STAGE_META[st].color }} />
+              {stageLabel(st, language)}
+            </span>
+          ))}
+        </div>
+      )}
     </>
   );
 }

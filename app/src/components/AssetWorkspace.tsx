@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AssetList } from './AssetList';
 import { AssetEditor } from './AssetEditor';
-import { MapView } from './MapView';
+import { MapView, type DrumOverlay } from './MapView';
+import { DrumListPanel } from './DrumListPanel';
+import { buildDrumInput, computeDrumPlan, lineTowers, useDrumSettings } from '../lib/drum/useDrumPlan';
 import { MapView3D } from './MapView3D';
 import { RightPanelStack } from './RightPanelStack';
 import { LicenseBadge } from './LicenseBadge';
@@ -9,6 +11,7 @@ import { ConductorTypeDialog } from './ConductorTypeDialog';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 import type { HeatMetric, MetricTotals } from './HeatMapPanel';
 import { useAssets } from '../lib/useAssets';
+import { useAssetSupply } from '../lib/useAssetSupply';
 import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress';
 import { useRestrictedToday } from '../lib/useRestrictedToday';
 import { useActiveAssetIds } from '../lib/useActiveAssetIds';
@@ -23,6 +26,8 @@ import { useProjectLayers } from '../lib/useProjectLayers';
 import { useMapLayers } from '../lib/useMapLayers';
 import { useProjectDocuments } from '../lib/useProjectDocuments';
 import { utmToLatLng } from '../lib/utmToLatLng';
+
+const escHtml = (v: string) => v.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
 
 interface AssetWorkspaceProps {
   projectId: string;
@@ -41,7 +46,9 @@ export function AssetWorkspace({
   isAdmin = false,
   onAssetSaved,
 }: AssetWorkspaceProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  // bobin listesi açıklamaları seçili dilde (şimdilik Türkçe / İngilizce; diğer dillerde İngilizce)
+  const drumLang: 'en' | 'tr' = language === 'tr' ? 'tr' : 'en';
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [zoomRequest, setZoomRequest] = useState<{ assetId: string; nonce: number } | null>(null);
   const [is3D, setIs3D] = useState(false);
@@ -51,6 +58,12 @@ export function AssetWorkspace({
     setZoomRequest({ assetId, nonce: Date.now() });
   }
   const { assets, loading: assetsLoading, refresh: refreshAssets } = useAssets(projectId);
+  const { statuses: supplyStatuses } = useAssetSupply(projectId);
+  // Bobin listesi (drum list): admin'e özel panel + harita katmanı
+  const drum = useDrumSettings(isAdmin ? projectId : undefined);
+  const [drumShow, setDrumShow] = useState(false);
+  const [drumSel, setDrumSel] = useState<number | null>(null);
+  const onDrumSegmentClick = useCallback((id: number) => setDrumSel((cur) => (cur === id ? null : id)), []);
   const knownAssetTypes = useMemo(
     () => Array.from(new Set(assets.map((a) => a.asset_type).filter((t): t is string => !!t))).sort(),
     [assets],
@@ -279,6 +292,69 @@ export function AssetWorkspace({
     return nearestId;
   }, [heatCentroid, heatPointsWithAsset]);
 
+  // Bobin listesi haritadaki direklerden (sıra, koordinat, kot, tip) hesaplanır
+  const drumTowers = useMemo(() => (isAdmin ? lineTowers(assets, coordinateSystem) : []), [isAdmin, assets, coordinateSystem]);
+  const drumResult = useMemo(
+    () => (drum.settings && drumTowers.length > 1 ? computeDrumPlan(buildDrumInput(drumTowers, drum.settings, drumLang, drum.spanInfo)) : null),
+    [drum.settings, drumTowers, drumLang, drum.spanInfo],
+  );
+  const drumOverlay = useMemo<DrumOverlay | null>(() => {
+    const res = drumResult;
+    if (!drumShow || !res?.model) return null;
+    const { R, model } = res;
+    const norm = (c: string) => String(c).trim().replace(/^T\s*/i, '');
+    const byCode = new Map(assets.map((a) => [norm(a.asset_code), a]));
+    const towerLL: ([number, number] | null)[] = R.towers.map((t: { no: string }) => {
+      const a = byCode.get(norm(t.no));
+      if (!a) return null;
+      if (a.lat != null && a.lng != null) return [a.lat, a.lng] as [number, number];
+      if (a.x != null && a.y != null && coordinateSystem) {
+        try {
+          return utmToLatLng(a.x, a.y, coordinateSystem);
+        } catch {
+          return null;
+        }
+      }
+      return null;
+    });
+    type Loc = { tower?: number; span?: number; off?: number; rem?: number };
+    const at = (loc: Loc): [number, number] | null => {
+      if (loc.tower != null) return towerLL[loc.tower];
+      const a = towerLL[loc.span!], b = towerLL[loc.span! + 1];
+      if (!a || !b) return null;
+      const f = loc.off! / R.plan[loc.span!];
+      return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+    };
+    const segments: DrumOverlay['segments'] = [];
+    for (const inf of model.segInfo.values()) {
+      const sg = inf.seg;
+      const pts: ([number, number] | null)[] = [at(sg.startLoc)];
+      const i0 = sg.startLoc.tower != null ? sg.startLoc.tower + 1 : sg.startLoc.span + 1;
+      const i1 = sg.endLoc.tower != null ? sg.endLoc.tower - 1 : sg.endLoc.span;
+      for (let i = i0; i <= i1; i++) pts.push(towerLL[i]);
+      pts.push(at(sg.endLoc));
+      const drumTxt = inf.lengths.length ? `${inf.lengths.join('/')} × ${inf.drums}` : '↺';
+      segments.push({
+        id: sg.id,
+        color: '#' + inf.color,
+        label: `${model.segName.get(sg.id)} · ${drumTxt}${sg.cond && sg.cond !== drum.settings?.baseCond ? ' · ' + sg.cond : ''}`,
+        tip: `<b>${escHtml(model.segName.get(sg.id) + (sg.cond ? ' · ' + sg.cond : ''))}</b>\n${escHtml(inf.usage)}`,
+        pts: pts.filter((p): p is [number, number] => !!p),
+      });
+    }
+    const joints = R.joints
+      .map((j: { id: number; loc: Loc }) => {
+        const p = at(j.loc);
+        return p ? { latlng: p, label:
+              drumLang === 'en'
+                ? `Joint ${j.id}: ${Math.round(j.loc.rem!)} m before T${R.towers[j.loc.span! + 1].no}`
+                : `Ek ${j.id}: T${R.towers[j.loc.span! + 1].no} direğine ${Math.round(j.loc.rem!)} m kala`,
+          } : null;
+      })
+      .filter(Boolean) as DrumOverlay['joints'];
+    return { segments, joints, selected: drumSel };
+  }, [drumResult, drumShow, drumSel, assets, coordinateSystem, drumLang, drum.settings?.baseCond]);
+
   return (
     <>
       <div className="project-body">
@@ -343,6 +419,7 @@ export function AssetWorkspace({
               isAdmin={isAdmin}
               onEditConductorType={setEditingChannel}
               heatmapEnabled={heatMetric != null}
+              supplyByAsset={supplyStatuses}
               heatPoints={heatPoints}
               heatCentroid={heatCentroid}
               geoLayers={activeMapLayers}
@@ -350,6 +427,8 @@ export function AssetWorkspace({
               photoLocations={photoLocations}
               photosLayerEnabled={photosLayerEnabled}
               extraBottomLeftControls={dimensionToggle}
+              drumOverlay={drumOverlay}
+              onDrumSegmentClick={onDrumSegmentClick}
             />
           );
         })()}
@@ -382,6 +461,40 @@ export function AssetWorkspace({
           photoCount={photoLocations.length}
           photosLayerEnabled={photosLayerEnabled}
           onTogglePhotosLayer={() => setPhotosLayerEnabled((v) => !v)}
+          drumPanel={
+            isAdmin ? (
+              <DrumListPanel
+                isAdmin={isAdmin}
+                towers={drumTowers}
+                baseCond={conductorTypes.conductor}
+                circuits={drum.circuits}
+                reportLang={drumLang}
+                lists={drum.lists}
+                activeId={drum.activeId}
+                onSelectList={drum.setActiveId}
+                settings={drum.settings}
+                result={drumResult}
+                onSave={drum.save}
+                onRemove={drum.remove}
+                spanInfo={drum.spanInfo}
+                onSaveSpanInfo={drum.saveSpanInfo}
+                showOnMap={drumShow}
+                printHref={`/admin/${projectSlug}/drum-list?lang=${drumLang}${drum.activeId ? `&list=${drum.activeId}` : ''}`}
+                onToggleMap={() => {
+                  setDrumShow((v) => !v);
+                  setIs3D(false);
+                }}
+                selectedSeg={drumSel}
+                onSelectSeg={(id) => {
+                  setDrumSel(id);
+                  if (id != null) {
+                    setDrumShow(true);
+                    setIs3D(false);
+                  }
+                }}
+              />
+            ) : null
+          }
         />
         {selectedAssetId && (
           <div className="floating-editor">

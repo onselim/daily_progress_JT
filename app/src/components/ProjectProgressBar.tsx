@@ -11,6 +11,7 @@ import { computeOverallPercent } from '../lib/overallProgress';
 import { computeGroupStatus } from '../lib/groupStatus';
 import { DesignPanel } from './DesignPanel';
 import { SupplyPanel } from './SupplyPanel';
+import { useSupplyFromTowers } from '../lib/useSupplyFromTowers';
 
 type Tab = 'overall' | 'design' | 'supply' | 'construction';
 
@@ -79,7 +80,8 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
   const { workItems } = useWorkItemsConfig(projectId);
   const construction = useConstructionBreakdown(projectId, workItems);
   const design = useDesignBreakdown(projectId);
-  const supply = useSupplyBreakdown(projectId);
+  const towerSupply = useSupplyFromTowers(projectId);
+  const supply = useSupplyBreakdown(projectId, towerSupply.overrides);
   const { percentByAssetAndKey } = useProjectWorkItemsProgress(projectId, workItems);
   const { stats } = useAssetStats(projectId);
   const overallPercent = computeOverallPercent(design.overallPercent, construction.overallPercent, supply.overallPercent);
@@ -204,6 +206,8 @@ export function ProjectProgressBar({ projectId, projectSlug, editable, isAdmin }
                 overallPercent={supply.overallPercent}
                 loading={supply.loading}
                 onSaved={supply.refresh}
+                computedKeys={supply.computedKeys}
+                towerSupply={towerSupply}
               />
             )}
 

@@ -16,6 +16,7 @@ import { useProjectWorkItemsProgress } from '../lib/useProjectWorkItemsProgress'
 import { computeGroupStatus } from '../lib/groupStatus';
 import { useDesignBreakdown } from '../lib/useDesignBreakdown';
 import { useSupplyBreakdown } from '../lib/useSupplyBreakdown';
+import { useSupplyFromTowers } from '../lib/useSupplyFromTowers';
 import { computeOverallPercent } from '../lib/overallProgress';
 import { useDailyLogEntries, type DailyLogEntry } from '../lib/useDailyLogEntries';
 import { usePlanForToday } from '../lib/usePlanForToday';
@@ -58,7 +59,8 @@ export default function PrintReportPage() {
   const { items, overallPercent: constructionPercent } = useConstructionBreakdown(project?.id, workItems);
   const { percentByAssetAndKey } = useProjectWorkItemsProgress(project?.id, workItems);
   const { items: designItems, overallPercent: designPercent } = useDesignBreakdown(project?.id);
-  const { items: supplyItems, overallPercent: supplyPercent } = useSupplyBreakdown(project?.id);
+  const towerSupply = useSupplyFromTowers(project?.id);
+  const { items: supplyItems, overallPercent: supplyPercent } = useSupplyBreakdown(project?.id, towerSupply.overrides);
   const overallPercent = computeOverallPercent(designPercent, constructionPercent, supplyPercent);
   const { entries } = useDailyLogEntries(project?.id);
   const { entries: workEntriesToday } = usePlanForToday(project?.id, workItems);

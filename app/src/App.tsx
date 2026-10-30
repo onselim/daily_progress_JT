@@ -15,6 +15,7 @@ import EditSupplyItemsPage from './pages/admin/EditSupplyItemsPage';
 import ReportSettingsPage from './pages/admin/ReportSettingsPage';
 import TeamPage from './pages/admin/TeamPage';
 import ModulesPage from './pages/admin/ModulesPage';
+import DrumListPrintPage from './pages/admin/DrumListPrintPage';
 import FieldProjectPage from './pages/field/FieldProjectPage';
 import ChecklistPage from './pages/field/ChecklistPage';
 import ChecklistDemoPage from './pages/ChecklistDemoPage';
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="/admin/:slug/report-settings" element={<ReportSettingsPage />} />
             <Route path="/admin/:slug/team" element={<TeamPage />} />
             <Route path="/admin/:slug/modules" element={<ModulesPage />} />
+            <Route path="/admin/:slug/drum-list" element={<DrumListPrintPage />} />
             <Route path="/admin/:slug" element={<AdminProjectPage />} />
           </Route>
 

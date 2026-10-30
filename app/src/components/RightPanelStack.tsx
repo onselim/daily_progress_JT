@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { AccordionPanel } from './AccordionPanel';
 import { ProjectDocumentsPanel } from './ProjectDocumentsPanel';
 import { ProjectLayersTree } from './ProjectLayersTree';
@@ -36,6 +37,8 @@ interface RightPanelStackProps {
   photoCount: number;
   photosLayerEnabled: boolean;
   onTogglePhotosLayer: () => void;
+  /** Admin-only conductor drum list (bobin listesi) panel. */
+  drumPanel?: ReactNode;
 }
 
 export function RightPanelStack({
@@ -64,13 +67,18 @@ export function RightPanelStack({
   photoCount,
   photosLayerEnabled,
   onTogglePhotosLayer,
+  drumPanel,
 }: RightPanelStackProps) {
-  const { t, n } = useLanguage();
+  const { t, n, language } = useLanguage();
   return (
     <div className="right-panel-stack">
       <AccordionPanel title={t('panels.lineSummary')}>
         <LineSummaryPanel summary={lineSummary} />
       </AccordionPanel>
+
+      {drumPanel && (
+        <AccordionPanel title={language === 'tr' ? 'Bobin listesi (drum list)' : 'Drum list'}>{drumPanel}</AccordionPanel>
+      )}
 
       <AccordionPanel title={t('panels.heatMap')}>
         <HeatMapPanel
