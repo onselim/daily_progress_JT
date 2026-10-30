@@ -17,7 +17,7 @@ import type { PhotoLocation } from '../lib/useProjectPhotoLocations';
 import { STAGE_META, SUPPLY_STAGES, legsSummary, stageLabel, type SupplyByAsset, type SupplyDisplayStage } from '../lib/supplyStatus';
 import type { TranslationKey } from '../lib/i18n/translations/en';
 import type { ConductorDrumData } from '../lib/useConductorDrums';
-import { conductorPopupHtml } from '../lib/conductorSummary';
+import { conductorPopupHtml, conductorSummaryHtml } from '../lib/conductorSummary';
 
 const CONDUCTOR_LABEL_KEY: Record<keyof LineConductorTypes, TranslationKey> = {
   conductor: 'wizard.conductorType',
@@ -286,6 +286,9 @@ export function MapView({
   const [basemap, setBasemap] = useState<keyof typeof BASEMAPS>('satellite');
   const [basemapMenuOpen, setBasemapMenuOpen] = useState(false);
   const [supplyMode, setSupplyMode] = useState(false);
+  // Supply mode has two independent tabs, each tapped open/closed (any combination): the towers and the line materials (conductor)
+  const [supplyTowersOpen, setSupplyTowersOpen] = useState(true);
+  const [supplyLinesOpen, setSupplyLinesOpen] = useState(false);
   // Default is the simple "here / on the way / not yet" view; the toggle shows all six stages. A legend item can be clicked to highlight it.
   const [supplyDetail, setSupplyDetail] = useState(false);
   const [supplyFocus, setSupplyFocus] = useState<string | null>(null);
@@ -455,7 +458,7 @@ export function MapView({
       map.removeLayer(conductorGroupRef.current);
       conductorGroupRef.current = null;
     }
-    if (!supplyMode || !conductorLines) return;
+    if (!supplyMode || !supplyLinesOpen || !conductorLines) return;
     if (!map.getPane('conductorPane')) map.createPane('conductorPane').style.zIndex = '440';
     const tr = language === 'tr';
     const group = L.layerGroup();
@@ -476,7 +479,7 @@ export function MapView({
     }
     group.addTo(map);
     conductorGroupRef.current = group;
-  }, [supplyMode, conductorLines, conductorFocus, language, conductorDrums]);
+  }, [supplyMode, supplyLinesOpen, conductorLines, conductorFocus, language, conductorDrums]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -712,7 +715,7 @@ export function MapView({
       const isSelected = asset.id === selectedAssetId;
       const isActive = activeAssetIds.has(asset.id);
       let supplyStage: SupplyDisplayStage | null = null;
-      if (supplyMode && supplyByAsset) {
+      if (supplyMode && supplyTowersOpen && supplyByAsset) {
         supplyStage = (percentByAssetAndKey[asset.id]?.er_te ?? 0) >= 100 ? 'erected' : supplyByAsset[asset.id]?.tower ?? 'not_ordered';
       }
       const legendItem = supplyStage ? supplyLegend.find((it) => it.stages.includes(supplyStage as SupplyDisplayStage)) : undefined;
@@ -948,6 +951,7 @@ export function MapView({
     onEditConductorType,
     language,
     supplyMode,
+    supplyTowersOpen,
     supplyByAsset,
     supplyLegend,
     supplyFocus,
@@ -1008,31 +1012,57 @@ export function MapView({
       </div>
       {supplyMode && supplyByAsset && (
         <div className="supply-legend">
-          <button
-            type="button"
-            className="supply-legend-item supply-legend-more"
-            onClick={() => {
-              setSupplyDetail((v) => !v);
-              setSupplyFocus(null);
-              setConductorFocus(null);
-            }}
-          >
-            {supplyDetail ? (language === 'tr' ? '‹ Sade' : '‹ Simple') : language === 'tr' ? 'Detay ›' : 'Detail ›'}
-          </button>
-          {supplyLegend.map((it) => (
+          <div className="supply-tabs">
             <button
               type="button"
-              key={it.key}
-              className={`supply-legend-item${supplyFocus === it.key ? ' active' : ''}`}
-              onClick={() => setSupplyFocus((f) => (f === it.key ? null : it.key))}
+              className={`supply-tab${supplyTowersOpen ? ' open' : ''}`}
+              onClick={() => {
+                setSupplyTowersOpen((v) => !v);
+                setSupplyFocus(null);
+              }}
             >
-              <i style={{ background: it.color }} />
-              {it.label} <b>{it.count}</b>
+              {language === 'tr' ? 'Direkler' : 'Towers'}
             </button>
-          ))}
-          {conductorLines && supplyDetail && (
-            <>
-              <span className="supply-legend-break" />
+            {conductorLines && (
+              <button
+                type="button"
+                className={`supply-tab${supplyLinesOpen ? ' open' : ''}`}
+                onClick={() => {
+                  setSupplyLinesOpen((v) => !v);
+                  setConductorFocus(null);
+                }}
+              >
+                {language === 'tr' ? 'Hat malzemeleri' : 'Line materials'}
+              </button>
+            )}
+          </div>
+          {supplyTowersOpen && (
+            <div className="supply-sec-body">
+              <button
+                type="button"
+                className="supply-legend-item supply-legend-more"
+                onClick={() => {
+                  setSupplyDetail((v) => !v);
+                  setSupplyFocus(null);
+                }}
+              >
+                {supplyDetail ? (language === 'tr' ? '‹ Sade' : '‹ Simple') : language === 'tr' ? 'Detay ›' : 'Detail ›'}
+              </button>
+              {supplyLegend.map((it) => (
+                <button
+                  type="button"
+                  key={it.key}
+                  className={`supply-legend-item${supplyFocus === it.key ? ' active' : ''}`}
+                  onClick={() => setSupplyFocus((f) => (f === it.key ? null : it.key))}
+                >
+                  <i style={{ background: it.color }} />
+                  {it.label} <b>{it.count}</b>
+                </button>
+              ))}
+            </div>
+          )}
+          {conductorLines && supplyLinesOpen && (
+            <div className="supply-sec-body">
               <span className="supply-legend-sep">{language === 'tr' ? 'İletken' : 'Conductor'}</span>
               {[
                 { key: 'site' as const, color: '#22c55e', label: language === 'tr' ? 'Sahada' : 'On site', km: conductorLines.siteKm },
@@ -1048,7 +1078,13 @@ export function MapView({
                   {it.label} <b>{it.km.toFixed(1)} km</b>
                 </button>
               ))}
-            </>
+              {conductorDrums && (
+                <details className="supply-drums">
+                  <summary>{language === 'tr' ? 'Bobin özeti' : 'Drum summary'}</summary>
+                  <div dangerouslySetInnerHTML={{ __html: conductorSummaryHtml(conductorDrums, language === 'tr') }} />
+                </details>
+              )}
+            </div>
           )}
         </div>
       )}
