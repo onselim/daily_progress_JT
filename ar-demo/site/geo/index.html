@@ -1507,6 +1507,19 @@ function projShowOnMap() {
       .bindTooltip(`${a.c} · ${st.t}${a.a ? ' · bugün/yarın iş var' : ''}${a.r ? ' · saha kısıtlı' : ''}${a.z != null ? ' · kot ' + a.z : ''}`).addTo(projMapLayer);
   }
 }
+// Link back to where this layer's data came from. A single-tower layer made by the excavation form
+// (slug "kazi-<no>") is not a project in the daily-report app, so /ar/kazi-<no> would show
+// "report not available" -- point it at the excavation deep link instead.
+function projRefreshLink() {
+  if (!PROJ || !PROJ.slug) return '';
+  if (PROJ.digSlug) {
+    const href = `?dig=1&slug=${encodeURIComponent(PROJ.digSlug)}&code=${encodeURIComponent(PROJ.digCode || '')}`;
+    return ` Güncellemek için <a href="${href}" style="color:#7fb7ff">kazı verisini yeniden getir</a>.`;
+  }
+  if (/^kazi-/.test(PROJ.slug)) return ' Güncellemek için "🕳 Kazı aplikasyonu" ile direk verisini yeniden getir.';
+  const slug = encodeURIComponent(PROJ.slug);
+  return ` Güncellemek için <a href="/ar/${slug}" style="color:#7fb7ff">/ar/${slug}</a> aç.`;
+}
 function projRefreshUi() {
   $('projRow').style.display = PROJ ? '' : 'none';
   for (const id of ['btnProjOn', 'projLegend']) $(id).style.display = PROJ ? '' : 'none';
@@ -1515,7 +1528,7 @@ function projRefreshUi() {
     for (const a of PROJ.assets) cnt[STATUS_AR[a.s] ? a.s : 'not_started']++;
     const ageMin = PROJ.at ? Math.max(0, Math.round((Date.now() - Date.parse(PROJ.at)) / 60000)) : null;
     const age = ageMin == null ? '' : ageMin < 2 ? 'az önce' : ageMin < 90 ? `${ageMin} dk önce` : `${Math.round(ageMin / 60)} saat önce`;
-    $('projInfo').innerHTML = `🏗 <b>${PROJ.name || PROJ.slug}</b>: ${PROJ.assets.length} direk (tamamlanan ${cnt.completed}, devam eden ${cnt.in_progress}, başlamayan ${cnt.not_started}, beklemede ${cnt.on_hold}). Veri: ${age}.${PROJ.slug ? ` Güncellemek için <a href="/ar/${PROJ.slug}" style="color:#7fb7ff">/ar/${PROJ.slug}</a> aç.` : ''}`;
+    $('projInfo').innerHTML = `🏗 <b>${PROJ.name || PROJ.slug}</b>: ${PROJ.assets.length} direk (tamamlanan ${cnt.completed}, devam eden ${cnt.in_progress}, başlamayan ${cnt.not_started}, beklemede ${cnt.on_hold}). Veri: ${age}.${projRefreshLink()}`;
   }
   refPickersRefresh();
 }
@@ -1817,7 +1830,7 @@ $('btnDigGo').addEventListener('click', async () => {
     $('digInfo').textContent = `✓ ${d.projectName} · Direk ${d.code} (${d.base}${d.bodyExtM >= 0 ? '+' : ''}${d.bodyExtM}) · zemin: ${d.soilLabel}` +
       (missing.length ? ` · ⚠ ${missing.map((i) => DIG_STUB_NAMES[i]).join(', ')} için tablo verisi yok` : ' · 4 bacak da hesaplanabilir') +
       '. AR\'ı başlat, alttan "Kazı" panelini aç.';
-    if (d.lat != null && d.lng != null) { projLoad({ v: 1, slug: 'kazi-' + code, name: `Direk ${d.code}`, at: new Date().toISOString(), assets: [{ c: d.code, lat: d.lat, lng: d.lng, z: null, s: 'not_started', a: 0, r: 0, st: null, t: d.base }] }); map.setView([d.lat, d.lng], 18); }
+    if (d.lat != null && d.lng != null) { projLoad({ v: 1, slug: 'kazi-' + code, digSlug: slug, digCode: code, name: `Direk ${d.code}`, at: new Date().toISOString(), assets: [{ c: d.code, lat: d.lat, lng: d.lng, z: null, s: 'not_started', a: 0, r: 0, st: null, t: d.base }] }); map.setView([d.lat, d.lng], 18); }
   } catch (e) { $('digInfo').textContent = '⚠ ' + e.message; console.error(e); }
 });
 $('pDig').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-dig]'); if (!b) return; markDig(b.dataset.dig, b.dataset.m); });
