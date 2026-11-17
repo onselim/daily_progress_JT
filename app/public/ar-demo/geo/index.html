@@ -18,6 +18,7 @@
   .row { display:flex; gap:8px; margin-bottom:8px; }
   label { flex:1; font-size:11px; color:var(--dim); display:flex; flex-direction:column; gap:3px; min-width:0; }
   input, select { width:100%; background:#0d141b; color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:9px 8px; font-size:15px; }
+  body.noobj [data-obj] { display:none !important; }
   button { font:inherit; color:#fff; background:#2a3846; border:0; border-radius:10px; padding:12px 14px; font-size:15px; }
   button.primary { background:var(--acc); font-weight:600; }
   .row button { flex:1; }
@@ -62,6 +63,9 @@
   <div id="map"></div>
   <div id="panel">
     <div class="row">
+      <button id="btnObjOn" class="small" style="width:100%"></button>
+    </div>
+    <div class="row" data-obj>
       <select id="objSel"></select>
       <button id="btnAdd" class="small">＋ Ekle</button>
       <button id="btnDel" class="small">🗑</button>
@@ -71,12 +75,12 @@
       <label id="lbZone" style="flex:0 0 70px">UTM zone<input id="utmZone" inputmode="numeric"></label>
       <label id="lbHemi" style="flex:0 0 84px">Yarıküre<select id="utmHemi"><option value="N">Kuzey</option><option value="S">Güney</option></select></label>
     </div>
-    <div class="row">
+    <div class="row" data-obj>
       <label id="lbCoord">Merkez koordinatı: alt orta nokta (enlem, boylam)
         <input id="coord" type="text" autocomplete="off" spellcheck="false" placeholder="41.0082000, 28.9784000">
       </label>
     </div>
-    <div class="row">
+    <div class="row" data-obj>
       <label id="lbW">En (m)<input id="w" inputmode="decimal"></label>
       <label id="lbD">Boy (m)<input id="d" inputmode="decimal"></label>
       <label id="lbH">Yükseklik (m)<input id="h" inputmode="decimal"></label>
@@ -84,8 +88,8 @@
     </div>
     <div class="row">
       <label>Bulunduğum yer kotu (m)<input id="zUser" inputmode="decimal"></label>
-      <label>Arazi kotu (m)<input id="zGround" inputmode="decimal"></label>
-      <label>Taban kotu (m)<input id="zBase" inputmode="decimal"></label>
+      <label data-obj>Arazi kotu (m)<input id="zGround" inputmode="decimal"></label>
+      <label data-obj>Taban kotu (m)<input id="zBase" inputmode="decimal"></label>
     </div>
     <details id="geoDet">
       <summary>📐 Koordinat sistemi ve georeferans</summary>
@@ -226,7 +230,10 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-const BUILD = '2026-09-20 · nesne yönü';   // shown in the status line and the AR HUD so a stale cached page is easy to spot
+// Library objects (building, wall, single tower, ...) are off by default: with a KMZ line loaded they only confuse. The toggle in the panel brings them back.
+let OBJ_ON = false; try { OBJ_ON = localStorage.getItem('arObjOn') === '1'; } catch (e) {}
+document.body.classList.toggle('noobj', !OBJ_ON);
+const BUILD = '2026-11-17 · nesneler kapalı';   // shown in the status line and the AR HUD so a stale cached page is easy to spot
 const R = 6378137, rad = Math.PI / 180, deg = 180 / Math.PI;
 const $ = (id) => document.getElementById(id);
 const wrapPi = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
@@ -554,7 +561,7 @@ function footprintLatLngs(o) {
 }
 function refreshMap() {
   objLayer.clearLayers();
-  S.objs.forEach((o, i) => {
+  if (OBJ_ON) S.objs.forEach((o, i) => {
     const sel = o.id === S.sel, col = sel ? '#ffb020' : '#8fb4d9';
     if (o.type === 'tank') L.circle([o.lat, o.lng], { radius: o.w / 2, color: col, weight: 2, fillOpacity: 0.25 }).addTo(objLayer);
     else L.polygon(footprintLatLngs(o), { color: col, weight: 2, fillOpacity: 0.25 }).addTo(objLayer);
@@ -582,7 +589,7 @@ function refreshOverlays() {
     const mk = L.marker([S.origin.lat, S.origin.lng], { draggable: true, icon: L.divIcon({ className: '', html: '<div class="pin me">Ben</div>', iconSize: [40, 24], iconAnchor: [20, 12] }) }).addTo(ovLayer);
     mk.on('dragend', () => { const p = mk.getLatLng(); S.origin = { mode: 'map', lat: p.lat, lng: p.lng }; save(); refreshOverlays(); updateStatus(); });
   }
-  if (op && o) {
+  if (OBJ_ON && op && o) {
     L.polyline([[op.lat, op.lng], [o.lat, o.lng]], { color: '#fff', weight: 2, dashArray: '6 6' })
       .bindTooltip(`${distM(op, o).toFixed(0)} m`, { permanent: true, direction: 'center', className: '' }).addTo(ovLayer);
   }
@@ -644,7 +651,7 @@ function updateStatus() {
   const p = [], op = originPoint(), o = cur();
   p.push(S.origin.mode === 'map' ? 'Konum: haritadan işaretli nokta' : S.origin.mode === 'ref' ? `Konum: georeferans (${refCount()} nokta)`
     : (fix ? `GPS ±${fix.acc.toFixed(0)} m` : 'GPS bekleniyor…'));
-  if (op && o) p.push(`Seçili nesneye: ${distM(op, o).toFixed(0)} m`);
+  if (OBJ_ON && op && o) p.push(`Seçili nesneye: ${distM(op, o).toFixed(0)} m`);
   p.push(xrSupported ? 'AR: hazır' : 'AR: bu tarayıcıda yok (Android Chrome kullan)');
   p.push('sürüm ' + BUILD);
   $('status').textContent = p.join(' · ');
@@ -726,6 +733,15 @@ $('btnDel').addEventListener('click', () => {
   S.objs = S.objs.filter((x) => x.id !== o.id); S.sel = S.objs[0].id; refreshAll();
 });
 
+const objBtn = () => { $('btnObjOn').textContent = `Nesneler (bina, direk modeli…): ${OBJ_ON ? 'Açık' : 'Kapalı'}`; };
+objBtn();
+$('btnObjOn').addEventListener('click', () => {
+  OBJ_ON = !OBJ_ON; try { localStorage.setItem('arObjOn', OBJ_ON ? '1' : '0'); } catch (e) {}
+  document.body.classList.toggle('noobj', !OBJ_ON); objBtn();
+  if (renderer) rebuildAll();
+  refreshAll();
+});
+
 // ================= AR runtime =================
 let renderer, scene, camera, session = null, hitSource = null, ghost = false;
 const rts = new Map();
@@ -783,7 +799,7 @@ function disposeRt(rt) {
   scene.remove(rt.group);
 }
 function rebuildObj(id) {
-  if (!renderer) return;
+  if (!renderer || !OBJ_ON) return;
   const o = S.objs.find((x) => x.id === id); if (!o) return;
   const old = rts.get(id); if (old) disposeRt(old);
   const rt = makeRuntime(o); rts.set(id, rt); scene.add(rt.group);
@@ -912,7 +928,7 @@ function hudText(now) {
     const el = Math.min(8, (now - cal.t0) / 1000);
     return `Kalibrasyon… ${el.toFixed(0)}/8 sn. Telefonu dik tut, ufka bak, kıpırdama.<br>Konum: ${S.origin.mode === 'map' ? 'haritadan' : (fix ? 'GPS ±' + fix.acc.toFixed(0) + ' m' : 'GPS yok')} · Pusula: ${heading != null ? 'var' : 'yok'}` + digHud();
   }
-  if (!selInfo) {   // georeference mode, waiting for 2 or 3 points
+  if (!origin) {   // georeference mode, waiting for 2 or 3 points
     const ok = (i) => (S.refs[i] ? (refMarks[i] ? '✓' : '…') : '–');
     const rows = `R1 ${ok(0)}   R2 ${ok(1)}` + (S.refs[2] || refMarks[2] ? `   R3 ${ok(2)}` : '');
     let next;
@@ -920,9 +936,7 @@ function hudText(now) {
     else { const wait = [0, 1, 2].find((i) => S.refs[i] && !refMarks[i]); next = wait !== undefined ? `R${wait + 1} noktasına git: üstünde dur 📍 ya da daireyi tam üstüne tut 🎯` : (refInfo ? '' : 'Hesaplanıyor…'); }
     return `<b>Georeferans</b>  ${rows}<br>${next}` + (groundMsg && now - groundMsg.t < 3500 ? '<br>' + groundMsg.s : '') + digHud();
   }
-  const { o, dist, rel, dz } = selInfo;
-  const dir = Math.abs(rel) < 0.35 ? 'önünde' : (rel > 0 ? `sağında ${(rel * deg).toFixed(0)}°` : `solunda ${(-rel * deg).toFixed(0)}°`);
-  let s = `<b>${o.name}</b>: ${dist.toFixed(0)} m uzakta, ${dir}<br>`;
+  let s = '';
   if (walk) s += walkHud().slice(4) + '<br>';
   if (originSrc === 'georeferans' && refInfo) {
     s += `Georeferans ✓ (${refInfo.n} nokta) ortalama sapma ${refInfo.meanResidual.toFixed(2)} m, en kötü ${refInfo.maxResidual.toFixed(2)} m` +
@@ -933,12 +947,24 @@ function hudText(now) {
       (originSrc === 'GPS' ? ` ±${fix ? fix.acc.toFixed(0) : '?'} m${calSpread != null && calSpread > 12 ? ' <b style="color:#ffd166">⚠ GPS oynak (' + calSpread.toFixed(0) + ' m)</b>' : ''}` : '') + ' · ' +
       (walkInfo ? `Yön: yürüyüş izinden ±${walkInfo.sd.toFixed(1)}°` : noCompass ? '⚠ Pusula yok: "Şu an tam kuzeye bakıyorum"' : `Pusula %${(calQuality * 100).toFixed(0)}`);
   }
-  if (o.zGround !== 0 || o.zBase !== 0 || S.zUser !== 0) {
-    s += '<br>' + (Math.abs(dz) < 0.05 ? '⬛ Taban arazi seviyesinde'
-      : dz > 0 ? `<b style="color:#ff8a70">GÖMÜLÜ: taban arazinin ${dz.toFixed(1)} m altında</b>` : `<b style="color:#ffd166">HAVADA: taban arazinin ${(-dz).toFixed(1)} m üstünde</b>`);
+  if (selInfo) {   // a library object is selected (only when objects are on)
+    const { o, dist, rel, dz } = selInfo;
+    const dir = Math.abs(rel) < 0.35 ? 'önünde' : (rel > 0 ? `sağında ${(rel * deg).toFixed(0)}°` : `solunda ${(-rel * deg).toFixed(0)}°`);
+    s = `<b>${o.name}</b>: ${dist.toFixed(0)} m uzakta, ${dir}<br>` + s;
+    if (o.zGround !== 0 || o.zBase !== 0 || S.zUser !== 0) {
+      s += '<br>' + (Math.abs(dz) < 0.05 ? '⬛ Taban arazi seviyesinde'
+        : dz > 0 ? `<b style="color:#ff8a70">GÖMÜLÜ: taban arazinin ${dz.toFixed(1)} m altında</b>` : `<b style="color:#ffd166">HAVADA: taban arazinin ${(-dz).toFixed(1)} m üstünde</b>`);
+    }
   }
   if (PROJ && projOpt.on) { const n = nearestProject(); if (n) s += `<br>Proje: en yakın direk <b>${n.a.c}</b> (${n.d.toFixed(0)} m): <b>${projStatus(n.a).t}</b>${n.a.a ? ' · bugün/yarın iş var' : ''}${n.a.r ? ' · <b style="color:#ff8a70">saha kısıtlı</b>' : ''}`; }
   if (KMZ && kmzOpt.on) { const n = nearestStruct(); if (n) s += `<br>Hat: en yakın direk <b>${n.s.name}</b> (${n.d.toFixed(0)} m), arazi kotu ${n.s.ele} m${S.zUser === 0 ? (DEM.mode === 'dem' ? ' · zemin: ' + DEM.info : DEM.mode === 'wait' ? ' · zemin: DEM bekleniyor (şimdilik direk tabanı)' : ' · zemin referansı: bu direğin tabanı (otomatik)') : ''}`; }
+  if (KMZ && kmzOpt.on) {   // diagnostics: how many pieces are drawn and where the line's base sits relative to the floor
+    const n = nearestStruct();
+    if (n && n.s.ele != null) {
+      const vis = [...kmzRt.values()].filter((r) => r.group.visible).length, zr = zRefFor('kmz', S.zUser !== 0 ? null : { z: n.s.ele, d: n.d, name: n.s.name }), off = groundY + adj.up - zr + n.s.ele;
+      s += `<br>Hat: ${vis} parça çizildi · direk tabanı zeminden ${off >= 0 ? '+' : ''}${off.toFixed(1)} m${Math.abs(off) > 3 ? ' <b style="color:#ffd166">⚠ hat havada/gömülü: "Bulunduğum yer kotu" 0 olsun ya da "Hattı zemine oturt"</b>' : ''}`;
+    }
+  }
   if (groundMsg && now - groundMsg.t < 3500) s += '<br>' + groundMsg.s;
   return s + digHud();
 }
