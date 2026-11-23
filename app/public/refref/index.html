@@ -9,19 +9,19 @@
   :root {
     --bg: #f4f5f7; --card: #ffffff; --ink: #16181d; --muted: #6b7280; --line: #e3e5ea;
     --accent: #1f6feb; --accent-ink: #ffffff; --ok: #137333; --bad: #c5221f; --warn-bg: #fff4e5; --warn-ink: #8a4b00;
-    --track: #e7e9ee;
+    --track: #e7e9ee; --scrim: rgba(10, 12, 16, .45);
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #0f1115; --card: #181b21; --ink: #e8eaee; --muted: #9aa1ad; --line: #2a2f38;
       --accent: #4c8dff; --accent-ink: #0b0d10; --ok: #5cc47a; --bad: #ff6b63; --warn-bg: #2b2112; --warn-ink: #f3c47a;
-      --track: #262b33;
+      --track: #262b33; --scrim: rgba(0, 0, 0, .6);
     }
   }
   :root[data-theme="dark"] {
     --bg: #0f1115; --card: #181b21; --ink: #e8eaee; --muted: #9aa1ad; --line: #2a2f38;
     --accent: #4c8dff; --accent-ink: #0b0d10; --ok: #5cc47a; --bad: #ff6b63; --warn-bg: #2b2112; --warn-ink: #f3c47a;
-    --track: #262b33;
+    --track: #262b33; --scrim: rgba(0, 0, 0, .6);
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--ink);
@@ -38,13 +38,14 @@
   input[type=password], input[type=text] { width: 100%; font: inherit; font-size: 17px; padding: 12px; border-radius: 10px;
     border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
   input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .check { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); font-weight: 400; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); font-weight: 400; margin: 0; }
   .check input { width: 18px; height: 18px; }
   .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border: 0; border-radius: 12px;
     background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 700; font-size: 17px; padding: 15px; cursor: pointer; }
   .btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--line); font-weight: 600; font-size: 15px; padding: 11px; margin-top: 8px; }
   .btn:disabled { opacity: .5; cursor: default; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .row2 > .only { grid-column: 1 / -1; }
   .warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; margin-top: 12px; }
   .hidden { display: none !important; }
   .bar { height: 8px; background: var(--track); border-radius: 99px; overflow: hidden; margin: 4px 0 8px; }
@@ -64,7 +65,19 @@
   .results-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .results-head h2 { font-size: 16px; margin: 0; }
   .link { background: none; border: 0; color: var(--accent); font: inherit; font-size: 14px; cursor: pointer; padding: 4px; }
+  #retry { margin: 0 0 12px; }
   footer { color: var(--muted); font-size: 12.5px; text-align: center; margin-top: 20px; }
+
+  /* parola penceresi */
+  dialog { border: 0; padding: 0; background: transparent; color: var(--ink); width: min(440px, calc(100vw - 32px)); max-width: none; }
+  dialog::backdrop { background: var(--scrim); }
+  .sheet { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+  .sheet h2 { font-size: 18px; margin: 0 0 4px; }
+  .sheet .what { color: var(--muted); font-size: 14px; margin: 0 0 14px; word-break: break-all; }
+  .sheet .err { color: var(--bad); font-size: 14px; font-weight: 600; min-height: 20px; margin: 8px 0 0; }
+  .sheet .btns { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; margin-top: 12px; }
+  .sheet .btns .btn { padding: 13px; font-size: 16px; }
+  .sheet .btns .cancel { background: transparent; color: var(--ink); border: 1px solid var(--line); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -74,33 +87,24 @@
 
   <div class="tabs" role="tablist">
     <button role="tab" id="tab-enc" aria-selected="true">Şifrele</button>
-    <button role="tab" id="tab-dec" aria-selected="false">Şifreyi çöz</button>
+    <button role="tab" id="tab-dec" aria-selected="false">Aç</button>
   </div>
 
   <section class="card">
-    <div class="field">
-      <label for="pw">Parola</label>
-      <input id="pw" type="password" autocomplete="new-password" autocapitalize="off" spellcheck="false">
-    </div>
-    <div class="field" id="pw2-wrap">
-      <label for="pw2">Parola (tekrar)</label>
-      <input id="pw2" type="password" autocomplete="new-password" autocapitalize="off" spellcheck="false">
-    </div>
-    <label class="check"><input type="checkbox" id="show"> Parolayı göster</label>
-
-    <div id="enc-actions" style="margin-top:14px">
+    <div id="enc-actions">
       <button class="btn" id="pick-media">📷 Foto / video seç</button>
       <div class="row2">
         <button class="btn secondary" id="pick-any">Başka dosya seç</button>
         <button class="btn secondary" id="pick-dir-enc">Klasör seç</button>
       </div>
+      <div class="warn">Dosyayı seçtikten sonra parola sorulur. Parolayı unutursanız dosya <b>kurtarılamaz</b>.
+        Asıl foto/videolar silinmez; şifreli dosyayı kaydettikten sonra isterseniz galeriden kendiniz silin.</div>
     </div>
-    <div id="dec-actions" class="hidden" style="margin-top:14px">
+    <div id="dec-actions" class="hidden">
       <button class="btn" id="pick-dat">🔓 Şifreli dosya seç (.dat)</button>
       <button class="btn secondary" id="pick-dir-dec">Klasör seç</button>
+      <div class="warn">Dosyayı seçtikten sonra o dosyanın parolası sorulur.</div>
     </div>
-
-    <div class="warn" id="warn-enc">Parolayı unutursanız dosyalar <b>kurtarılamaz</b>. Asıl foto/videolar silinmez; şifreli dosyayı kaydettikten sonra isterseniz galeriden kendiniz silin.</div>
   </section>
 
   <section class="card hidden" id="progress-card">
@@ -116,6 +120,7 @@
         <button class="link" id="clear">Temizle</button>
       </span>
     </div>
+    <button class="btn secondary hidden" id="retry"></button>
     <div id="results"></div>
   </section>
 
@@ -126,6 +131,27 @@
   <input type="file" id="in-dat" multiple class="hidden">
   <input type="file" id="in-dir" webkitdirectory multiple class="hidden">
 </main>
+
+<dialog id="pw-dialog">
+  <form class="sheet" id="pw-form" autocomplete="off">
+    <h2 id="pw-title">Parola</h2>
+    <p class="what" id="pw-what"></p>
+    <div class="field">
+      <label for="pw">Parola</label>
+      <input id="pw" type="password" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="field" id="pw2-wrap">
+      <label for="pw2">Parola (tekrar)</label>
+      <input id="pw2" type="password" autocapitalize="off" spellcheck="false">
+    </div>
+    <label class="check"><input type="checkbox" id="show"> Parolayı göster</label>
+    <p class="err" id="pw-err" role="alert"></p>
+    <div class="btns">
+      <button type="button" class="btn cancel" id="pw-cancel">İptal</button>
+      <button type="submit" class="btn" id="pw-ok">Tamam</button>
+    </div>
+  </form>
+</dialog>
 
 <script>
 // ==CORE== (Python sürümüyle birebir aynı biçim: DKL2)
@@ -192,6 +218,19 @@ const DK = (() => {
     return { blob: out.done(), name: randomName() };
   }
 
+  // Dosyayı açmadan sadece parolanın doğru olup olmadığına bakar (true/false)
+  async function checkPassword(file, pw) {
+    const header = new Uint8Array(await file.slice(0, HLEN).arrayBuffer());
+    const magic = String.fromCharCode(...header.slice(0, 4));
+    if (magic === "DKL1") throw new OldFormat();
+    if (magic !== "DKL2" || file.size <= HLEN + TAG) throw new NotOurFile();
+    const iter = new DataView(header.buffer).getUint32(20);
+    if (iter < 1000 || iter > 10000000) throw new NotOurFile();
+    const { check: mine } = await derive(pw, header.slice(4, 20), iter);
+    let diff = 0; for (let k = 0; k < 16; k++) diff |= header[32 + k] ^ mine[k];
+    return diff === 0;
+  }
+
   async function decryptFile(file, pw, onProgress) {
     const header = new Uint8Array(await file.slice(0, HLEN).arrayBuffer());
     const magic = String.fromCharCode(...header.slice(0, 4));
@@ -233,13 +272,13 @@ const DK = (() => {
     "3gp": "video/3gpp", webm: "video/webm", mkv: "video/x-matroska", avi: "video/x-msvideo", wmv: "video/x-ms-wmv" };
   function mimeFor(name) { return MIME[(name.split(".").pop() || "").toLowerCase()] || "application/octet-stream"; }
 
-  return { encryptFile, decryptFile, mimeFor, WrongPassword, NotOurFile, OldFormat };
+  return { encryptFile, decryptFile, checkPassword, mimeFor, WrongPassword, NotOurFile, OldFormat };
 })();
 // ==/CORE==
 
 (() => {
   const $ = id => document.getElementById(id);
-  let mode = "enc", busy = false, results = [];
+  let mode = "enc", busy = false, results = [], retryFiles = [];
 
   function setMode(m) {
     mode = m;
@@ -247,13 +286,13 @@ const DK = (() => {
     $("tab-dec").setAttribute("aria-selected", m === "dec");
     $("enc-actions").classList.toggle("hidden", m !== "enc");
     $("dec-actions").classList.toggle("hidden", m !== "dec");
-    $("pw2-wrap").classList.toggle("hidden", m !== "enc");
-    $("warn-enc").classList.toggle("hidden", m !== "enc");
-    $("pw").setAttribute("autocomplete", m === "enc" ? "new-password" : "current-password");
   }
-  $("tab-enc").onclick = () => setMode("enc");
-  $("tab-dec").onclick = () => setMode("dec");
-  $("show").onchange = e => { const t = e.target.checked ? "text" : "password"; $("pw").type = t; $("pw2").type = t; };
+  $("tab-enc").onclick = () => { if (!busy) setMode("enc"); };
+  $("tab-dec").onclick = () => { if (!busy) setMode("dec"); };
+
+  function setButtons(on) {
+    for (const id of ["pick-media", "pick-any", "pick-dat", "pick-dir-enc", "pick-dir-dec", "retry"]) $(id).disabled = !on;
+  }
 
   // Tarayıcı şifreleme fonksiyonlarını sadece https (veya localhost) üzerinde açar
   if (!(window.crypto && crypto.subtle)) {
@@ -266,50 +305,89 @@ const DK = (() => {
 
   // Klasör seçme sadece bilgisayar tarayıcılarında güvenilir çalışıyor
   const dirOK = "webkitdirectory" in document.createElement("input") && matchMedia("(pointer: fine)").matches;
-  if (!dirOK) { $("pick-dir-enc").classList.add("hidden"); $("pick-dir-dec").classList.add("hidden"); }
-
-  function checkPw() {
-    const pw = $("pw").value;
-    if (mode === "enc") {
-      if (pw.length < 6) { alert("En az 6 karakterlik bir parola yazın."); return null; }
-      if (pw !== $("pw2").value) { alert("İki parola aynı değil."); return null; }
-    } else if (!pw) { alert("Parolayı yazın."); return null; }
-    return pw;
+  if (!dirOK) {
+    $("pick-dir-enc").classList.add("hidden"); $("pick-dir-dec").classList.add("hidden");
+    $("pick-any").classList.add("only");
   }
-  function pick(inputId) { if (busy) return; if (checkPw() !== null) $(inputId).click(); }
-  $("pick-media").onclick = () => pick("in-media");
-  $("pick-any").onclick = () => pick("in-any");
-  $("pick-dat").onclick = () => pick("in-dat");
-  $("pick-dir-enc").onclick = () => pick("in-dir");
-  $("pick-dir-dec").onclick = () => pick("in-dir");
+
+  // 1) önce dosya seçilir
+  $("pick-media").onclick = () => !busy && $("in-media").click();
+  $("pick-any").onclick = () => !busy && $("in-any").click();
+  $("pick-dat").onclick = () => !busy && $("in-dat").click();
+  $("pick-dir-enc").onclick = () => !busy && $("in-dir").click();
+  $("pick-dir-dec").onclick = () => !busy && $("in-dir").click();
   for (const id of ["in-media", "in-any", "in-dat", "in-dir"]) {
     $(id).onchange = e => {
       let files = Array.from(e.target.files || []);
       e.target.value = "";
       if (id === "in-dir") files = files.filter(f => mode === "dec" ? /\.dat$/i.test(f.name) : !/\.dat$/i.test(f.name));
-      if (files.length) run(files);
+      if (files.length) askPassword(files);
       else if (id === "in-dir") alert(mode === "dec" ? "Bu klasörde .dat dosyası yok." : "Bu klasörde dosya yok.");
     };
   }
 
+  // 2) sonra o dosya(lar)ın parolası sorulur
+  let pending = null;
+  function askPassword(files, note) {
+    pending = files;
+    const enc = mode === "enc";
+    $("pw-title").textContent = enc ? "Şifreleme parolası" : "Bu dosyanın parolası";
+    $("pw-what").textContent = enc
+      ? `${files.length === 1 ? "1 dosya" : files.length + " dosya"} bu parolayla şifrelenecek.`
+      : (files.length === 1 ? files[0].name : `${files.length} şifreli dosya`) + (note ? " — " + note : "");
+    $("pw2-wrap").classList.toggle("hidden", !enc);
+    $("pw").value = ""; $("pw2").value = ""; $("pw-err").textContent = "";
+    $("pw").setAttribute("autocomplete", enc ? "new-password" : "current-password");
+    $("pw-ok").textContent = enc ? "Şifrele" : "Aç";
+    $("pw-ok").disabled = false;
+    $("pw-dialog").showModal();
+    $("pw").focus();
+  }
+  $("show").onchange = e => { const t = e.target.checked ? "text" : "password"; $("pw").type = t; $("pw2").type = t; };
+  $("pw-cancel").onclick = () => { pending = null; $("pw-dialog").close(); };
+  $("pw-form").onsubmit = async e => {
+    e.preventDefault();
+    const pw = $("pw").value, files = pending;
+    if (!files) return;
+    if (mode === "enc") {
+      if (pw.length < 6) { $("pw-err").textContent = "En az 6 karakter yazın."; return; }
+      if (pw !== $("pw2").value) { $("pw-err").textContent = "İki parola aynı değil."; return; }
+    } else {
+      if (!pw) { $("pw-err").textContent = "Parolayı yazın."; return; }
+      // parolayı hemen ilk dosyada kontrol et; yanlışsa pencere açık kalır
+      $("pw-ok").disabled = true; $("pw-ok").textContent = "Kontrol ediliyor…"; $("pw-err").textContent = "";
+      let right = true;
+      try { right = await DK.checkPassword(files[0], pw); } catch (_) { /* bozuk/eski dosya: sonuçlarda gösterilir */ }
+      $("pw-ok").disabled = false; $("pw-ok").textContent = "Aç";
+      if (!right) {
+        $("pw-err").textContent = files.length === 1 ? "Parola yanlış. Tekrar deneyin." : `Parola yanlış (${files[0].name}). Tekrar deneyin.`;
+        $("pw").value = ""; $("pw").focus();
+        return;
+      }
+    }
+    pending = null;
+    $("pw-dialog").close();
+    run(files, pw);
+  };
+
   const fmtSize = b => b < 1024 * 1024 ? (b / 1024).toFixed(0) + " KB"
     : b < 1024 ** 3 ? (b / 1024 / 1024).toFixed(1) + " MB" : (b / 1024 ** 3).toFixed(2) + " GB";
 
-  async function run(files) {
-    const pw = checkPw(); if (pw === null) return;
+  // 3) işlem
+  async function run(files, pw) {
     busy = true; setButtons(false);
     let lock = null;
     try { lock = await navigator.wakeLock?.request("screen"); } catch (_) {}
     $("progress-card").classList.remove("hidden");
     $("results-card").classList.remove("hidden");
     $("results-title").textContent = mode === "enc" ? "Şifrelenen dosyalar" : "Açılan dosyalar";
-    if (!results.length) $("results").innerHTML = "";
+    retryFiles = []; $("retry").classList.add("hidden");
     let ok = 0;
     for (let k = 0; k < files.length; k++) {
       const f = files[k];
       // asıl dosya adı ekranda hiç gösterilmez
-      const label = `${mode === "enc" ? "Şifreleniyor" : "Çözülüyor"}… (${k + 1}/${files.length})`;
-      setProgress(0, label + (mode === "dec" ? " — parola kontrol ediliyor…" : ""));
+      const label = `${mode === "enc" ? "Şifreleniyor" : "Açılıyor"}… (${k + 1}/${files.length})`;
+      setProgress(0, label);
       try {
         const r = mode === "enc"
           ? await DK.encryptFile(f, pw, p => setProgress(p, label))
@@ -318,7 +396,7 @@ const DK = (() => {
         ok++;
       } catch (err) {
         let msg = "Beklenmeyen hata: " + (err && err.message || err);
-        if (err instanceof DK.WrongPassword) msg = "Parola yanlış.";
+        if (err instanceof DK.WrongPassword) { msg = "Bu dosya başka bir parolayla şifrelenmiş."; retryFiles.push(f); }
         else if (err instanceof DK.NotOurFile) msg = "Bu programla şifrelenmiş bir dosya değil ya da dosya bozuk.";
         else if (err instanceof DK.OldFormat) msg = "Bu dosya programın ilk sürümüyle şifrelenmiş; bilgisayardaki Dosya Kilidi ile açın.";
         else if (err && err.name === "NotReadableError") msg = "Dosya okunamadı (çok büyük olabilir).";
@@ -326,14 +404,16 @@ const DK = (() => {
       }
     }
     setProgress(1, `Bitti: ${ok}/${files.length} dosya.`);
+    if (retryFiles.length) {
+      $("retry").textContent = `🔑 Kalan ${retryFiles.length} dosya için başka parola gir`;
+      $("retry").classList.remove("hidden");
+    }
     try { await lock?.release(); } catch (_) {}
     busy = false; setButtons(true);
     if (mode === "enc" && files.length === 1 && ok === 1) save(results[results.length - 1]);
   }
+  $("retry").onclick = () => { if (!busy && retryFiles.length) askPassword(retryFiles.slice(), "farklı parola"); };
 
-  function setButtons(on) {
-    for (const id of ["pick-media", "pick-any", "pick-dat", "pick-dir-enc", "pick-dir-dec"]) $(id).disabled = !on;
-  }
   function setProgress(p, text) { $("bar").style.width = (p * 100).toFixed(1) + "%"; $("status").textContent = text; }
 
   function save(r) {
@@ -384,7 +464,7 @@ const DK = (() => {
   };
   $("clear").onclick = () => {
     for (const r of results) URL.revokeObjectURL(r.url);
-    results = []; $("results").innerHTML = "";
+    results = []; retryFiles = []; $("results").innerHTML = ""; $("retry").classList.add("hidden");
     $("results-card").classList.add("hidden"); $("progress-card").classList.add("hidden");
   };
   window.addEventListener("beforeunload", e => { if (busy) { e.preventDefault(); e.returnValue = ""; } });
