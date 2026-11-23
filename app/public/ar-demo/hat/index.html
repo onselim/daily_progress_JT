@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hat AR</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<!--
+  Hat AR: the daily-report app's AR entry point (per-tower "AR" buttons, /ar/<proje>).
+  Deliberately small: the project's PLS-CADD line (KMZ) placed on the terrain, and the excavation pits of
+  one tower picked from a menu. No model library, no buildings: that sandbox stays at /ar-demo/geo/.
+  Data: project + towers + stub/foundation tables straight from Supabase (the app's login is reused when
+  present, so unpublished projects work too); the line KMZ from the project's Layers documents, cached on
+  the device (IndexedDB) so it also works with no signal on site.
+-->
+<style>
+  :root { --bg:#0f1720; --panel:#16202b; --line:#2a3846; --fg:#e6edf3; --dim:#9fb0c0; --acc:#2f81f7; --warn:#ffb020; --ok:#7dff8a; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font-family:system-ui,sans-serif; }
+  #app { display:flex; flex-direction:column; height:100dvh; }
+  #map { flex:1; min-height:180px; }
+  #panel { background:var(--panel); border-top:1px solid var(--line); padding:10px 12px calc(10px + env(safe-area-inset-bottom)); max-height:56%; overflow:auto; }
+  .sec { border:1px solid var(--line); border-radius:12px; padding:8px 10px; margin-bottom:8px; }
+  .sech { font-size:12px; font-weight:700; color:var(--dim); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
+  .row { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
+  .info { flex:1; font-size:13px; line-height:1.4; min-width:0; }
+  label { flex:1; font-size:11px; color:var(--dim); display:flex; flex-direction:column; gap:3px; min-width:0; }
+  select { width:100%; background:#0d141b; color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:9px 8px; font-size:15px; }
+  button { font:inherit; color:#fff; background:#2a3846; border:0; border-radius:10px; padding:11px 12px; font-size:15px; }
+  button.small { flex:0 0 auto; padding:9px 12px; font-size:14px; }
+  button.primary { background:var(--acc); font-weight:600; width:100%; padding:14px; font-size:16px; }
+  .seg { display:flex; gap:6px; margin-bottom:6px; } .seg button { flex:1; font-size:13.5px; padding:10px 6px; }
+  .seg button.on { background:var(--acc); }
+  .hint { font-size:11.5px; color:var(--dim); line-height:1.4; margin:2px 0 6px; }
+  .warn { color:var(--warn); } .okc { color:var(--ok); }
+  #status { font-size:12px; color:var(--dim); line-height:1.5; margin-top:8px; }
+  .tw { width:12px; height:12px; border-radius:50%; background:#ffd23f; border:2px solid #fff; box-shadow:0 0 0 1px #0008; }
+  .tw.dig { width:20px; height:20px; margin:-4px 0 0 -4px; background:#ff5a5a; border-width:3px; }
+  .pin { background:#e5484d; color:#fff; border-radius:6px; font:700 12px/20px system-ui; text-align:center; border:2px solid #fff; box-shadow:0 0 0 1px #0008; }
+  .pop button { display:block; width:100%; margin:4px 0; padding:8px; font-size:13px; }
+  .leaflet-popup-content { margin:10px 12px; color:#111; }
+
+  /* AR overlay */
+  #overlay { display:none; position:fixed; inset:0; pointer-events:none; font-size:14px; color:#fff; text-shadow:0 1px 3px #000; }
+  #hud { position:absolute; top:calc(8px + env(safe-area-inset-top)); left:8px; right:8px; background:#000a; border-radius:10px; padding:8px 10px; line-height:1.45; }
+  #cross { position:absolute; left:50%; top:50%; width:26px; height:26px; margin:-13px 0 0 -13px; border:2px solid #fff8; border-radius:50%; }
+  #ctl { position:absolute; left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom)); pointer-events:auto; }
+  #ctl .bar { display:flex; gap:6px; }
+  #ctl .bar button { flex:1; background:#000b; padding:12px 2px; font-size:14px; }
+  #ctl .bar button.on { background:var(--acc); }
+  .apanel { display:none; background:#000c; border-radius:10px; padding:8px 8px 2px; margin-bottom:6px; max-height:46vh; overflow:auto; }
+  .apanel .r { display:flex; align-items:center; gap:5px; margin-bottom:6px; }
+  .apanel .r span { flex:1; font-size:13px; min-width:0; }
+  .apanel .r button { flex:0 0 46px; padding:9px 0; font-size:15px; }
+  .apanel .r.steps button { flex:1; font-size:13px; }
+  .apanel .r.steps span { flex:0 0 92px; }
+  .apanel select { padding:7px 8px; font-size:14px; }
+  .apanel .full { width:100%; margin-bottom:6px; padding:9px; font-size:13.5px; }
+  .apanel .note { font-size:11.5px; color:#c8d3de; line-height:1.4; margin-bottom:6px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="map"></div>
+  <div id="panel">
+    <div class="sec">
+      <div class="sech">1 · Hat</div>
+      <div class="row"><div class="info" id="lineInfo">Yükleniyor…</div><button id="btnLineFile" class="small">📂 Dosya</button></div>
+      <input type="file" id="lineFile" accept=".kmz,.kml,application/vnd.google-earth.kmz,application/vnd.google-earth.kml+xml" style="display:none">
+    </div>
+    <div class="sec">
+      <div class="sech">2 · Hizalama</div>
+      <div class="seg"><button data-mode="gps">📍 Telefon konumu</button><button data-mode="ref">📐 Referans direkler</button></div>
+      <div class="hint" id="modeHint"></div>
+      <div id="refBox">
+        <div class="row"><label>R1<select id="ref0"></select></label><label>R2<select id="ref1"></select></label><label>R3 (isteğe bağlı)<select id="ref2"></select></label></div>
+        <button id="btnAutoRef" style="width:100%">🔁 Referansları otomatik seç</button>
+        <div class="hint" id="refHint"></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sech">3 · Kazı alanı</div>
+      <label>Direk<select id="digSel"></select></label>
+      <div class="hint" id="digInfo"></div>
+    </div>
+    <button id="btnAR" class="primary">▶ AR'ı başlat</button>
+    <div id="status">GPS bekleniyor…</div>
+  </div>
+</div>
+
+<div id="overlay">
+  <div id="hud">Hazırlanıyor…</div>
+  <div id="cross"></div>
+  <div id="ctl">
+    <div id="pDig" class="apanel">
+      <div class="r"><select id="digSel2"></select></div>
+      <div class="note" id="digNote"></div>
+      <div class="r"><span>1. Merkez kazığı</span><button data-stake="center" data-m="aim">🎯</button><button data-stake="center" data-m="here">📍</button></div>
+      <div class="r"><span id="lblFront">2. İleri aliman</span><button data-stake="front" data-m="aim">🎯</button><button data-stake="front" data-m="here">📍</button></div>
+      <div class="r"><span id="lblBack">2. Geri aliman</span><button data-stake="back" data-m="aim">🎯</button><button data-stake="back" data-m="here">📍</button></div>
+      <button class="full" id="btnStakeReset">Kazık işaretlerini sil</button>
+    </div>
+    <div id="pRef" class="apanel">
+      <div class="note">Referans direğin <b>merkezinde dur</b> ve 📍'e bas, ya da daireyi merkezin <b>tam üstüne tut</b> ve 🎯'e bas. 2 nokta yeter, 3. nokta hata payını gösterir.</div>
+      <div class="r"><span id="rl0">R1</span><button data-ref="0" data-m="aim">🎯</button><button data-ref="0" data-m="here">📍</button></div>
+      <div class="r"><span id="rl1">R2</span><button data-ref="1" data-m="aim">🎯</button><button data-ref="1" data-m="here">📍</button></div>
+      <div class="r"><span id="rl2">R3</span><button data-ref="2" data-m="aim">🎯</button><button data-ref="2" data-m="here">📍</button></div>
+      <button class="full" id="btnRefReset">Referans işaretlerini sil</button>
+    </div>
+    <div id="pSet" class="apanel">
+      <button class="full" id="btnAimTower">🎯 Yönü direğe nişanla (daireyi gerçek direğe tut, bas)</button>
+      <button class="full" id="btnAtTower">📍 En yakın direğin merkezindeyim (konumu düzelt)</button>
+      <button class="full" id="btnGround">Zemin seviyesini ölç (daireyi ayağının dibine tut)</button>
+      <div class="r steps"><span>Döndür (°)</span><button data-k="rot" data-v="-5">-5</button><button data-k="rot" data-v="-1">-1</button><button data-k="rot" data-v="1">+1</button><button data-k="rot" data-v="5">+5</button></div>
+      <div class="r steps"><span>İleri/geri (m)</span><button data-n="f" data-v="-5">-5</button><button data-n="f" data-v="-1">-1</button><button data-n="f" data-v="1">+1</button><button data-n="f" data-v="5">+5</button></div>
+      <div class="r steps"><span>Sağ/sol (m)</span><button data-n="r" data-v="-5">-5</button><button data-n="r" data-v="-1">-1</button><button data-n="r" data-v="1">+1</button><button data-n="r" data-v="5">+5</button></div>
+      <div class="r steps"><span>Yükseklik (m)</span><button data-k="up" data-v="-1">-1</button><button data-k="up" data-v="-0.1">-0.1</button><button data-k="up" data-v="0.1">+0.1</button><button data-k="up" data-v="1">+1</button></div>
+      <div class="r steps"><span id="lblRad">Görüş 1000 m</span><button data-rad="-500">-500</button><button data-rad="500">+500</button></div>
+      <button class="full" id="btnLabels">Direk etiketleri: Açık</button>
+      <button class="full" id="btnRecal">GPS / pusulayı yeniden kalibre et</button>
+    </div>
+    <div class="bar">
+      <button id="bDig">Kazı</button>
+      <button id="bRef">Referans</button>
+      <button id="bSet">Ayar</button>
+      <button id="bExit">Çık</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { rad, deg, wrapPi, enuFrom, offsetLatLng, distM, latLngToUtm, utmToLatLng, utmZoneOf, epsgToUtm } from '../lib/geo.js';
+import { parseKml, kmzReadFile } from '../lib/kml.js';
+import { towerExcavation, STUB_NAMES } from '../lib/excavation.js';
+
+const BUILD = '2026-11-23 hat';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const qp = new URLSearchParams(location.search);
+const natural = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
+
+// ================= settings (per device) =================
+const ST_KEY = 'arHat1';
+let H = {}; try { H = JSON.parse(localStorage.getItem(ST_KEY) || '{}') || {}; } catch (e) {}
+H = { mode: 'gps', refs: [null, null, null], dig: null, radius: 1000, labels: true, ...H };
+const SLUG = (qp.get('slug') || H.slug || '').trim();
+if (H.slug !== SLUG) { H.refs = [null, null, null]; H.dig = null; }   // another project: its towers mean nothing here
+H.slug = SLUG;
+if (qp.get('kazi')) H.dig = qp.get('kazi').trim();
+const save = () => { try { localStorage.setItem(ST_KEY, JSON.stringify(H)); } catch (e) {} };
+save();
+
+// ================= Supabase (read-only) =================
+// Anon key: public by design (RLS), the same one the app ships. When the app's login session is in this browser
+// (same origin), its token is used instead, so members also see unpublished projects.
+const SB_URL = 'https://dgwposrzxzycoownpcdk.supabase.co', SB_KEY = 'sb_publishable_vrRcFEJadOB1BlYa32ZkvA_fQ1wy_5s';
+function userToken() {
+  try {
+    for (const k of Object.keys(localStorage)) if (/^sb-.*-auth-token$/.test(k)) {
+      const j = JSON.parse(localStorage.getItem(k) || 'null'), t = j && j.access_token;
+      if (t && (!j.expires_at || j.expires_at * 1000 > Date.now() + 30000)) return t;
+    }
+  } catch (e) {}
+  return null;
+}
+async function sbGet(path) {
+  const go = (tok) => fetch(SB_URL + '/rest/v1/' + path, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + (tok || SB_KEY) } });
+  const tok = userToken(); let r = await go(tok);
+  if (tok && (r.status === 401 || r.status === 403)) r = await go(null);
+  if (!r.ok) throw new Error('sunucu hatası ' + r.status);
+  return r.json();
+}
+
+// ================= project data =================
+let PROJECT = null, ASSETS = [], CFG = { stub: [], found: [] }, LINE = null, TW = [], dataNote = '';
+const DATA_KEY = 'arHatData:' + SLUG;
+function ingest(p, rows, cfg) {
+  PROJECT = { ...p, utm: epsgToUtm(p.coordinate_system) };
+  CFG.stub = (cfg.find((r) => r.key === 'stub_settings') || {}).value || [];
+  CFG.found = (cfg.find((r) => r.key === 'foundation_types') || {}).value || [];
+  ASSETS = rows.map((a) => {
+    let lat = a.lat, lng = a.lng, E = a.x, N = a.y;
+    const u = PROJECT.utm;
+    if (E != null && N != null && u) [lat, lng] = utmToLatLng(u.zone, u.north, E, N);   // surveyed UTM is the master (the app's pits use it too)
+    if (lat == null || lng == null) return null;
+    if (E == null || N == null) { const z = u || { zone: utmZoneOf(lng), north: lat >= 0 }; [E, N] = latLngToUtm(lat, lng, z.zone, z.north); }
+    return { code: String(a.asset_code), type: a.asset_type, lat, lng, z: a.z, E, N, soil: a.soil_type, legExts: [a.leg1_ext_m, a.leg2_ext_m, a.leg3_ext_m, a.leg4_ext_m] };
+  }).filter(Boolean).sort((x, y) => natural(x.code, y.code));
+}
+async function loadProject() {
+  if (!SLUG) { dataNote = 'Proje belirtilmedi: sadece cihazdaki hat dosyası kullanılır.'; return; }
+  try {
+    const p = (await sbGet(`projects?select=id,name,coordinate_system&slug=eq.${encodeURIComponent(SLUG)}`))[0];
+    if (!p) throw new Error(`proje bulunamadı ("${SLUG}"; giriş yapılmamışsa proje yayınlanmış olmalı)`);
+    const [rows, cfg] = await Promise.all([
+      sbGet(`assets?select=asset_code,asset_type,x,y,z,lat,lng,leg1_ext_m,leg2_ext_m,leg3_ext_m,leg4_ext_m,soil_type&project_id=eq.${p.id}`),
+      sbGet(`project_config?select=key,value&project_id=eq.${p.id}&key=in.(stub_settings,foundation_types)`),
+    ]);
+    ingest(p, rows, cfg);
+    try { localStorage.setItem(DATA_KEY, JSON.stringify({ p, rows, cfg, at: Date.now() })); } catch (e) {}
+  } catch (e) {
+    let c = null; try { c = JSON.parse(localStorage.getItem(DATA_KEY) || 'null'); } catch (e2) {}
+    if (c) { ingest(c.p, c.rows, c.cfg); dataNote = `⚠ Sunucuya ulaşılamadı (${e.message}); cihazdaki ${new Date(c.at).toLocaleString('tr-TR')} tarihli veri kullanılıyor.`; }
+    else dataNote = '⚠ Proje verisi alınamadı: ' + e.message;
+  }
+}
+
+// ---- line KMZ: project Layers document -> parsed once, cached on the device ----
+const idb = {
+  open: () => new Promise((res, rej) => { const r = indexedDB.open('arHat', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }),
+  async get(k) { const db = await this.open(); return new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); },
+  async set(k, v) { const db = await this.open(); return new Promise((res, rej) => { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, k); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); }); },
+};
+const LINE_KEY = 'line:' + (SLUG || '-');
+const isLineFile = (s) => /\.(kmz|kml)(\?|$)/i.test(s || '');
+async function lineFromFile(file) { return parseKml(await kmzReadFile(file), file.name); }
+async function loadLine() {
+  let url = qp.get('kmzurl'), name = qp.get('kmzname');
+  if (!url && PROJECT) {
+    try {
+      const docs = await sbGet(`documents?select=slot_name,file_url,uploaded_at&project_id=eq.${PROJECT.id}&section=eq.layers&order=uploaded_at.desc`);
+      const d = docs.find((x) => isLineFile(x.slot_name) || isLineFile(x.file_url));
+      if (d) { url = d.file_url; name = d.slot_name; }
+    } catch (e) {}
+  }
+  let cached = null; try { cached = await idb.get(LINE_KEY); } catch (e) {}
+  if (cached && cached.line && (cached.manual || !url || cached.url === url)) { setLine(cached.line, cached.manual ? 'cihazdan seçildi' : 'cihazda kayıtlı'); return; }
+  if (!url) { setLine(null); return; }
+  $('lineInfo').textContent = `${name || 'Hat'} indiriliyor…`;
+  try {
+    const r = await fetch(url); if (!r.ok) throw new Error('indirilemedi (' + r.status + ')');
+    const blob = await r.blob(), line = await lineFromFile(new File([blob], name || 'hat.kmz', { type: blob.type }));
+    setLine(line, 'projeden');
+    try { await idb.set(LINE_KEY, { url, line, manual: false }); } catch (e) {}
+  } catch (e) {
+    if (cached && cached.line) setLine(cached.line, 'cihazdaki eski kopya');
+    else { setLine(null); $('lineInfo').innerHTML = `<span class="warn">⚠ Hat dosyası açılamadı: ${esc(e.message)}</span>`; }
+  }
+}
+$('btnLineFile').addEventListener('click', () => $('lineFile').click());
+$('lineFile').addEventListener('change', async () => {
+  const f = $('lineFile').files[0]; $('lineFile').value = ''; if (!f) return;
+  $('lineInfo').textContent = 'Okunuyor…';
+  try { const line = await lineFromFile(f); setLine(line, 'cihazdan seçildi'); try { await idb.set(LINE_KEY, { url: 'file:' + f.name, line, manual: true }); } catch (e) {} }
+  catch (e) { $('lineInfo').innerHTML = `<span class="warn">⚠ ${esc(e.message)}</span>`; }
+});
+let lineSrc = '';
+function setLine(line, src) {
+  LINE = line; lineSrc = src || '';
+  for (const rt of lineRt.values()) lineDispose(rt); lineRt.clear();
+  rebuildTowers();
+  $('lineInfo').innerHTML = LINE
+    ? `📂 <b>${esc(LINE.name)}</b> · ${LINE.structs.length} direk <span style="color:var(--dim)">(${esc(lineSrc)})</span>`
+    : '<span class="warn">Projede hat dosyası (KMZ) yok.</span> Proje "Katmanlar" belgelerine yükle ya da 📂 ile bu cihazdan seç.';
+  if (LINE && !map._fitted) fitAll();
+}
+
+// One tower list for every menu: the project's towers (they carry the excavation data), or the line's
+// structures when no project is loaded. Elevation from the line when it has that tower (same datum as the
+// drawn line), else the project's own Z.
+function rebuildTowers() {
+  const byName = new Map((LINE ? LINE.structs : []).map((s) => [String(s.name), s]));
+  if (ASSETS.length) TW = ASSETS.map((a, i) => { const s = byName.get(a.code); return { code: a.code, lat: a.lat, lng: a.lng, ele: s && s.ele != null ? s.ele : a.z, ai: i, ht: s ? s.ht : null }; });
+  else TW = LINE ? LINE.structs.map((s) => ({ code: String(s.name), lat: s.lat, lng: s.lng, ele: s.ele, ai: -1, ht: s.ht })) : [];
+  demCalibrate();
+  refreshTowerMenus(); showMap(); digCompute();
+}
+const twByCode = (c) => (c == null ? null : TW.find((t) => t.code === String(c)) || null);
+
+// ================= GPS / compass =================
+let fix = null;
+if ('geolocation' in navigator) navigator.geolocation.watchPosition((p) => {
+  const first = !fix;
+  fix = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() };
+  showUser(); updateStatus(); if (first && !TW.length) map.setView([fix.lat, fix.lng], 16);
+}, (err) => { $('status').textContent = 'GPS hatası: ' + err.message; }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+let heading = null, headingT = 0, haveAbs = false;
+function compassHeading(alpha, beta, gamma) {
+  const x = beta * rad, y = gamma * rad, z = alpha * rad;
+  const cY = Math.cos(y), cZ = Math.cos(z), sX = Math.sin(x), sY = Math.sin(y), sZ = Math.sin(z);
+  const Vx = -cZ * sY - sZ * sX * cY, Vy = -sZ * sY + cZ * sX * cY;
+  let h = Math.atan(Vx / Vy); if (Vy < 0) h += Math.PI; else if (Vx < 0) h += 2 * Math.PI;
+  return h * deg;
+}
+const onOrient = (ev) => { if (ev.alpha == null || ev.beta == null || ev.gamma == null) return; heading = compassHeading(ev.alpha, ev.beta, ev.gamma); headingT = performance.now(); };
+window.addEventListener('deviceorientationabsolute', (e) => { haveAbs = true; onOrient(e); }, true);
+window.addEventListener('deviceorientation', (e) => { if (!haveAbs && e.absolute) onOrient(e); }, true);
+
+// ================= map =================
+const map = L.map('map', { zoomControl: false }).setView([41.7, 44.8], 8);
+const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri' });
+const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+sat.addTo(map); L.control.layers({ Uydu: sat, Harita: osm }, null, { position: 'topright' }).addTo(map);
+const lineLayer = L.layerGroup().addTo(map), refLayer = L.layerGroup().addTo(map), digLayer = L.layerGroup().addTo(map);
+const userDot = L.circleMarker([0, 0], { radius: 7, color: '#fff', weight: 2, fillColor: '#2f81f7', fillOpacity: 1 });
+const userAcc = L.circle([0, 0], { radius: 1, color: '#2f81f7', weight: 1, fillOpacity: 0.1 });
+function showUser() { if (!fix) return; if (!map.hasLayer(userDot)) { userDot.addTo(map); userAcc.addTo(map); } userDot.setLatLng([fix.lat, fix.lng]); userAcc.setLatLng([fix.lat, fix.lng]).setRadius(fix.acc); }
+function fitAll() {
+  const pts = TW.length ? TW : (LINE ? LINE.structs : []); if (!pts.length) return;
+  map._fitted = true;
+  const d = twByCode(qp.get('direk')) || twByCode(H.dig);   // ?direk= : the Stringing section's AR button
+  if (d) map.setView([d.lat, d.lng], 17); else map.fitBounds(L.latLngBounds(pts.map((s) => [s.lat, s.lng])).pad(0.05));
+}
+function showMap() {
+  lineLayer.clearLayers();
+  if (LINE) L.polyline(LINE.structs.map((s) => [s.lat, s.lng]), { color: '#ff5a5a', weight: 3, opacity: 0.9, interactive: false }).addTo(lineLayer);
+  else if (TW.length) L.polyline(TW.map((s) => [s.lat, s.lng]), { color: '#ff5a5a', weight: 2, opacity: 0.6, dashArray: '6 6', interactive: false }).addTo(lineLayer);
+  for (const t of TW) {
+    const isDig = t.code === String(H.dig);
+    L.marker([t.lat, t.lng], { icon: L.divIcon({ className: '', html: `<div class="tw${isDig ? ' dig' : ''}"></div>`, iconSize: [12, 12], iconAnchor: [6, 6] }), zIndexOffset: isDig ? 500 : 0 })
+      .bindTooltip(`Direk ${esc(t.code)}${t.ele != null ? ' · kot ' + t.ele : ''}`)
+      .bindPopup(() => `<div class="pop"><b>Direk ${esc(t.code)}</b><button data-pdig="${esc(t.code)}">🕳 Kazı alanını göster</button>${H.mode === 'ref' ? [0, 1, 2].map((k) => `<button data-pref="${k}" data-code="${esc(t.code)}">R${k + 1} yap</button>`).join('') : ''}</div>`)
+      .addTo(lineLayer);
+  }
+  refLayer.clearLayers();
+  if (H.mode === 'ref') H.refs.forEach((c, k) => { const t = twByCode(c); if (t) L.marker([t.lat, t.lng], { icon: L.divIcon({ className: '', html: `<div class="pin">R${k + 1}</div>`, iconSize: [30, 22], iconAnchor: [15, 28] }), zIndexOffset: 800 }).addTo(refLayer); });
+}
+// popups stop click propagation to the map container, so their buttons are wired when a popup opens
+map.on('popupopen', (e) => {
+  const el = e.popup.getElement(); if (!el) return;
+  el.querySelectorAll('[data-pdig]').forEach((b) => b.addEventListener('click', () => { map.closePopup(); digSelect(b.dataset.pdig); }));
+  el.querySelectorAll('[data-pref]').forEach((b) => b.addEventListener('click', () => { map.closePopup(); setRef(+b.dataset.pref, b.dataset.code); }));
+});
+
+// ================= main-screen controls =================
+function towerOptions(sel, emptyLabel) {
+  return `<option value="">${emptyLabel}</option>` + TW.map((t) => `<option value="${esc(t.code)}"${t.code === String(sel) ? ' selected' : ''}>Direk ${esc(t.code)}${t.ht != null ? '  (' + t.ht + ' m)' : ''}</option>`).join('');
+}
+function refreshTowerMenus() {
+  $('digSel').innerHTML = towerOptions(H.dig, TW.length ? '— direk seç —' : '— direk listesi yok —');
+  $('digSel2').innerHTML = towerOptions(H.dig, '— kazı gösterme —');
+  for (const k of [0, 1, 2]) $('ref' + k).innerHTML = towerOptions(H.refs[k], '—');
+  refreshMode();
+}
+function refreshMode() {
+  for (const b of document.querySelectorAll('.seg button')) b.classList.toggle('on', b.dataset.mode === H.mode);
+  $('refBox').style.display = H.mode === 'ref' ? '' : 'none';
+  $('modeHint').innerHTML = H.mode === 'gps'
+    ? 'Hat, telefonun GPS konumuna ve pusulasına göre araziye oturur. Hızlı ama birkaç metre / birkaç derece şaşabilir. Kazı için kesin yer gerekiyorsa AR içinde <b>Kazı → merkez + aliman kazığı</b> işaretle ya da referans direkleri kullan.'
+    : 'Sahada koordinatı bilinen 2-3 direk merkezini AR içinde işaretlersin; GPS ve pusula kullanılmaz, en hassas yöntem. Direkler arası en az 20-30 m olsun.';
+  for (const k of [0, 1, 2]) { const t = twByCode(H.refs[k]); $('rl' + k).textContent = t ? `R${k + 1}: Direk ${t.code}` : `R${k + 1}: seçilmedi`; }
+  $('bRef').style.display = H.mode === 'ref' ? '' : 'none';
+  $('btnRecal').style.display = H.mode === 'gps' ? '' : 'none';
+}
+document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
+  H.mode = b.dataset.mode; save();
+  if (H.mode === 'ref' && H.refs.filter(Boolean).length < 2) autoRefs();
+  refreshTowerMenus(); showMap(); updateStatus();
+}));
+function setRef(k, code) {
+  H.refs[k] = code || null;
+  for (let j = 0; j < 3; j++) if (j !== k && H.refs[j] && H.refs[j] === H.refs[k]) H.refs[j] = null;   // the same tower twice gives no direction
+  refMarks[k] = null; if (H.mode === 'ref' && !stakeOn) origin = null;
+  save(); refreshTowerMenus(); showMap();
+}
+[0, 1, 2].forEach((k) => $('ref' + k).addEventListener('change', () => setRef(k, $('ref' + k).value)));
+// The excavation tower and its nearer neighbour(s) when a tower is picked (that is where the engineer is);
+// otherwise the towers nearest to the phone. Neighbours on a line are 300-450 m apart, plenty of baseline.
+function autoRefs() {
+  if (TW.length < 2) return;
+  const d = twByCode(H.dig); let pick;
+  if (d) {
+    const i = TW.indexOf(d), nb = [TW[i - 1], TW[i + 1]].filter(Boolean);
+    const near = fix ? (a, b) => distM(fix, a) - distM(fix, b) : () => 0;
+    pick = [d, ...nb.sort(near)];
+  } else {
+    const c = fix || map.getCenter();
+    pick = [...TW].sort((a, b) => distM(c, a) - distM(c, b)).slice(0, 3);
+  }
+  H.refs = [0, 1, 2].map((k) => (pick[k] ? pick[k].code : null)); refMarks = [null, null, null]; if (!stakeOn) origin = null; save();
+  $('refHint').textContent = `Seçildi: ${pick.slice(0, 3).map((t, k) => `R${k + 1} = Direk ${t.code}`).join(', ')}. Sahada bu direklerin merkezini AR'daki "Referans" panelinden işaretle.`;
+}
+$('btnAutoRef').addEventListener('click', () => { autoRefs(); refreshTowerMenus(); showMap(); });
+$('digSel').addEventListener('change', () => digSelect($('digSel').value));
+$('digSel2').addEventListener('change', () => digSelect($('digSel2').value));
+
+function updateStatus() {
+  const p = [];
+  p.push(fix ? `GPS ±${fix.acc.toFixed(0)} m` : 'GPS bekleniyor…');
+  if (fix && TW.length) { let b = null, bd = Infinity; for (const t of TW) { const d = distM(fix, t); if (d < bd) { bd = d; b = t; } } p.push(`en yakın direk ${b.code} (${bd < 1000 ? bd.toFixed(0) + ' m' : (bd / 1000).toFixed(1) + ' km'})`); }
+  p.push(xrSupported ? 'AR hazır' : 'AR bu tarayıcıda yok (Android Chrome kullan)');
+  p.push('sürüm ' + BUILD);
+  $('status').innerHTML = (dataNote ? `<span class="warn">${esc(dataNote)}</span><br>` : '') + (PROJECT ? `🏗 ${esc(PROJECT.name)} · ` : '') + p.join(' · ');
+}
+let xrSupported = false;
+if (navigator.xr) navigator.xr.isSessionSupported('immersive-ar').then((ok) => { xrSupported = ok; updateStatus(); }).catch(() => {});
+
+// ================= ground elevation (topography) =================
+// The AR floor (groundY) is paired ONCE with a terrain elevation z0 at the place it was measured: then every
+// tower/span is drawn at groundY + (its PLS elevation - z0), i.e. on the real terrain wherever the user walks
+// (AR tracking already follows the user up and down slopes). z0 comes from, in order: the tower whose centre
+// was marked (references / stakes) -> a tower within 60 m -> the public DEM (Open-Meteo / Copernicus 90 m),
+// calibrated against the towers' PLS elevations (bias = median(PLS - DEM)) -> nearest tower (rough).
+const DEM = { cal: null, busy: false };
+async function demFetch(pts) {
+  const r = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${pts.map((q) => q.lat.toFixed(5)).join(',')}&longitude=${pts.map((q) => q.lng.toFixed(5)).join(',')}`);
+  if (!r.ok) throw new Error('DEM ' + r.status); const j = await r.json(); if (!Array.isArray(j.elevation)) throw new Error('DEM yanıtı'); return j.elevation;
+}
+function demCalibrate() {
+  const pts = TW.filter((t) => t.ele != null); if (pts.length < 2 || DEM.busy) return;
+  const step = Math.max(1, Math.floor(pts.length / 40)), pick = pts.filter((q, i) => i % step === 0).slice(0, 40);
+  DEM.busy = true;
+  demFetch(pick).then((el) => {
+    const d = pick.map((q, i) => q.ele - el[i]).sort((a, b) => a - b), m = d[d.length >> 1];
+    DEM.cal = { bias: m, sd: Math.sqrt(d.reduce((a, x) => a + (x - m) ** 2, 0) / d.length), n: d.length };
+  }).catch((e) => console.warn('DEM kalibrasyonu yapılamadı', e)).finally(() => { DEM.busy = false; });
+}
+let zb = null;   // { z, src, approx, lat, lng } : terrain elevation at the place where groundY was measured
+function zBaseAt(lat, lng, exact) {
+  if (exact) { zb = { ...exact, lat, lng, approx: false }; return; }
+  const n = nearestTower({ lat, lng });
+  if (n && n.t.ele != null && n.d < 60) { zb = { z: n.t.ele, src: `direk ${n.t.code} tabanı (${n.d.toFixed(0)} m)`, approx: false, lat, lng }; return; }
+  zb = { z: n && n.t.ele != null ? n.t.ele : 0, src: n ? `direk ${n.t.code} tabanı varsayıldı, DEM bekleniyor` : 'kot bilinmiyor', approx: true, lat, lng };
+  if (!DEM.cal) return;
+  const want = zb;
+  demFetch([{ lat, lng }]).then((el) => { if (zb !== want) return; zb = { z: el[0] + DEM.cal.bias, src: `doğal arazi (DEM ${el[0].toFixed(0)} m ${DEM.cal.bias >= 0 ? '+' : '−'} ${Math.abs(DEM.cal.bias).toFixed(1)}, ±${DEM.cal.sd.toFixed(1)} m)`, approx: false, lat, lng }; })
+    .catch(() => {});
+}
+function nearestTower(p) {
+  let b = null, bd = Infinity; for (const t of TW) { const d = distM(p, t); if (d < bd) { bd = d; b = t; } }
+  return b ? { t: b, d: bd } : null;
+}
+
+// ================= AR runtime =================
+let renderer, scene, camera, session = null, hitSource = null;
+let cal = null, origin = null, thetaN = 0, calQuality = null, noCompass = false, originSrc = '';
+let groundY = 0, wantGround = false, wantGroundT = 0, lastHit = null, msg = null;
+let refMarks = [null, null, null], refInfo = null, stakeOn = false;
+const adj = { e: 0, n: 0, up: 0, rot: 0 };
+const q = new THREE.Quaternion(), fwd = new THREE.Vector3();
+let camYaw = 0, camPos = { x: 0, y: 0, z: 0 }, level = false, lastHud = 0;
+const say = (s) => { msg = { t: performance.now(), s }; };
+const lineGroup = new THREE.Group(), digGroup = new THREE.Group(), lineRt = new Map();
+
+function initThree() {
+  if (renderer) return;
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor');
+  Object.assign(renderer.domElement.style, { position: 'fixed', left: '0', top: '0', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none' });
+  document.body.appendChild(renderer.domElement);
+  scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(70, 1, 0.1, 6000);
+  scene.add(lineGroup); scene.add(digGroup);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8fa0b3, 1.5));
+  const sun = new THREE.DirectionalLight(0xfff4e0, 2.0); sun.position.set(40, 80, 30); scene.add(sun);
+}
+const tnow = () => thetaN + adj.rot * rad;
+// AR-space (x,z) of a lat/lng in the current alignment. AR's (x,z) = (East, -North) rotated by tn about the origin.
+function worldOf(lat, lng, tn = tnow()) {
+  const en = enuFrom(origin.lat, origin.lng, lat, lng), e = en.e + adj.e, n = en.n + adj.n;
+  return { x: origin.x + e * Math.cos(tn) + n * Math.sin(tn), z: origin.z + e * Math.sin(tn) - n * Math.cos(tn) };
+}
+function userLatLng() {
+  if (!origin) return null;
+  const tn = tnow(), dx = camPos.x - origin.x, dz = camPos.z - origin.z;
+  const [lat, lng] = offsetLatLng(origin.lat, origin.lng, dx * Math.cos(tn) + dz * Math.sin(tn) - adj.e, dx * Math.sin(tn) - dz * Math.cos(tn) - adj.n);
+  return { lat, lng };
+}
+const yOf = (ele) => groundY + adj.up + ((ele == null ? (zb ? zb.z : 0) : ele) - (zb ? zb.z : 0));
+
+// ----- GPS + compass calibration (mode "Telefon konumu") -----
+function startCal() { cal = { t0: performance.now(), tDate: Date.now(), n: 0, sx: 0, sy: 0, gw: 0, glat: 0, glng: 0, lastFix: 0 }; origin = null; calQuality = null; noCompass = false; }
+function finishCal() {
+  const lat = cal.gw > 0 ? cal.glat / cal.gw : fix.lat, lng = cal.gw > 0 ? cal.glng / cal.gw : fix.lng;
+  if (cal.n >= 15) { thetaN = Math.atan2(cal.sy, cal.sx); calQuality = Math.hypot(cal.sx, cal.sy) / cal.n; } else { thetaN = camYaw; noCompass = true; }
+  origin = { lat, lng, x: camPos.x, z: camPos.z }; originSrc = 'GPS'; cal = null;
+  groundY = camPos.y - 1.5; zBaseAt(lat, lng);   // refined by "Zemin seviyesini ölç" or the first floor hit below
+  wantGround = !!hitSource; wantGroundT = performance.now(); groundAuto = true;
+}
+let groundAuto = false;
+
+function frame(t, xrFrame) {
+  if (!xrFrame) return;
+  const ref = renderer.xr.getReferenceSpace(), pose = xrFrame.getViewerPose(ref);
+  if (pose) {
+    const o = pose.transform.orientation, p = pose.transform.position;
+    q.set(o.x, o.y, o.z, o.w); fwd.set(0, 0, -1).applyQuaternion(q);
+    camYaw = Math.atan2(fwd.x, -fwd.z); level = Math.abs(fwd.y) < 0.6; camPos = { x: p.x, y: p.y, z: p.z };
+  }
+  const now = performance.now();
+  if (hitSource) {
+    const res = xrFrame.getHitTestResults(hitSource);
+    const hp = res.length ? res[0].getPose(ref).transform.position : null;
+    lastHit = hp ? { x: hp.x, y: hp.y, z: hp.z } : null;
+    if (wantGround && lastHit && lastHit.y < camPos.y - 0.4) {
+      groundY = lastHit.y; wantGround = false;
+      const u = userLatLng(); if (u) zBaseAt(u.lat, u.lng);   // the floor measured HERE pairs with the terrain elevation HERE
+      if (!groundAuto) say('Zemin seviyesi ölçüldü ✓'); groundAuto = false;
+    } else if (wantGround && now - wantGroundT > 4000) { wantGround = false; if (!groundAuto) say('⚠ Zemin bulunamadı: daireyi yakındaki zemine tut, yavaşça gezdir, tekrar bas'); groundAuto = false; }
+  }
+  if (cal && pose) {
+    if (level && heading != null && now - headingT < 500) { const off = camYaw - heading * rad; cal.sx += Math.cos(off); cal.sy += Math.sin(off); cal.n++; }
+    if (fix && fix.t > cal.tDate && fix.t !== cal.lastFix && fix.acc <= 35) { const w = 1 / Math.max(fix.acc, 3) ** 2; cal.gw += w; cal.glat += fix.lat * w; cal.glng += fix.lng * w; cal.lastFix = fix.t; }
+    const el = (now - cal.t0) / 1000;
+    if (fix && ((el >= 8 && cal.n >= 15) || el >= 12)) finishCal();
+  }
+  placeAll();
+  renderer.render(scene, camera);
+  if (now - lastHud > 250) { lastHud = now; $('hud').innerHTML = hudText(now) + `<br><span style="opacity:.6;font-size:11px">sürüm ${BUILD}</span>`; }
+}
+function placeAll() {
+  if (!origin) { lineGroup.visible = false; digGroup.visible = false; return; }
+  const tn = tnow();
+  lineUpdate(tn); digPlace(tn);
+}
+
+// ----- line (PLS-CADD KMZ) rendering: only the pieces within view distance are built -----
+const std = (color, rough = 0.8, metal = 0.05, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
+function beamGeo(p0, p1, t) {
+  const a = new THREE.Vector3(...p0), b = new THREE.Vector3(...p1), len = a.distanceTo(b);
+  const g = new THREE.BoxGeometry(t, t, len);
+  const qq = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), b.clone().sub(a).normalize());
+  g.applyMatrix4(new THREE.Matrix4().compose(a.clone().add(b).multiplyScalar(0.5), qq, new THREE.Vector3(1, 1, 1)));
+  return g;
+}
+function beams(arr, t) {
+  const gs = [];
+  for (let i = 0; i + 5 < arr.length; i += 6) { const a = [arr[i], arr[i + 1], arr[i + 2]], b = [arr[i + 3], arr[i + 4], arr[i + 5]]; if (Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) > 1e-3) gs.push(beamGeo(a, b, t)); }
+  return gs.length ? mergeGeometries(gs) : null;
+}
+const labelTex = (txt, accent) => {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 96; const g = c.getContext('2d');
+  g.fillStyle = 'rgba(15,23,32,0.82)'; g.beginPath(); g.roundRect(4, 4, 248, 88, 14); g.fill();
+  if (accent) { g.fillStyle = accent; g.fillRect(4, 4, 12, 88); }
+  g.fillStyle = '#fff'; g.font = 'bold 44px system-ui,sans-serif'; g.textAlign = 'center'; g.fillText(txt[0], 132, 46);
+  g.fillStyle = '#9fd0ff'; g.font = '28px system-ui,sans-serif'; g.fillText(txt[1] || '', 132, 80);
+  return new THREE.CanvasTexture(c);
+};
+function lineBuild(c) {
+  const g = new THREE.Group(), add = (geo, mat) => { if (geo) g.add(new THREE.Mesh(geo, mat)); };
+  if (c.f && c.f.length) { const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.BufferAttribute(c.f.slice(), 3)); fg.computeVertexNormals(); g.add(new THREE.Mesh(fg, std(0xc3ccd6, 0.55, 0.45, { side: THREE.DoubleSide, flatShading: true }))); }
+  if (c.t.length) add(beams(c.t, 0.16), std(0xc3ccd6, 0.55, 0.6));
+  if (c.w.length) {
+    const col = c.cable.startsWith('acsr') ? 0xffd23f : c.cable.startsWith('opgw') ? 0x6be3ff : 0x7dff8a;
+    add(beams(c.w, 0.09), new THREE.MeshBasicMaterial({ color: col }));
+    const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(c.w.slice(), 3)); g.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: col })));
+  }
+  if (c.h.length) add(beams(c.h, 0.05), std(0xb07a4a, 0.6, 0.0));
+  let label = null;
+  if (c.kind === 'tower' && c.sname) {
+    const s = LINE.structs.find((x) => x.name === c.sname), isDig = String(c.sname) === String(H.dig);
+    label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex([`Direk ${c.sname}`, s && s.ht != null ? `${s.ht} m · kot ${s.ele}` : ''], isDig ? '#ff5a5a' : null), depthTest: false, transparent: true }));
+    label.scale.set(9, 3.4, 1); label.position.set(0, c.top + 5, 0); label.renderOrder = 10; label.visible = H.labels; g.add(label);
+  }
+  lineGroup.add(g);
+  return { group: g, label };
+}
+function lineDispose(rt) { rt.group.traverse((m) => { if (m.geometry) m.geometry.dispose(); if (m.material) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); } }); lineGroup.remove(rt.group); }
+function lineUpdate(tn) {
+  if (!LINE) { lineGroup.visible = false; return; }
+  lineGroup.visible = true; let builds = 0;
+  // chunk heights are absolute PLS elevations: shift so z0 (terrain under the measured floor) lands on groundY
+  const y0 = groundY + adj.up - (zb ? zb.z : 0);
+  for (const c of LINE.chunks) {
+    const p = worldOf(c.lat, c.lng, tn), dc = Math.hypot(p.x - camPos.x, p.z - camPos.z) - c.rad;
+    let rt = lineRt.get(c.id);
+    if (dc > H.radius * 1.3) { if (rt) { lineDispose(rt); lineRt.delete(c.id); } continue; }
+    if (dc > H.radius) { if (rt) rt.group.visible = false; continue; }
+    if (!rt) { if (builds >= 2) continue; rt = lineBuild(c); lineRt.set(c.id, rt); builds++; }
+    rt.group.visible = true; rt.group.position.set(p.x, y0, p.z); rt.group.rotation.y = -tn;
+  }
+}
+
+// ================= excavation pits of the selected tower =================
+// Computed exactly as the app's map layer (lib/excavation.js = stubGeometry.ts) in UTM from the project's
+// tower coordinates, then placed like any other georeferenced point: so the pits appear at their real place
+// as soon as the alignment (GPS, reference towers or stakes) is done -- nothing to mark by hand.
+let DIG = null;   // { t, prev, next, legs:[{leg, stub, legExtM, c:[[e,n]x4], lc:[e,n]}], missing[], bisEN, stake:{center,front,back} }
+function digCompute() {
+  digGroup.clear(); digLayer.clearLayers();
+  const keepStake = DIG && DIG.t && DIG.t.code === String(H.dig) ? DIG.stake : null;
+  DIG = null; stakeOn = stakeOn && !!keepStake;
+  const t = twByCode(H.dig);
+  if (!t) { $('digInfo').textContent = TW.length ? 'Direk seçince 4 bacağın kazı çukurları AR\'da ve haritada yerinde gösterilir. Haritada direğe dokunarak da seçebilirsin.' : ''; digUi(); return; }
+  const i = TW.indexOf(t);
+  DIG = { t, prev: TW[i - 1] || null, next: TW[i + 1] || null, legs: [], missing: [], stake: keepStake || { center: null, front: null, back: null } };
+  if (t.ai < 0) DIG.missing.push('proje verisi yok (sadece hat dosyası): çukur ölçüleri hesaplanamaz');
+  else {
+    const a = ASSETS[t.ai], res = towerExcavation(ASSETS, t.ai, CFG.stub, CFG.found), u = PROJECT.utm || { zone: utmZoneOf(a.lng), north: a.lat >= 0 };
+    const toEN = ([E, N]) => { const [la, ln] = utmToLatLng(u.zone, u.north, E, N), en = enuFrom(t.lat, t.lng, la, ln); return [en.e, en.n]; };
+    DIG.missing = res.missing; DIG.parsed = res.parsed; DIG.found = res.foundation; DIG.type = a.type;
+    DIG.legs = res.legs.filter(Boolean).map((l) => ({ leg: l.leg, stub: l.stub, legExtM: l.legExtM, c: l.cornersUtm.map(toEN), lc: toEN(l.centerUtm) }));
+    for (const l of DIG.legs) L.polygon(l.c.map(([e, n]) => offsetLatLng(t.lat, t.lng, e, n)), { color: '#fff', weight: 1, fillColor: hexOf(DIG_COLORS[l.leg]), fillOpacity: 0.6 }).bindTooltip(`${l.stub} · LE ${l.legExtM >= 0 ? '+' : ''}${l.legExtM} m`).addTo(digLayer);
+  }
+  digBuild(); digUi();
+}
+const DIG_COLORS = { 1: 0xff5a5a, 2: 0xffd23f, 3: 0x6be3ff, 4: 0x7dff8a };
+const hexOf = (n) => '#' + n.toString(16).padStart(6, '0');
+function digSelect(code) {
+  H.dig = code || null; save(); stakeOn = false;
+  digCompute(); refreshTowerMenus(); showMap();
+  for (const rt of lineRt.values()) lineDispose(rt); lineRt.clear();   // re-label the highlighted tower
+  const t = twByCode(H.dig); if (t && !session) map.setView([t.lat, t.lng], Math.max(map.getZoom(), 17));
+}
+function digUi() {
+  const t = DIG && DIG.t;
+  $('lblFront').textContent = DIG && DIG.next ? `2. İleri aliman (→ Direk ${DIG.next.code})` : '2. İleri aliman (hat sonu)';
+  $('lblBack').textContent = DIG && DIG.prev ? `   Geri aliman (← Direk ${DIG.prev.code})` : '   Geri aliman (hat başı)';
+  if (!t) { $('digNote').textContent = 'Listeden direk seç: 4 bacağın kazı çukurları yerinde gösterilir.'; return; }
+  const ok = DIG.legs.length, info = `Direk ${t.code}${DIG.type ? ' · ' + DIG.type : ''}${DIG.found ? ' · zemin: ' + DIG.found.soilType : ''}` +
+    (ok ? ` · ${ok}/4 çukur (${DIG.legs.map((l) => `${l.stub} LE ${l.legExtM >= 0 ? '+' : ''}${l.legExtM}`).join(', ')})` : '') +
+    (DIG.missing.length ? ` · ⚠ ${DIG.missing.join('; ')}` : '');
+  $('digInfo').innerHTML = esc(info) + (ok ? '<br>AR\'ı başlatıp hizalama bitince çukurlar yerinde görünür. Kesin yer için AR\'da <b>Kazı</b> panelinden merkez + aliman kazığını işaretle.' : '');
+  $('digNote').innerHTML = esc(info) + '<br>Hizalama bitince çukurlar kendiliğinden yerinde çizilir. <b>İsteğe bağlı, en hassası:</b> merkez kazığını 📍/🎯, sonra bir aliman kazığını 🎯 işaretle: hat ve çukurlar bu direkte kazıklara oturur.';
+}
+function digQuad(corners, y, color) {
+  const v = corners.map(([e, n]) => [e, y, -n]), [c0, c1, c2, c3] = v;
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([...c0, ...c1, ...c2, ...c0, ...c2, ...c3]), 3));
+  const grp = new THREE.Group();
+  grp.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false })));
+  const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([...c0, ...c1, ...c2, ...c3, ...c0].map((x, i) => (i % 3 === 1 ? x + 0.01 : x))), 3));
+  grp.add(new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0xffffff })));
+  return grp;
+}
+// built in the tower's local frame: x = East, z = -North, y = metres relative to the tower's ground (centre)
+function digBuild() {
+  digGroup.clear(); if (!DIG) return;
+  for (const l of DIG.legs) {
+    digGroup.add(digQuad(l.c, -l.legExtM, DIG_COLORS[l.leg]));   // LE +1.5 = this leg's ground is 1.5 m below the centre
+    const lab = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex([l.stub, `LE ${l.legExtM >= 0 ? '+' : ''}${l.legExtM} m`], hexOf(DIG_COLORS[l.leg])), depthTest: false, transparent: true }));
+    lab.scale.set(2.4, 0.9, 1); lab.position.set(l.lc[0], -l.legExtM + 0.8, -l.lc[1]); lab.renderOrder = 10; digGroup.add(lab);
+  }
+  const mg = new THREE.RingGeometry(0.15, 0.28, 32); mg.rotateX(-Math.PI / 2);
+  const mk = new THREE.Mesh(mg, new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })); mk.position.y = 0.02; digGroup.add(mk);
+  const pole = new THREE.CylinderGeometry(0.05, 0.05, 3, 8); pole.translate(0, 1.5, 0); digGroup.add(new THREE.Mesh(pole, new THREE.MeshBasicMaterial({ color: 0xff5a5a })));
+  // centre line toward the neighbouring towers (where the alignment stakes are)
+  for (const nb of [DIG.prev, DIG.next]) {
+    if (!nb) continue;
+    const en = enuFrom(DIG.t.lat, DIG.t.lng, nb.lat, nb.lng), d = Math.hypot(en.e, en.n) || 1, L8 = 12;
+    const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0.03, 0, en.e / d * L8, 0.03, -en.n / d * L8]), 3));
+    digGroup.add(new THREE.Line(lg, new THREE.LineBasicMaterial({ color: nb === DIG.next ? 0x7dff8a : 0x9fd0ff })));
+  }
+  const lab = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex([`Direk ${DIG.t.code}`, 'kazı merkezi'], '#ff5a5a'), depthTest: false, transparent: true }));
+  lab.scale.set(3.6, 1.35, 1); lab.position.set(0, 3.6, 0); lab.renderOrder = 10; digGroup.add(lab);
+}
+let digInfoAR = null;
+function digPlace(tn) {
+  digInfoAR = null;
+  if (!DIG) { digGroup.visible = false; return; }
+  const p = worldOf(DIG.t.lat, DIG.t.lng, tn);
+  digGroup.position.set(p.x, yOf(DIG.t.ele), p.z); digGroup.rotation.y = -tn; digGroup.visible = true;
+  const dx = p.x - camPos.x, dz = p.z - camPos.z, yaw = Math.atan2(dx, -dz);
+  digInfoAR = { d: Math.hypot(dx, dz), rel: wrapPi(yaw - camYaw) };
+}
+
+// ----- stakes: centre peg + alignment peg(s) of the selected tower -> exact local alignment -----
+// AR direction angle of an ENU bearing b is b + tn (see worldOf), so one aliman peg on the line toward a
+// neighbour gives tn directly; the centre peg gives the translation. Both pegs are local: no GPS, no compass.
+function markStake(which, how) {
+  if (!DIG) { say('⚠ Önce kazı direğini seç'); return; }
+  let p;
+  if (how === 'aim') { if (!lastHit) { say('⚠ Zemin bulunamadı: daireyi kazığa tut, telefonu yavaşça gezdir, tekrar bas'); return; } p = { ...lastHit }; }
+  else p = { x: camPos.x, y: lastHit ? lastHit.y : camPos.y - 1.5, z: camPos.z };
+  if (which !== 'center' && !(which === 'front' ? DIG.next : DIG.prev)) { say('⚠ Bu yönde komşu direk yok'); return; }
+  DIG.stake[which] = p;
+  say(`${which === 'center' ? 'Merkez kazığı' : which === 'front' ? 'İleri aliman' : 'Geri aliman'} işaretlendi ✓`);
+  applyStakes();
+}
+function applyStakes() {
+  const s = DIG.stake, T = DIG.t; if (!s.center) { if (s.front || s.back) say('Şimdi merkez kazığını işaretle'); return; }
+  const hs = [];
+  for (const [k, nb] of [['front', DIG.next], ['back', DIG.prev]]) {
+    const a = s[k]; if (!a || !nb) continue;
+    if (Math.hypot(a.x - s.center.x, a.z - s.center.z) < 1) { s[k] = null; say('⚠ Aliman kazığı merkeze çok yakın (1 m altı); daha uzaktaki kazığı işaretle'); continue; }
+    const en = enuFrom(T.lat, T.lng, nb.lat, nb.lng);
+    hs.push(Math.atan2(a.x - s.center.x, -(a.z - s.center.z)) - Math.atan2(en.e, en.n));
+  }
+  if (!hs.length && !origin) { say('Merkez işaretlendi ✓ Yön için bir aliman kazığını da işaretle'); return; }
+  const tn = hs.length ? Math.atan2(hs.reduce((a, h) => a + Math.sin(h), 0), hs.reduce((a, h) => a + Math.cos(h), 0)) : tnow();
+  thetaN = tn; adj.e = adj.n = adj.up = adj.rot = 0; cal = null; noCompass = false; calQuality = null;
+  origin = { lat: T.lat, lng: T.lng, x: s.center.x, z: s.center.z }; groundY = s.center.y;
+  zBaseAt(T.lat, T.lng, { z: T.ele == null ? 0 : T.ele, src: `direk ${T.code} merkez kazığı` });
+  originSrc = hs.length ? `kazıklar (merkez + ${hs.length} aliman)` : 'merkez kazığı + önceki yön'; stakeOn = true;
+  // both pegs: the measured line angle at this tower vs the design (a quick check of the pegs themselves)
+  stakeCheck = null;
+  if (s.front && s.back && DIG.prev && DIG.next) {
+    const m = Math.acos(Math.max(-1, Math.min(1, ((s.front.x - s.center.x) * (s.back.x - s.center.x) + (s.front.z - s.center.z) * (s.back.z - s.center.z)) / (Math.hypot(s.front.x - s.center.x, s.front.z - s.center.z) * Math.hypot(s.back.x - s.center.x, s.back.z - s.center.z))))) * deg;
+    const ef = enuFrom(T.lat, T.lng, DIG.next.lat, DIG.next.lng), eb = enuFrom(T.lat, T.lng, DIG.prev.lat, DIG.prev.lng);
+    const d = Math.acos(Math.max(-1, Math.min(1, (ef.e * eb.e + ef.n * eb.n) / (Math.hypot(ef.e, ef.n) * Math.hypot(eb.e, eb.n))))) * deg;
+    stakeCheck = { m, d };
+  }
+}
+let stakeCheck = null;
+
+// ----- reference towers (mode "Referans direkler") -----
+function markRef(i, how) {
+  const r = twByCode(H.refs[i]); if (!r) { say(`⚠ R${i + 1} seçilmemiş (ana ekran)`); return; }
+  let p;
+  if (how === 'aim') { if (!lastHit) { say('⚠ Zemin bulunamadı: daireyi noktaya tut, telefonu yavaşça gezdir, tekrar bas'); return; } p = { ...lastHit, approx: false }; }
+  else p = { x: camPos.x, z: camPos.z, y: lastHit ? lastHit.y : camPos.y - 1.5, approx: !lastHit };
+  refMarks[i] = p; say(`R${i + 1} (Direk ${r.code}) işaretlendi ✓`);
+  solveRefs();
+}
+// closed-form 2D Procrustes (same as the geo page): exact for 2 points, least squares for 3, residual per point
+function solveRefs() {
+  const idx = [0, 1, 2].filter((i) => refMarks[i] && twByCode(H.refs[i]));
+  if (idx.length < 2) return;
+  const anchor = twByCode(H.refs[idx[0]]);
+  const pts = idx.map((i) => { const t = twByCode(H.refs[i]), en = enuFrom(anchor.lat, anchor.lng, t.lat, t.lng), m = refMarks[i]; return { e: en.e, n: en.n, x: m.x, z: m.z, approx: m.approx }; });
+  let trueSpan = 0, arSpan = 0;
+  for (let a = 0; a < pts.length; a++) for (let b = a + 1; b < pts.length; b++) { trueSpan = Math.max(trueSpan, Math.hypot(pts[a].e - pts[b].e, pts[a].n - pts[b].n)); arSpan = Math.max(arSpan, Math.hypot(pts[a].x - pts[b].x, pts[a].z - pts[b].z)); }
+  if (trueSpan < 3 || arSpan < 1) { const last = idx[idx.length - 1]; refMarks[last] = null; say(`⚠ Referanslar çok yakın (${trueSpan.toFixed(1)} m); R${last + 1}'i yeniden işaretle`); return; }
+  const mean = (k) => pts.reduce((s, p) => s + p[k], 0) / pts.length, ce = mean('e'), cn = mean('n'), cx = mean('x'), cz = mean('z');
+  let A = 0, B = 0;
+  for (const p of pts) { const e2 = p.e - ce, n2 = p.n - cn, x2 = p.x - cx, z2 = p.z - cz; A += x2 * e2 - z2 * n2; B += x2 * n2 + z2 * e2; }
+  thetaN = Math.atan2(B, A);
+  const c = Math.cos(thetaN), sn = Math.sin(thetaN), Tx = cx - (c * ce + sn * cn), Tz = cz - (sn * ce - c * cn);
+  origin = { lat: anchor.lat, lng: anchor.lng, x: Tx, z: Tz }; groundY = refMarks[idx[0]].y; originSrc = 'referans direkler';
+  zBaseAt(anchor.lat, anchor.lng, { z: anchor.ele == null ? 0 : anchor.ele, src: `direk ${anchor.code} (R${idx[0] + 1}) tabanı` });
+  adj.e = adj.n = adj.up = adj.rot = 0; noCompass = false; calQuality = null; stakeOn = false;
+  let sumR = 0, maxR = 0;
+  for (const p of pts) { const r = Math.hypot(Tx + (c * p.e + sn * p.n) - p.x, Tz + (sn * p.e - c * p.n) - p.z); sumR += r; maxR = Math.max(maxR, r); }
+  refInfo = { n: pts.length, mean: sumR / pts.length, max: maxR, approx: pts.some((p) => p.approx), trueSpan };
+}
+
+// ----- HUD -----
+function hudText(now) {
+  const m = msg && now - msg.t < 3500 ? '<br>' + msg.s : '';
+  if (cal) return `Kalibrasyon… ${Math.min(8, (now - cal.t0) / 1000).toFixed(0)}/8 sn. Telefonu dik tut, ufka bak, kıpırdama.<br>GPS ${fix ? '±' + fix.acc.toFixed(0) + ' m' : 'yok'} · pusula ${heading != null ? 'var' : 'yok'}` + m;
+  if (!origin) {
+    if (H.mode === 'ref') {
+      const ok = (i) => (H.refs[i] ? (refMarks[i] ? '✓' : '…') : '–');
+      const wait = [0, 1, 2].find((i) => H.refs[i] && !refMarks[i]), t = wait != null ? twByCode(H.refs[wait]) : null;
+      return `<b>Referans</b>  R1 ${ok(0)}  R2 ${ok(1)}${H.refs[2] ? '  R3 ' + ok(2) : ''}<br>` +
+        (H.refs.filter(Boolean).length < 2 ? '⚠ Ana ekranda en az 2 referans direk seç' : t ? `R${wait + 1} = <b>Direk ${t.code}</b> merkezine git: üstünde dur 📍 ya da daireyi tam üstüne tut 🎯 (Referans paneli)` : 'Hesaplanıyor…') + m;
+    }
+    return 'Hizalama bekleniyor…' + m;
+  }
+  let s = '';
+  if (originSrc === 'referans direkler' && refInfo) s += `Hizalama: referans ✓ (${refInfo.n} direk) sapma ort. ${refInfo.mean.toFixed(2)} m, en kötü ${refInfo.max.toFixed(2)} m` + (refInfo.max > Math.max(0.5, refInfo.trueSpan * 0.02) ? ' <b class="warn" style="color:#ffd166">⚠ büyük: yeniden işaretle</b>' : '');
+  else if (stakeOn) s += `Hizalama: ${originSrc} ✓` + (stakeCheck ? ` · hat açısı ölçülen ${stakeCheck.m.toFixed(1)}°, proje ${stakeCheck.d.toFixed(1)}°${Math.abs(stakeCheck.m - stakeCheck.d) > 2 ? ' <b style="color:#ffd166">⚠ kazıkları kontrol et</b>' : ''}` : '');
+  else s += `Hizalama: GPS ±${fix ? fix.acc.toFixed(0) : '?'} m · ${noCompass ? '⚠ pusula yok: Ayar → "Yönü direğe nişanla"' : 'pusula %' + (calQuality * 100).toFixed(0)} <span style="opacity:.75">(birkaç m / derece şaşabilir)</span>`;
+  if (zb) s += `<br>Zemin kotu: ${zb.z.toFixed(1)} m · ${zb.src}${zb.approx ? ' <b style="color:#ffd166">(yaklaşık)</b>' : ''}`;
+  const u = userLatLng(), n = u && nearestTower(u);
+  if (n) s += `<br>En yakın direk <b>${n.t.code}</b>: ${n.d.toFixed(0)} m`;
+  if (DIG && digInfoAR) {
+    const r = digInfoAR.rel, dir = Math.abs(r) < 0.3 ? 'önünde' : r > 0 ? `sağında ${(r * deg).toFixed(0)}°` : `solunda ${(-r * deg).toFixed(0)}°`;
+    s += `<br>🕳 <b>Direk ${DIG.t.code}</b> kazı merkezi ${digInfoAR.d.toFixed(digInfoAR.d < 20 ? 1 : 0)} m, ${dir} · ${DIG.legs.length}/4 çukur`;
+    if (!stakeOn && originSrc === 'GPS') s += ' <span style="color:#ffd166">· kesin yer için Kazı → kazıkları işaretle</span>';
+  }
+  return s + m;
+}
+
+// ----- session -----
+async function startAR() {
+  if (!xrSupported) { alert('Bu tarayıcı/telefon AR desteklemiyor. Android\'de Chrome ile aç.'); return; }
+  if (!LINE && !DIG) { if (!confirm('Hat dosyası yüklü değil ve kazı direği seçilmedi: AR\'da gösterilecek bir şey yok. Yine de başlatılsın mı?')) return; }
+  if (H.mode === 'ref' && H.refs.filter((c) => twByCode(c)).length < 2) { alert('Referans modunda en az 2 referans direk seç (ya da "Referansları otomatik seç").'); return; }
+  if (H.mode === 'gps') {
+    if (!fix) { alert('GPS konumu henüz alınamadı. Birkaç saniye bekle.'); return; }
+    if (fix.acc > 30 && !confirm(`GPS zayıf (±${fix.acc.toFixed(0)} m): hat birkaç on metre kayabilir. Yine de devam edilsin mi?`)) return;
+  }
+  initThree();
+  try { session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['local-floor'], optionalFeatures: ['hit-test', 'dom-overlay'], domOverlay: { root: $('overlay') } }); }
+  catch (err) { alert('AR başlatılamadı: ' + err.message); return; }
+  $('overlay').style.display = 'block';
+  session.addEventListener('end', onEnd);
+  await renderer.xr.setSession(session);
+  try { const vs = await session.requestReferenceSpace('viewer'); hitSource = await session.requestHitTestSource({ space: vs }); } catch (e) { hitSource = null; }
+  groundY = 0; wantGround = false; adj.e = adj.n = adj.up = adj.rot = 0; refMarks = [null, null, null]; refInfo = null; lastHit = null; zb = null; stakeOn = false; stakeCheck = null; origin = null;
+  if (DIG) DIG.stake = { center: null, front: null, back: null };
+  if (H.mode === 'ref') { cal = null; showPanel('pRef'); } else { startCal(); showPanel(DIG ? 'pDig' : null); }
+  renderer.setAnimationLoop(frame);
+}
+function onEnd() {
+  renderer.setAnimationLoop(null); session = null; hitSource = null;
+  $('overlay').style.display = 'none'; showPanel(null);
+  if (renderer) renderer.xr.setSession(null);
+  updateStatus();
+}
+function showPanel(id) {
+  for (const [p, b] of [['pDig', 'bDig'], ['pRef', 'bRef'], ['pSet', 'bSet']]) { const on = p === id; $(p).style.display = on ? 'block' : 'none'; $(b).classList.toggle('on', on); }
+}
+const togglePanel = (id) => showPanel($(id).style.display === 'block' ? null : id);
+$('btnAR').addEventListener('click', startAR);
+$('bExit').addEventListener('click', () => { if (session) session.end(); });
+$('bDig').addEventListener('click', () => togglePanel('pDig'));
+$('bRef').addEventListener('click', () => togglePanel('pRef'));
+$('bSet').addEventListener('click', () => togglePanel('pSet'));
+$('pDig').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-stake]'); if (b) markStake(b.dataset.stake, b.dataset.m); });
+$('btnStakeReset').addEventListener('click', () => { if (DIG) DIG.stake = { center: null, front: null, back: null }; stakeOn = false; stakeCheck = null; say('Kazık işaretleri silindi (hizalama olduğu gibi kaldı)'); });
+$('pRef').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-ref]'); if (b) markRef(+b.dataset.ref, b.dataset.m); });
+$('btnRefReset').addEventListener('click', () => { refMarks = [null, null, null]; refInfo = null; if (H.mode === 'ref' && !stakeOn) origin = null; say('Referans işaretleri silindi'); });
+$('btnGround').addEventListener('click', () => { if (!hitSource) { alert('Bu telefonda zemin ölçümü yok; Yükseklik düğmelerini kullan.'); return; } groundAuto = false; wantGround = true; wantGroundT = performance.now(); });
+$('btnRecal').addEventListener('click', () => { if (H.mode !== 'gps') return; stakeOn = false; startCal(); });
+$('btnLabels').addEventListener('click', () => { H.labels = !H.labels; save(); $('btnLabels').textContent = `Direk etiketleri: ${H.labels ? 'Açık' : 'Kapalı'}`; for (const rt of lineRt.values()) if (rt.label) rt.label.visible = H.labels; });
+$('btnLabels').textContent = `Direk etiketleri: ${H.labels ? 'Açık' : 'Kapalı'}`;
+$('lblRad').textContent = `Görüş ${H.radius} m`;
+// aim: the tower nearest to the crosshair direction (within 30°) is turned exactly onto the crosshair
+$('btnAimTower').addEventListener('click', () => {
+  if (!origin) { say('⚠ Önce hizalama bitmeli'); return; }
+  let best = null, bd = 30 * rad;
+  for (const t of TW) { const p = worldOf(t.lat, t.lng), d = Math.hypot(p.x - camPos.x, p.z - camPos.z); if (d < 15) continue; const r = Math.abs(wrapPi(Math.atan2(p.x - camPos.x, -(p.z - camPos.z)) - camYaw)); if (r < bd) { bd = r; best = { t, p }; } }
+  if (!best) { say('⚠ Daire yönünde (±30°) direk yok: daireyi gerçek bir direğe tut'); return; }
+  // turn the world about the CAMERA (not the origin, which may be far away): re-anchor the origin where the user stands
+  const da = wrapPi(camYaw - Math.atan2(best.p.x - camPos.x, -(best.p.z - camPos.z))), u = userLatLng();
+  thetaN = tnow() + da; adj.rot = adj.e = adj.n = 0;
+  origin = { lat: u.lat, lng: u.lng, x: camPos.x, z: camPos.z };
+  say(`🎯 Yön Direk ${best.t.code}'e göre ayarlandı (${(da * deg).toFixed(1)}°)`);
+});
+$('btnAtTower').addEventListener('click', () => {
+  if (!origin) { say('⚠ Önce hizalama bitmeli'); return; }
+  const u = userLatLng(), n = u && nearestTower(u); if (!n) return;
+  if (n.d > 80 && !confirm(`En yakın direk ${n.t.code} şu an ${n.d.toFixed(0)} m uzakta görünüyor. Konum ona göre düzeltilsin mi?`)) return;
+  const tn = tnow(); thetaN = tn; adj.e = adj.n = adj.rot = 0;
+  origin = { lat: n.t.lat, lng: n.t.lng, x: camPos.x, z: camPos.z };
+  groundY = lastHit ? lastHit.y : camPos.y - 1.5; zBaseAt(n.t.lat, n.t.lng, { z: n.t.ele == null ? 0 : n.t.ele, src: `direk ${n.t.code} tabanı` });
+  say(`📍 Konum Direk ${n.t.code} merkezine göre düzeltildi`);
+});
+$('pSet').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-k],button[data-n],button[data-rad]'); if (!b) return;
+  if (b.dataset.rad) { H.radius = Math.min(5000, Math.max(200, H.radius + +b.dataset.rad)); save(); $('lblRad').textContent = `Görüş ${H.radius} m`; return; }
+  const v = parseFloat(b.dataset.v);
+  if (b.dataset.n) {   // move along / across the current view direction
+    if (!origin) return;
+    const bb = camYaw - tnow(), u = b.dataset.n === 'f' ? [Math.sin(bb), Math.cos(bb)] : [Math.cos(bb), -Math.sin(bb)];
+    adj.e = +(adj.e + v * u[0]).toFixed(2); adj.n = +(adj.n + v * u[1]).toFixed(2);
+  } else adj[b.dataset.k] = +(adj[b.dataset.k] + v).toFixed(2);
+});
+$('overlay').addEventListener('beforexrselect', (e) => e.preventDefault());
+
+// ================= start =================
+refreshMode(); updateStatus(); digUi();
+(async () => {
+  $('lineInfo').textContent = SLUG ? 'Proje verisi alınıyor…' : 'Cihazdaki hat aranıyor…';
+  await loadProject();
+  rebuildTowers();
+  if (H.mode === 'ref' && H.refs.filter(Boolean).length < 2) autoRefs();
+  await loadLine();
+  if (!map._fitted) fitAll();
+  refreshTowerMenus(); updateStatus();
+})();
+
+// test hooks (desktop/Playwright): feed data without network, place everything for a given standing point
+window.__hat = {
+  ingest: (p, rows, cfg) => { ingest(p, rows, cfg); rebuildTowers(); },
+  setLine: (text, name) => setLine(parseKml(text, name || 'test.kml'), 'test'),
+  select: digSelect, dig: () => DIG, towers: () => TW, H,
+  sim: (lat, lng, thDeg, z0) => {
+    initThree(); origin = { lat, lng, x: 0, z: 0 }; thetaN = thDeg * rad; camPos = { x: 0, y: 1.6, z: 0 }; adj.e = adj.n = adj.up = adj.rot = 0; groundY = 0;
+    zb = { z: z0 ?? 0, src: 'test' };
+    for (let i = 0; i < 60; i++) placeAll();
+    digGroup.updateMatrixWorld(true);
+    const pits = [];
+    digGroup.traverse((m) => { if (m.isMesh && m.geometry.attributes.position.count === 6) { const a = m.geometry.attributes.position, v = new THREE.Vector3(a.getX(0), a.getY(0), a.getZ(0)).applyMatrix4(m.matrixWorld); pits.push([+v.x.toFixed(3), +v.y.toFixed(3), +v.z.toFixed(3)]); } });
+    return { lineBuilt: lineRt.size, digPos: DIG ? [digGroup.position.x, digGroup.position.y, digGroup.position.z].map((x) => +x.toFixed(3)) : null, pits };
+  },
+  stakeSim: (center, front, back) => { DIG.stake = { center, front: front || null, back: back || null }; applyStakes(); return { thetaN_deg: thetaN * deg, origin, stakeCheck }; },
+  worldOf: (lat, lng) => worldOf(lat, lng), map,
+};
+</script>
+</body>
+</html>

@@ -41,7 +41,8 @@ Hepsi **ana React uygulamasından bağımsız**, vanilla JS/HTML statik sayfalar
 
 | Araç | Link | Durum |
 |---|---|---|
-| AR Konum | `/ar-demo/geo/` | Aktif — KMZ hat (çoklu), proje direk katmanı, kazı aplikasyonu, georeferans, yürüyerek hizalama, DEM zemin kotu |
+| Hat AR (uygulamanın AR'ı) | `/ar-demo/hat/` (`/ar/<proje>` buraya yönlenir) | Aktif — günlük rapordaki tüm AR düğmeleri bunu açar. Sadece projenin KMZ hattı araziye oturur + menüden seçilen direğin 4 kazı çukuru yerinde çizilir. Hizalama: telefon GPS'i, referans direkler ya da merkez + aliman kazığı. Veri Supabase'den slug ile (uygulamanın girişi varsa o kullanılır), KMZ proje Katmanlar belgesinden, cihazda saklanır |
+| AR Konum (deneme alanı) | `/ar-demo/geo/` | Aktif ama uygulamadan linklenmiyor — model kütüphanesi (bina vb.), çoklu KMZ, yürüyerek hizalama |
 | Kazı Aplikasyonu Demo | `/ar-demo/demo-kazi/` | Aktif — projeden bağımsız, direk tipi seçilebilir (B30, 2S), tanıtım amaçlı |
 | Sehim Kontrolü Demo | `/ar-demo/demo-sehim/` | Aktif — sıcaklık/sehim tablosu gir, 2 nokta işaretle, parabolik sehim eğrisi AR'da çizilir |
 | AR Masaüstü Model | `/ar-demo/` | Aktif — direk kütüphanesi, masa üstü 3D önizleme |
@@ -65,15 +66,13 @@ Hepsi **ana React uygulamasından bağımsız**, vanilla JS/HTML statik sayfalar
 
 Bu, kullanıcının "dağınık olmasın" isteğinin asıl karşılığı:
 
-- **AR araçları ana uygulamadan kopuk.** Kendi UTM matematiği, kendi
-  Supabase sorguları var. **İki farklı** veri aktarım yöntemi birikti:
-  KMZ/proje katmanı → `localStorage` üzerinden (`arPayload.ts`, henüz
-  pushlanmadı); kazı aplikasyonu → AR sayfası Supabase'e **doğrudan**
-  bağlanıyor. Tek bir yönteme indirilmeli.
-- **`/ar/:slug` girişi ve `arPayload.ts`/`ArLaunchPage.tsx` yazıldı, test
-  edildi ama commit/push edilmedi** — üretim uygulamasını değiştirdiği için
-  kullanıcı onayı bekleniyor. Pushlansa bile hiçbir menüden linklenmiyor,
-  ayrıca eklenmesi lazım (Field/Admin panelinde bir "AR" düğmesi).
+- **AR veri aktarımı tek yönteme indirildi (2026-11-23):** uygulamanın AR'ı
+  (`/ar-demo/hat/`) projeyi, direkleri ve stub/temel tablolarını Supabase'den
+  slug ile kendisi çeker; `localStorage` ile veri aktarımı (`arPayload.ts`)
+  kaldırıldı, linkler `app/src/lib/arLinks.ts`'te. Kazı geometrisi
+  `ar-demo/lib/excavation.js`'te, `stubGeometry.ts` ile birebir aynı (test
+  edildi). Kalan: geo sayfası hâlâ kendi gömülü kopyalarını kullanıyor;
+  ortak `ar-demo/lib/` modüllerine taşınabilir.
 - **Direk mühendislik verisi proje bazlı, elle SQL ile giriliyor**
   (`insert_jvari_*.sql`). Yeni proje sihirbazında bu adım yok. Bkz. Bölüm 4.
 - **AR araçlarının teması ana uygulamadan farklı** (koyu tema benzer ama
@@ -91,7 +90,7 @@ Bu, kullanıcının "dağınık olmasın" isteğinin asıl karşılığı:
 3. **Erbil 132kV'nin verisini çıkarma** — formül artık çözüldü (bkz. Bölüm
    4), sadece `Foundations Construction Drawings/` altındaki her tip × her
    zemin çizimini okumak kaldı.
-4. **`/ar/:slug` entegrasyonunu pushlama** — kullanıcı onayı bekleniyor.
+4. **Hat AR'ı sahada denemek** — referans direk ve merkez + aliman kazığı ile hizalamanın gerçek hassasiyeti.
 5. **Irak 400kV eski tip** — henüz hiç doküman yok, kullanıcı ekleyecek.
 
 **Tamamlandı (2026-09-27):** Admin proje haritası — bkz. Bölüm 1, Ana

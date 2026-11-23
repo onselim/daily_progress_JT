@@ -371,10 +371,4 @@ export const ka: Record<TranslationKey, string> = {
   'print.approvedBy': 'დამტკიცებულია: რეზიდენტი ინჟინერი',
   'print.todaysActiveTowers': 'დღეს აქტიური ანძები — {date}',
   'print.notAvailable': 'ამ პროექტის ანგარიში ამჟამად მიუწვდომელია.',
-  'arLaunch.title': 'AR ხედი',
-  'arLaunch.intro': 'იხილეთ პროექტის ანძები ტელეფონის კამერით, მშენებლობის სტატუსის მიხედვით შეფერადებული. მუშაობს Android ტელეფონზე Chrome-ით.',
-  'arLaunch.open': 'გახსნა AR-ში',
-  'arLaunch.noCoords': 'ამ პროექტში ჯერ არ არის კოორდინატებიანი ანძა.',
-  'arLaunch.towersReady': 'ანძები კოორდინატებით: {count}',
-  'arLaunch.onHold': 'შეჩერებულია',
 };

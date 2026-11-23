@@ -369,10 +369,4 @@ export const ar: Record<TranslationKey, string> = {
   'print.approvedBy': 'اعتمد بواسطة: المهندس المقيم',
   'print.todaysActiveTowers': 'الأبراج النشطة اليوم — {date}',
   'print.notAvailable': 'تقرير هذا المشروع غير متاح حاليًا.',
-  'arLaunch.title': 'عرض الواقع المعزز',
-  'arLaunch.intro': 'شاهد أبراج المشروع عبر كاميرا هاتفك، بألوان حسب حالة التنفيذ. يعمل على هاتف أندرويد بمتصفح كروم.',
-  'arLaunch.open': 'افتح في الواقع المعزز',
-  'arLaunch.noCoords': 'لا توجد أبراج بإحداثيات في هذا المشروع بعد.',
-  'arLaunch.towersReady': '{count} برجاً لها إحداثيات',
-  'arLaunch.onHold': 'متوقف',
 };

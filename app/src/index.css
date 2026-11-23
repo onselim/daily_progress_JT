@@ -3941,40 +3941,6 @@ a.pw-edit-items-link {
   }
 }
 
-/* /ar/:slug launcher page */
-.ar-launch-legend {
-  list-style: none;
-  margin: 0 0 20px;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 18px;
-  color: var(--text-h);
-}
-.ar-launch-dot {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-inline-end: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  vertical-align: -1px;
-}
-.ar-launch-btn {
-  font: inherit;
-  font-size: 17px;
-  font-weight: 600;
-  color: #fff;
-  background: var(--accent);
-  border: 0;
-  border-radius: 10px;
-  padding: 14px 22px;
-  cursor: pointer;
-}
-.ar-launch-btn:hover {
-  background: var(--accent-h);
-}
-
 /* Full-screen pop-up with the 3D stub-setting page (closed by the X at the top right) */
 .stub3d-overlay {
   position: fixed;

@@ -1517,8 +1517,7 @@ function projRefreshLink() {
     return ` Güncellemek için <a href="${href}" style="color:#7fb7ff">kazı verisini yeniden getir</a>.`;
   }
   if (/^kazi-/.test(PROJ.slug)) return ' Güncellemek için "🕳 Kazı aplikasyonu" ile direk verisini yeniden getir.';
-  const slug = encodeURIComponent(PROJ.slug);
-  return ` Güncellemek için <a href="/ar/${slug}" style="color:#7fb7ff">/ar/${slug}</a> aç.`;
+  return '';   // /ar/<slug> now opens the app's own line AR page (ar-demo/hat/), which no longer hands data to this page
 }
 function projRefreshUi() {
   $('projRow').style.display = PROJ ? '' : 'none';

@@ -21,7 +21,7 @@ import { Stub3dModal } from './Stub3dModal';
 import { ChecklistLink } from './checklists/ChecklistLink';
 import './checklists/checklist.css';
 import { utmToLatLng } from '../lib/utmToLatLng';
-import { arExcavationUrl, arStringingUrl, stubSettingsUrl } from '../lib/arPayload';
+import { arExcavationUrl, arStringingUrl, stubSettingsUrl } from '../lib/arLinks';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 import type { TranslationKey } from '../lib/i18n/translations/en';
 
@@ -728,7 +728,7 @@ export function AssetEditor({
                 <div className="group-ar-row">
                   <a
                     className="group-ar-link"
-                    href={arStringingUrl(assetCode.trim(), lineKmz)}
+                    href={arStringingUrl(projectSlug, assetCode.trim(), lineKmz)}
                     target="_blank"
                     rel="noreferrer"
                     title={t('assetEditor.openArStringingHint')}
@@ -813,7 +813,7 @@ export function AssetEditor({
                       {isFoundationItem && item.label.trim().toLowerCase() === 'excavation' && assetCode.trim() && (
                         <a
                           className="photo-toggle-btn"
-                          href={arExcavationUrl(projectSlug, assetCode.trim())}
+                          href={arExcavationUrl(projectSlug, assetCode.trim(), lineKmz)}
                           target="_blank"
                           rel="noreferrer"
                           title={t('assetEditor.openArExcavation')}
