@@ -228,6 +228,7 @@ export const es: Record<TranslationKey, string> = {
 
   'documents.noDocuments': 'Aún no se han subido documentos.',
   'documents.fetchOsm': 'Obtener infraestructura existente (OSM)',
+  'documents.openInfraMap': 'Abrir en OpenInfraMap',
   'documents.fetchingOsm': 'Obteniendo desde OpenStreetMap…',
   'documents.generateExcavationLayer': 'Generar capa de excavación',
   'documents.generating': 'Generando…',

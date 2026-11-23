@@ -227,6 +227,7 @@ export const de: Record<TranslationKey, string> = {
 
   'documents.noDocuments': 'Noch keine Dokumente hochgeladen.',
   'documents.fetchOsm': 'Vorhandene Infrastruktur abrufen (OSM)',
+  'documents.openInfraMap': 'In OpenInfraMap öffnen',
   'documents.fetchingOsm': 'Wird von OpenStreetMap abgerufen…',
   'documents.generateExcavationLayer': 'Aushub-Ebene erstellen',
   'documents.generating': 'Wird erstellt…',

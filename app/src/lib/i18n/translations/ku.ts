@@ -231,6 +231,7 @@ export const ku: Record<TranslationKey, string> = {
 
   'documents.noDocuments': 'Hîn belge nehatine barkirin.',
   'documents.fetchOsm': 'Binesaziya heyî bîne (OSM)',
+  'documents.openInfraMap': 'Di OpenInfraMap de veke',
   'documents.fetchingOsm': 'Ji OpenStreetMap tê anîn…',
   'documents.generateExcavationLayer': 'Çîna kortikên kolanê çêbike',
   'documents.generating': 'Tê çêkirin…',

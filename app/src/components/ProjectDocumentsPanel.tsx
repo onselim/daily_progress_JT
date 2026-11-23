@@ -5,7 +5,7 @@ import { uploadProjectDocument } from '../lib/uploadProjectDocument';
 import { deleteProjectDocument } from '../lib/deleteProjectDocument';
 import { renameProjectDocument } from '../lib/renameDocument';
 import { createDocumentFolder, deleteDocumentFolder, renameDocumentFolder, moveProjectDocument } from '../lib/documentFolders';
-import { computeProjectBounds, fetchExistingInfrastructure } from '../lib/fetchOsmInfrastructure';
+import { computeProjectBounds, fetchExistingInfrastructure, openInfraMapUrl } from '../lib/fetchOsmInfrastructure';
 import type { AssetListItem } from '../lib/useAssets';
 import type { FoundationTypeConfig } from '../lib/useFoundationTypesConfig';
 import { useStubSettingsConfig } from '../lib/useStubSettingsConfig';
@@ -465,6 +465,8 @@ export function ProjectDocumentsPanel({
 
   if (loading) return <p className="accordion-empty">{t('common.loading')}</p>;
 
+  const infraBounds = osmFetchContext ? computeProjectBounds(osmFetchContext.assets, osmFetchContext.coordinateSystem) : null;
+  const openInfraMapHref = infraBounds ? openInfraMapUrl(infraBounds) : null;
   const rootDocs = documents.filter((d) => d.folder_id === null);
   const rootFolders = folders.filter((f) => f.parent_folder_id === null);
 
@@ -475,6 +477,17 @@ export function ProjectDocumentsPanel({
           <button type="button" className="doc-folder-add-btn" onClick={handleFetchOsmLayers} disabled={fetchingOsm}>
             {fetchingOsm ? (osmFetchProgress ?? t('documents.fetchingOsm')) : `🌐 ${t('documents.fetchOsm')}`}
           </button>
+          {openInfraMapHref && (
+            <a
+              className="doc-folder-add-btn"
+              href={openInfraMapHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'block', marginTop: 6, textAlign: 'center', textDecoration: 'none' }}
+            >
+              🗺 {t('documents.openInfraMap')}
+            </a>
+          )}
           {osmFetchError && <p className="osm-fetch-error">{osmFetchError}</p>}
         </div>
       )}

@@ -55,6 +55,18 @@ export function computeProjectBounds(assets: AssetListItem[], coordinateSystem: 
   };
 }
 
+/** Link to openinframap.org centred on the project's extent. Only a normal page link the user
+ * opens in a new tab -- nothing is fetched from OpenInfraMap and the coordinates stay in the
+ * URL hash, which the browser never sends to the server. Zoom is picked so the whole line
+ * fits a ~1000 px wide map. */
+export function openInfraMapUrl(b: Bounds): string {
+  const lat = (b.south + b.north) / 2;
+  const lng = (b.west + b.east) / 2;
+  const span = Math.max(b.north - b.south, (b.east - b.west) * Math.cos((lat * Math.PI) / 180), 0.05);
+  const zoom = Math.min(14, Math.max(4, Math.floor(Math.log2(1265 / span))));
+  return `https://openinframap.org/#${zoom}/${lat.toFixed(4)}/${lng.toFixed(4)}`;
+}
+
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

@@ -227,6 +227,7 @@ export const ka: Record<TranslationKey, string> = {
 
   'documents.noDocuments': 'დოკუმენტები ჯერ არ ატვირთულა.',
   'documents.fetchOsm': 'არსებული ინფრასტრუქტურის მოძიება (OSM)',
+  'documents.openInfraMap': 'გახსნა OpenInfraMap-ში',
   'documents.fetchingOsm': 'OpenStreetMap-იდან მოძიება…',
   'documents.generateExcavationLayer': 'გათხრის ორმოს ფენის შექმნა',
   'documents.generating': 'იქმნება…',

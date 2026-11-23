@@ -228,6 +228,7 @@ export const fr: Record<TranslationKey, string> = {
 
   'documents.noDocuments': 'Aucun document téléversé pour le moment.',
   'documents.fetchOsm': "Récupérer l'infrastructure existante (OSM)",
+  'documents.openInfraMap': 'Ouvrir dans OpenInfraMap',
   'documents.fetchingOsm': 'Récupération depuis OpenStreetMap…',
   'documents.generateExcavationLayer': 'Générer la couche des fouilles',
   'documents.generating': 'Génération…',

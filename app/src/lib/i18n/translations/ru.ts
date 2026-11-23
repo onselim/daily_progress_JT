@@ -227,6 +227,7 @@ export const ru: Record<TranslationKey, string> = {
 
   'documents.noDocuments': 'Документы пока не загружены.',
   'documents.fetchOsm': 'Получить существующую инфраструктуру (OSM)',
+  'documents.openInfraMap': 'Открыть в OpenInfraMap',
   'documents.fetchingOsm': 'Получение данных из OpenStreetMap…',
   'documents.generateExcavationLayer': 'Создать слой котлованов',
   'documents.generating': 'Создание…',

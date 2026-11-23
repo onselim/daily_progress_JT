@@ -226,6 +226,7 @@ export const tr: Record<TranslationKey, string> = {
 
   'documents.noDocuments': 'Henüz belge yüklenmedi.',
   'documents.fetchOsm': 'Mevcut altyapıyı getir (OSM)',
+  'documents.openInfraMap': "OpenInfraMap'te aç",
   'documents.fetchingOsm': "OpenStreetMap'ten alınıyor…",
   'documents.generateExcavationLayer': 'Kazı çukuru katmanı oluştur',
   'documents.generating': 'Oluşturuluyor…',

@@ -239,6 +239,7 @@ export const en = {
   // ---- project documents panel ----
   'documents.noDocuments': 'No documents uploaded yet.',
   'documents.fetchOsm': 'Fetch existing infrastructure (OSM)',
+  'documents.openInfraMap': 'Open in OpenInfraMap',
   'documents.fetchingOsm': 'Fetching from OpenStreetMap…',
   'documents.generateExcavationLayer': 'Generate excavation-pit layer',
   'documents.generating': 'Generating…',

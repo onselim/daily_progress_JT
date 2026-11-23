@@ -226,6 +226,7 @@ export const ar: Record<TranslationKey, string> = {
 
   'documents.noDocuments': 'لم يتم رفع أي مستندات بعد.',
   'documents.fetchOsm': 'جلب البنية التحتية الحالية (OSM)',
+  'documents.openInfraMap': 'فتح في OpenInfraMap',
   'documents.fetchingOsm': 'جارٍ الجلب من OpenStreetMap…',
   'documents.generateExcavationLayer': 'إنشاء طبقة حفر الأساسات',
   'documents.generating': 'جارٍ الإنشاء…',
