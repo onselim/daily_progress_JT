@@ -303,10 +303,12 @@ const DK = (() => {
     $("progress-card").classList.remove("hidden");
     $("results-card").classList.remove("hidden");
     $("results-title").textContent = mode === "enc" ? "Şifrelenen dosyalar" : "Açılan dosyalar";
+    if (!results.length) $("results").innerHTML = "";
     let ok = 0;
     for (let k = 0; k < files.length; k++) {
       const f = files[k];
-      const label = `${mode === "enc" ? "Şifreleniyor" : "Çözülüyor"}: ${f.name} (${k + 1}/${files.length})`;
+      // asıl dosya adı ekranda hiç gösterilmez
+      const label = `${mode === "enc" ? "Şifreleniyor" : "Çözülüyor"}… (${k + 1}/${files.length})`;
       setProgress(0, label + (mode === "dec" ? " — parola kontrol ediliyor…" : ""));
       try {
         const r = mode === "enc"
@@ -320,7 +322,7 @@ const DK = (() => {
         else if (err instanceof DK.NotOurFile) msg = "Bu programla şifrelenmiş bir dosya değil ya da dosya bozuk.";
         else if (err instanceof DK.OldFormat) msg = "Bu dosya programın ilk sürümüyle şifrelenmiş; bilgisayardaki Dosya Kilidi ile açın.";
         else if (err && err.name === "NotReadableError") msg = "Dosya okunamadı (çok büyük olabilir).";
-        addResult({ ok: false, name: f.name, msg });
+        addResult({ ok: false, name: mode === "enc" ? `Dosya ${k + 1}` : f.name, msg });
       }
     }
     setProgress(1, `Bitti: ${ok}/${files.length} dosya.`);
@@ -350,16 +352,19 @@ const DK = (() => {
   function addResult(r) {
     const div = document.createElement("div");
     div.className = "item " + (r.ok ? "ok" : "bad");
-    const name = document.createElement("div"); name.className = "name"; name.textContent = r.name; div.appendChild(name);
+    // Ekranda sadece şifreli (.dat) adı görünür; asıl ad sadece kaydedilen dosyada kullanılır
+    const name = document.createElement("div"); name.className = "name";
+    name.textContent = r.ok && r.dec ? r.from : r.name; div.appendChild(name);
     const meta = document.createElement("div"); meta.className = "meta"; div.appendChild(meta);
     if (!r.ok) { meta.textContent = r.msg; $("results").prepend(div); return; }
     r.url = URL.createObjectURL(r.blob);
     results.push(r);
-    meta.textContent = r.dec ? `${fmtSize(r.blob.size)} · şifreli dosya: ${r.from}` : `${fmtSize(r.blob.size)} · asıl dosya: ${r.from}`;
+    const t = r.blob.type;
+    const kind = t.startsWith("image/") ? "Fotoğraf" : t.startsWith("video/") ? "Video" : "Dosya";
+    meta.textContent = r.dec ? `${kind} · ${fmtSize(r.blob.size)}` : fmtSize(r.blob.size);
     if (r.dec) {
-      const t = r.blob.type;
       if (t.startsWith("image/") && !/hei[cf]/.test(t)) {
-        const img = document.createElement("img"); img.src = r.url; img.alt = r.name; div.insertBefore(img, name);
+        const img = document.createElement("img"); img.src = r.url; img.alt = "Önizleme"; div.insertBefore(img, name);
       } else if (t.startsWith("video/")) {
         const v = document.createElement("video"); v.src = r.url; v.controls = true; v.playsInline = true; v.preload = "metadata";
         div.insertBefore(v, name);
