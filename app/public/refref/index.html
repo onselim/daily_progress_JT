@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Dosya Kilidi</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #ffffff; --ink: #16181d; --muted: #6b7280; --line: #e3e5ea;
+    --accent: #1f6feb; --accent-ink: #ffffff; --ok: #137333; --bad: #c5221f; --warn-bg: #fff4e5; --warn-ink: #8a4b00;
+    --track: #e7e9ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1115; --card: #181b21; --ink: #e8eaee; --muted: #9aa1ad; --line: #2a2f38;
+      --accent: #4c8dff; --accent-ink: #0b0d10; --ok: #5cc47a; --bad: #ff6b63; --warn-bg: #2b2112; --warn-ink: #f3c47a;
+      --track: #262b33;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1115; --card: #181b21; --ink: #e8eaee; --muted: #9aa1ad; --line: #2a2f38;
+    --accent: #4c8dff; --accent-ink: #0b0d10; --ok: #5cc47a; --bad: #ff6b63; --warn-bg: #2b2112; --warn-ink: #f3c47a;
+    --track: #262b33;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-text-size-adjust: 100%; }
+  main { max-width: 560px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 24px; margin: 4px 0 2px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 14px; margin: 0 0 18px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--track); border-radius: 12px; padding: 4px; margin-bottom: 14px; }
+  .tabs button { border: 0; background: transparent; color: var(--ink); font: inherit; font-weight: 600; padding: 10px; border-radius: 9px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  label { display: block; font-size: 14px; font-weight: 600; margin: 0 0 6px; }
+  .field { margin-bottom: 12px; }
+  input[type=password], input[type=text] { width: 100%; font: inherit; font-size: 17px; padding: 12px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); font-weight: 400; }
+  .check input { width: 18px; height: 18px; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border: 0; border-radius: 12px;
+    background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 700; font-size: 17px; padding: 15px; cursor: pointer; }
+  .btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--line); font-weight: 600; font-size: 15px; padding: 11px; margin-top: 8px; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; margin-top: 12px; }
+  .hidden { display: none !important; }
+  .bar { height: 8px; background: var(--track); border-radius: 99px; overflow: hidden; margin: 4px 0 8px; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+  #status { font-size: 14px; color: var(--muted); min-height: 20px; }
+  .item { border-top: 1px solid var(--line); padding: 12px 0; }
+  .item:first-child { border-top: 0; padding-top: 0; }
+  .item .name { font-weight: 600; word-break: break-all; }
+  .item .meta { color: var(--muted); font-size: 13px; margin: 2px 0 8px; word-break: break-all; }
+  .item.bad .name { color: var(--bad); }
+  .item.ok .name::before { content: "✔ "; color: var(--ok); }
+  .item.bad .name::before { content: "✘ "; }
+  .item img, .item video { display: block; max-width: 100%; max-height: 60vh; border-radius: 10px; margin: 0 0 8px; background: #000; }
+  .actions { display: flex; gap: 8px; }
+  .actions button { flex: 1; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; font-weight: 600;
+    font-size: 15px; padding: 10px; border-radius: 10px; cursor: pointer; }
+  .results-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .results-head h2 { font-size: 16px; margin: 0; }
+  .link { background: none; border: 0; color: var(--accent); font: inherit; font-size: 14px; cursor: pointer; padding: 4px; }
+  footer { color: var(--muted); font-size: 12.5px; text-align: center; margin-top: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🔒 Dosya Kilidi</h1>
+  <p class="sub">Foto ve videoları parolayla şifreler. Dosyalarınız hiçbir yere yüklenmez; her şey bu telefonda yapılır.</p>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-enc" aria-selected="true">Şifrele</button>
+    <button role="tab" id="tab-dec" aria-selected="false">Şifreyi çöz</button>
+  </div>
+
+  <section class="card">
+    <div class="field">
+      <label for="pw">Parola</label>
+      <input id="pw" type="password" autocomplete="new-password" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="field" id="pw2-wrap">
+      <label for="pw2">Parola (tekrar)</label>
+      <input id="pw2" type="password" autocomplete="new-password" autocapitalize="off" spellcheck="false">
+    </div>
+    <label class="check"><input type="checkbox" id="show"> Parolayı göster</label>
+
+    <div id="enc-actions" style="margin-top:14px">
+      <button class="btn" id="pick-media">📷 Foto / video seç</button>
+      <div class="row2">
+        <button class="btn secondary" id="pick-any">Başka dosya seç</button>
+        <button class="btn secondary" id="pick-dir-enc">Klasör seç</button>
+      </div>
+    </div>
+    <div id="dec-actions" class="hidden" style="margin-top:14px">
+      <button class="btn" id="pick-dat">🔓 Şifreli dosya seç (.dat)</button>
+      <button class="btn secondary" id="pick-dir-dec">Klasör seç</button>
+    </div>
+
+    <div class="warn" id="warn-enc">Parolayı unutursanız dosyalar <b>kurtarılamaz</b>. Asıl foto/videolar silinmez; şifreli dosyayı kaydettikten sonra isterseniz galeriden kendiniz silin.</div>
+  </section>
+
+  <section class="card hidden" id="progress-card">
+    <div class="bar"><i id="bar"></i></div>
+    <div id="status"></div>
+  </section>
+
+  <section class="card hidden" id="results-card">
+    <div class="results-head">
+      <h2 id="results-title">Sonuçlar</h2>
+      <span>
+        <button class="link" id="save-all">Hepsini kaydet</button>
+        <button class="link" id="clear">Temizle</button>
+      </span>
+    </div>
+    <div id="results"></div>
+  </section>
+
+  <footer>Bilgisayardaki Dosya Kilidi programıyla aynı biçim: birinde şifrelenen dosya diğerinde açılır.</footer>
+
+  <input type="file" id="in-media" accept="image/*,video/*" multiple class="hidden">
+  <input type="file" id="in-any" multiple class="hidden">
+  <input type="file" id="in-dat" multiple class="hidden">
+  <input type="file" id="in-dir" webkitdirectory multiple class="hidden">
+</main>
+
+<script>
+// ==CORE== (Python sürümüyle birebir aynı biçim: DKL2)
+const DK = (() => {
+  const MAGIC2 = [0x44, 0x4B, 0x4C, 0x32]; // "DKL2"
+  const ITER = 600000, CH = 1 << 20, TAG = 16, HLEN = 48;
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const rand = n => crypto.getRandomValues(new Uint8Array(n));
+
+  class WrongPassword extends Error {}
+  class NotOurFile extends Error {}
+  class OldFormat extends Error {}
+
+  async function derive(pw, salt, iter) {
+    const base = await crypto.subtle.importKey("raw", enc.encode(pw), "PBKDF2", false, ["deriveBits"]);
+    const bits = new Uint8Array(await crypto.subtle.deriveBits(
+      { name: "PBKDF2", hash: "SHA-256", salt, iterations: iter }, base, 384));
+    const key = await crypto.subtle.importKey("raw", bits.slice(0, 32), { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+    return { key, check: bits.slice(32, 48) };
+  }
+  function nonce(prefix, i) {
+    const n = new Uint8Array(12); n.set(prefix, 0); new DataView(n.buffer).setUint32(8, i); return n;
+  }
+  function aad(header, last) {
+    const a = new Uint8Array(HLEN + 1); a.set(header, 0); a[HLEN] = last ? 1 : 0; return a;
+  }
+  function randomName() {
+    return Array.from(rand(6), b => b.toString(16).padStart(2, "0")).join("") + ".dat";
+  }
+  // Büyük videolarda belleği şişirmemek için parçaları ara ara Blob'a toplar
+  function blobBuilder(type) {
+    const blobs = []; let batch = [];
+    return {
+      push(u8) { batch.push(u8); if (batch.length >= 16) { blobs.push(new Blob(batch)); batch = []; } },
+      done() { if (batch.length) blobs.push(new Blob(batch)); return new Blob(blobs, { type }); }
+    };
+  }
+
+  async function encryptFile(file, pw, onProgress) {
+    const salt = rand(16), prefix = rand(8);
+    const { key, check } = await derive(pw, salt, ITER);
+    const header = new Uint8Array(HLEN);
+    header.set(MAGIC2, 0); header.set(salt, 4); new DataView(header.buffer).setUint32(20, ITER);
+    header.set(prefix, 24); header.set(check, 32);
+    const meta = enc.encode(JSON.stringify({ name: file.name, size: file.size }));
+    const M = new Uint8Array(4 + meta.length);
+    new DataView(M.buffer).setUint32(0, meta.length); M.set(meta, 4);
+    const total = M.length + file.size;
+    const n = Math.max(1, Math.ceil(total / CH));
+    const out = blobBuilder("application/octet-stream");
+    out.push(header);
+    for (let i = 0; i < n; i++) {
+      const s = i * CH, e = Math.min(total, s + CH);
+      const chunk = new Uint8Array(e - s);
+      let off = 0;
+      if (s < M.length) { const m = M.subarray(s, Math.min(e, M.length)); chunk.set(m, 0); off = m.length; }
+      const fs = Math.max(0, s - M.length), fe = e - M.length;
+      if (fe > fs) chunk.set(new Uint8Array(await file.slice(fs, fe).arrayBuffer()), off);
+      const ct = await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv: nonce(prefix, i), additionalData: aad(header, i === n - 1) }, key, chunk);
+      out.push(new Uint8Array(ct));
+      onProgress && onProgress(e / total);
+    }
+    return { blob: out.done(), name: randomName() };
+  }
+
+  async function decryptFile(file, pw, onProgress) {
+    const header = new Uint8Array(await file.slice(0, HLEN).arrayBuffer());
+    const magic = String.fromCharCode(...header.slice(0, 4));
+    if (magic === "DKL1") throw new OldFormat();
+    if (magic !== "DKL2" || file.size <= HLEN + TAG) throw new NotOurFile();
+    const dv = new DataView(header.buffer);
+    const salt = header.slice(4, 20), iter = dv.getUint32(20), prefix = header.slice(24, 32), check = header.slice(32, 48);
+    if (iter < 1000 || iter > 10000000) throw new NotOurFile();
+    const { key, check: mine } = await derive(pw, salt, iter);
+    let diff = 0; for (let k = 0; k < 16; k++) diff |= check[k] ^ mine[k];
+    if (diff) throw new WrongPassword();
+    const body = file.size - HLEN, n = Math.ceil(body / (CH + TAG));
+    let out = null, name = "dosya";
+    for (let i = 0; i < n; i++) {
+      const s = HLEN + i * (CH + TAG), e = Math.min(file.size, s + CH + TAG);
+      if (e - s <= TAG) throw new NotOurFile();
+      let pt;
+      try {
+        pt = new Uint8Array(await crypto.subtle.decrypt(
+          { name: "AES-GCM", iv: nonce(prefix, i), additionalData: aad(header, i === n - 1) }, key,
+          await file.slice(s, e).arrayBuffer()));
+      } catch (_) { throw new NotOurFile(); }
+      if (i === 0) {
+        const mlen = new DataView(pt.buffer).getUint32(0);
+        if (4 + mlen > pt.length) throw new NotOurFile();
+        const meta = JSON.parse(dec.decode(pt.subarray(4, 4 + mlen)));
+        name = String(meta.name || "dosya").split(/[\\/]/).pop() || "dosya";
+        out = blobBuilder(mimeFor(name));
+        pt = pt.subarray(4 + mlen);
+      }
+      out.push(pt);
+      onProgress && onProgress((i + 1) / n);
+    }
+    return { blob: out.done(), name };
+  }
+
+  const MIME = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif", webp: "image/webp",
+    heic: "image/heic", heif: "image/heif", bmp: "image/bmp", mp4: "video/mp4", m4v: "video/mp4", mov: "video/quicktime",
+    "3gp": "video/3gpp", webm: "video/webm", mkv: "video/x-matroska", avi: "video/x-msvideo", wmv: "video/x-ms-wmv" };
+  function mimeFor(name) { return MIME[(name.split(".").pop() || "").toLowerCase()] || "application/octet-stream"; }
+
+  return { encryptFile, decryptFile, mimeFor, WrongPassword, NotOurFile, OldFormat };
+})();
+// ==/CORE==
+
+(() => {
+  const $ = id => document.getElementById(id);
+  let mode = "enc", busy = false, results = [];
+
+  function setMode(m) {
+    mode = m;
+    $("tab-enc").setAttribute("aria-selected", m === "enc");
+    $("tab-dec").setAttribute("aria-selected", m === "dec");
+    $("enc-actions").classList.toggle("hidden", m !== "enc");
+    $("dec-actions").classList.toggle("hidden", m !== "dec");
+    $("pw2-wrap").classList.toggle("hidden", m !== "enc");
+    $("warn-enc").classList.toggle("hidden", m !== "enc");
+    $("pw").setAttribute("autocomplete", m === "enc" ? "new-password" : "current-password");
+  }
+  $("tab-enc").onclick = () => setMode("enc");
+  $("tab-dec").onclick = () => setMode("dec");
+  $("show").onchange = e => { const t = e.target.checked ? "text" : "password"; $("pw").type = t; $("pw2").type = t; };
+
+  // Tarayıcı şifreleme fonksiyonlarını sadece https (veya localhost) üzerinde açar
+  if (!(window.crypto && crypto.subtle)) {
+    const w = document.createElement("div");
+    w.className = "warn"; w.style.marginBottom = "14px";
+    w.innerHTML = "<b>Bu sayfa bu şekilde açılınca çalışmaz.</b> Lütfen sayfayı kendi https linkinden açın (dosya olarak değil).";
+    document.querySelector(".tabs").before(w);
+    setButtons(false);
+  }
+
+  // Klasör seçme sadece bilgisayar tarayıcılarında güvenilir çalışıyor
+  const dirOK = "webkitdirectory" in document.createElement("input") && matchMedia("(pointer: fine)").matches;
+  if (!dirOK) { $("pick-dir-enc").classList.add("hidden"); $("pick-dir-dec").classList.add("hidden"); }
+
+  function checkPw() {
+    const pw = $("pw").value;
+    if (mode === "enc") {
+      if (pw.length < 6) { alert("En az 6 karakterlik bir parola yazın."); return null; }
+      if (pw !== $("pw2").value) { alert("İki parola aynı değil."); return null; }
+    } else if (!pw) { alert("Parolayı yazın."); return null; }
+    return pw;
+  }
+  function pick(inputId) { if (busy) return; if (checkPw() !== null) $(inputId).click(); }
+  $("pick-media").onclick = () => pick("in-media");
+  $("pick-any").onclick = () => pick("in-any");
+  $("pick-dat").onclick = () => pick("in-dat");
+  $("pick-dir-enc").onclick = () => pick("in-dir");
+  $("pick-dir-dec").onclick = () => pick("in-dir");
+  for (const id of ["in-media", "in-any", "in-dat", "in-dir"]) {
+    $(id).onchange = e => {
+      let files = Array.from(e.target.files || []);
+      e.target.value = "";
+      if (id === "in-dir") files = files.filter(f => mode === "dec" ? /\.dat$/i.test(f.name) : !/\.dat$/i.test(f.name));
+      if (files.length) run(files);
+      else if (id === "in-dir") alert(mode === "dec" ? "Bu klasörde .dat dosyası yok." : "Bu klasörde dosya yok.");
+    };
+  }
+
+  const fmtSize = b => b < 1024 * 1024 ? (b / 1024).toFixed(0) + " KB"
+    : b < 1024 ** 3 ? (b / 1024 / 1024).toFixed(1) + " MB" : (b / 1024 ** 3).toFixed(2) + " GB";
+
+  async function run(files) {
+    const pw = checkPw(); if (pw === null) return;
+    busy = true; setButtons(false);
+    let lock = null;
+    try { lock = await navigator.wakeLock?.request("screen"); } catch (_) {}
+    $("progress-card").classList.remove("hidden");
+    $("results-card").classList.remove("hidden");
+    $("results-title").textContent = mode === "enc" ? "Şifrelenen dosyalar" : "Açılan dosyalar";
+    let ok = 0;
+    for (let k = 0; k < files.length; k++) {
+      const f = files[k];
+      const label = `${mode === "enc" ? "Şifreleniyor" : "Çözülüyor"}: ${f.name} (${k + 1}/${files.length})`;
+      setProgress(0, label + (mode === "dec" ? " — parola kontrol ediliyor…" : ""));
+      try {
+        const r = mode === "enc"
+          ? await DK.encryptFile(f, pw, p => setProgress(p, label))
+          : await DK.decryptFile(f, pw, p => setProgress(p, label));
+        addResult({ ok: true, name: r.name, blob: r.blob, from: f.name, dec: mode === "dec" });
+        ok++;
+      } catch (err) {
+        let msg = "Beklenmeyen hata: " + (err && err.message || err);
+        if (err instanceof DK.WrongPassword) msg = "Parola yanlış.";
+        else if (err instanceof DK.NotOurFile) msg = "Bu programla şifrelenmiş bir dosya değil ya da dosya bozuk.";
+        else if (err instanceof DK.OldFormat) msg = "Bu dosya programın ilk sürümüyle şifrelenmiş; bilgisayardaki Dosya Kilidi ile açın.";
+        else if (err && err.name === "NotReadableError") msg = "Dosya okunamadı (çok büyük olabilir).";
+        addResult({ ok: false, name: f.name, msg });
+      }
+    }
+    setProgress(1, `Bitti: ${ok}/${files.length} dosya.`);
+    try { await lock?.release(); } catch (_) {}
+    busy = false; setButtons(true);
+    if (mode === "enc" && files.length === 1 && ok === 1) save(results[results.length - 1]);
+  }
+
+  function setButtons(on) {
+    for (const id of ["pick-media", "pick-any", "pick-dat", "pick-dir-enc", "pick-dir-dec"]) $(id).disabled = !on;
+  }
+  function setProgress(p, text) { $("bar").style.width = (p * 100).toFixed(1) + "%"; $("status").textContent = text; }
+
+  function save(r) {
+    const a = document.createElement("a");
+    a.href = r.url; a.download = r.name; document.body.appendChild(a); a.click(); a.remove();
+  }
+  async function share(r) {
+    const file = new File([r.blob], r.name, { type: r.blob.type });
+    try { await navigator.share({ files: [file] }); } catch (_) {}
+  }
+  const canShare = r => {
+    try { return !!navigator.canShare && navigator.canShare({ files: [new File([r.blob], r.name, { type: r.blob.type })] }); }
+    catch (_) { return false; }
+  };
+
+  function addResult(r) {
+    const div = document.createElement("div");
+    div.className = "item " + (r.ok ? "ok" : "bad");
+    const name = document.createElement("div"); name.className = "name"; name.textContent = r.name; div.appendChild(name);
+    const meta = document.createElement("div"); meta.className = "meta"; div.appendChild(meta);
+    if (!r.ok) { meta.textContent = r.msg; $("results").prepend(div); return; }
+    r.url = URL.createObjectURL(r.blob);
+    results.push(r);
+    meta.textContent = r.dec ? `${fmtSize(r.blob.size)} · şifreli dosya: ${r.from}` : `${fmtSize(r.blob.size)} · asıl dosya: ${r.from}`;
+    if (r.dec) {
+      const t = r.blob.type;
+      if (t.startsWith("image/") && !/hei[cf]/.test(t)) {
+        const img = document.createElement("img"); img.src = r.url; img.alt = r.name; div.insertBefore(img, name);
+      } else if (t.startsWith("video/")) {
+        const v = document.createElement("video"); v.src = r.url; v.controls = true; v.playsInline = true; v.preload = "metadata";
+        div.insertBefore(v, name);
+      }
+    }
+    const act = document.createElement("div"); act.className = "actions";
+    const b1 = document.createElement("button"); b1.textContent = "⬇ Kaydet"; b1.onclick = () => save(r); act.appendChild(b1);
+    if (canShare(r)) {
+      const b2 = document.createElement("button"); b2.textContent = "↗ Paylaş"; b2.onclick = () => share(r); act.appendChild(b2);
+    }
+    div.appendChild(act);
+    $("results").prepend(div);
+  }
+
+  $("save-all").onclick = async () => {
+    for (const r of results) { save(r); await new Promise(res => setTimeout(res, 600)); }
+  };
+  $("clear").onclick = () => {
+    for (const r of results) URL.revokeObjectURL(r.url);
+    results = []; $("results").innerHTML = "";
+    $("results-card").classList.add("hidden"); $("progress-card").classList.add("hidden");
+  };
+  window.addEventListener("beforeunload", e => { if (busy) { e.preventDefault(); e.returnValue = ""; } });
+})();
+</script>
+</body>
+</html>
