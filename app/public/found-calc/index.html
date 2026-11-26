@@ -3189,6 +3189,17 @@ I18N.addText("ku", "0|Amûra hesabkirina bingehan\n1|Cureyê bircê\n2|B-# (birc
     svg += mesh(rb.padBotN, pb, B, c + pb / 2, c + pb * 1.5, false, C.bot, T1);
     svg += mesh(rb.padTopN, pt, B, T1 - c - pt / 2, T1 - c - pt * 1.5, true, C.top, T1);
     svg += mesh(rb.pad2N, p2, B1, T1 + T2 - c - p2 / 2, T1 + T2 - c - p2 * 1.5, true, C.p2, T2);
+    // sehpalar (Π): S1 alt hasır üstünde → taban ayağı üst hasırını, S2 üst hasır üstünde → 2. ayak hasırını taşır
+    let chairPt = null;
+    rbd.bars.filter((b) => b.group === 'sehpa' && b.grid).forEach((b) => {
+      const L = b.shape.legs.map((x) => x * 10), ft = L[0], hh = L[1], a = L[2] / 2;
+      const side = b.mark === 'S2' ? B1 : B, z0 = b.mark === 'S2' ? T1 - c : c + 2 * pb, nx = b.grid.nx, ny = b.grid.ny, dx = side / nx, dy = side / ny;
+      for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
+        const xc = -side / 2 + dx * (i + 0.5), y = -side / 2 + dy * (j + 0.5);
+        svg += PL([P(xc - a - ft, y, z0), P(xc - a, y, z0), P(xc - a, y, z0 + hh), P(xc + a, y, z0 + hh), P(xc + a, y, z0), P(xc + a + ft, y, z0)], { stroke: '#138D90', w: bw(b.phi) });
+        if (b.mark === 'S1' && i === 0 && j === ny - 1) chairPt = P(xc - a, y, z0 + hh * 0.6);
+      }
+    });
     // baca çubukları + etriyeler
     const zb = c + pb * 2, zt = H - o.coverChimTop * 10;
     const half = A / 2 - (o.coverChim * 10 + rb.stPhi + rb.chimPhi / 2);
@@ -3222,6 +3233,7 @@ I18N.addText("ku", "0|Amûra hesabkirina bingehan\n1|Cureyê bircê\n2|B-# (birc
     if (ks) { const p = P(ks.xy.x * 10 + lean(H - 1400), ks.xy.y * 10 - lean(H - 1400), H - 1400); svg += balloon(x0 + w - 12, y0 + h * 0.22, bl.chimSide, p[0], p[1]); }
     const ez = T1 + T2 + cs + 2 * sS, pa = P(A / 2 - cs + lean(ez), A / 2 - cs - lean(ez), ez);
     svg += balloon(x0 + w - 8, y0 + h * 0.36, bl.stir, pa[0], pa[1]);
+    if (chairPt && bl.chair) svg += balloon(x0 + 9, y0 + h * 0.62, bl.chair, chairPt[0], chairPt[1]);
     return svg;
   }
 
@@ -3259,6 +3271,7 @@ I18N.addText("ku", "0|Amûra hesabkirina bingehan\n1|Cureyê bircê\n2|B-# (birc
       bot: (gr.find((g) => g.meshKey === 'A') || {}).pos, top: (gr.find((g) => g.meshKey === 'B') || {}).pos, p2: (gr.find((g) => g.meshKey === 'D') || {}).pos,
       chimCorner: (gr.find((g) => g.kind === 'chim' && g.diag) || {}).pos, chimSide: (gr.find((g) => g.kind === 'chim' && !g.diag) || gr.find((g) => g.kind === 'chim') || {}).pos,
       stir: (gr.find((g) => g.kind === 'stir') || {}).pos,
+      chair: (gr.find((g) => g.kind === 'chair' && g.tags[0] === 'S1') || gr.find((g) => g.kind === 'chair') || {}).pos,
     };
   }
 
