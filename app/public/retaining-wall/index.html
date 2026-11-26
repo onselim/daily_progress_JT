@@ -86,6 +86,9 @@ svg text{user-select:none}
 #toast.show{opacity:1;transform:none}
 #busy{position:fixed;inset:0;background:#F4F6F9E6;z-index:80;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-size:15px;color:var(--navy)}
 #busy .prog{width:min(360px,80vw)}
+#tip{position:fixed;z-index:90;max-width:340px;background:#1C2B3A;color:#fff;font-size:12.5px;line-height:1.5;padding:8px 11px;border-radius:8px;box-shadow:0 6px 22px #0005;pointer-events:none;display:none}
+[data-tip] label{cursor:help}
+@media print{#tip{display:none!important}}
 @page sheet{size:A3 landscape;margin:0}
 #t-pafta .sheet{display:none}#t-pafta .sheet.on{display:block}
 #t-pafta .sheet svg{width:100%;height:auto;display:block;background:#fff;box-shadow:0 1px 8px #0003}
@@ -999,6 +1002,65 @@ body.print-sheet #t-pafta .sheet{display:block!important;page:sheet;break-after:
       { k: 'meta.project', t: 'txt', label: 'Proje', w2: 1 }, { k: 'meta.name', t: 'txt', label: 'Duvar adı', w2: 1 }, { k: 'meta.drawn', t: 'txt', label: 'Çizen' }, { k: 'meta.checked', t: 'txt', label: 'Kontrol' }, { k: 'meta.rev', t: 'txt', label: 'Revizyon' },
     ] },
   ];
+
+  /* ---------------- parametre açıklamaları (fareyle üzerine gelince) ---------------- */
+  const TIPS = {
+    stemShape: 'Gövdenin hangi yüzünün eğimli olduğu. Ön yüz eğimli (arka yüz düşey) en yaygın tiptir: kalıbı kolay, dolgu düzgün sıkıştırılır. Arka yüz eğimlide eğimin üstündeki dolgu ağırlığı da dirence katılır. Sabit kalınlık küçük duvarlarda (H < 3 m) pratiktir.',
+    'geo.H': 'Taban altından duvar üstüne toplam yükseklik (taban kalınlığı dahil). İtki H² ile, devirici moment H³ ile büyür: yüksekliği %20 artırmak momenti yaklaşık %70 artırır.',
+    'geo.Df': 'Ön taraftaki zemin yüzeyinin taban altından yüksekliği (gömülme derinliği). Donma derinliğinin altında olmalı (genelde ≥ 0,8–1,0 m). Diş varsa pasif direnç bu derinlikten başlar; ön dolgunun kendisi ancak “ön dolgunun pasif direncini say” işaretliyse sayılır.',
+    L: 'Yalnız metraj ve maliyet için duvar boyu. Hesap 1 m duvar için yapılır.',
+    'top.P': 'Duvar üstüne gelen düşey çizgisel yük (ör. üst yapı, korkuluk ağırlığı). Değişken yük sayılır: taban basıncında hesaba katılır, devrilme ve kaymada dirence sayılmaz (Seçenekler’den değiştirilebilir).',
+    'top.Ht': 'Duvar üstüne etkiyen yatay yük (korkuluk, araç çarpması, rüzgâr perdesi). Gövde momentini Ht·Hs kadar artırır ve γQ ile çarpılır.',
+    'geo.toe': 'Gövdenin önünde kalan taban parçası. Devrilmeye karşı kolu büyütür, taban basıncını yayar. Ön sınır varsa (L tipi) yapılamaz. Optimum genelde kısa ön, uzun arka ampatmandır.',
+    'geo.heel': 'Gövdenin arkasında, dolgunun altında kalan taban parçası. Üstündeki dolgu ağırlığı duvarı dengeler: kayma ve devrilmeye karşı en etkili boyuttur. Eğimli dolguda uzadıkça itki düzlemi de yükselir.',
+    'geo.tb': 'Taban plağı kalınlığı. Ampatmanların eğilme ve etriyesiz kesme kapasitesini belirler. Tipik H/10 – H/12, en az 0,30 m.',
+    'geo.ttop': 'Gövdenin üst kalınlığı. Beton dökümü ve donatı yerleşimi için en az 0,20–0,25 m önerilir.',
+    'geo.tbot': 'Gövdenin tabanla birleştiği kesitteki kalınlığı; en büyük moment ve kesme buradadır. İnce gövde daha çok donatı, kalın gövde daha çok beton demektir. Tipik H/10 – H/12.',
+    'key.on': 'Taban altına dökülen beton diş. Önündeki zeminin pasif direncini devreye sokarak kaymaya karşı direnç sağlar. Kayma belirleyiciyken topuğu uzatmaktan çoğu zaman daha ekonomiktir.',
+    'key.h': 'Dişin taban altından derinliği. Pasif direnç derinliğin karesiyle artar. Kazı ve yapım zorluğu nedeniyle genelde 0,4–1,0 m.',
+    'key.b': 'Dişin genişliği; dişin eğilme ve kesmesini taşır. Genelde 0,3–0,5 m.',
+    'key.pos': 'Gövde altında: gövde donatısı dişe devam ettirilebilir, en yaygın konum. Arka uçta: kayma yüzeyi daha derinde ve uzun olur. Ön uçta: ön kazı açılırsa etkisi kaybolabilir.',
+    'back.g': 'Dolgunun su seviyesi üstündeki doğal birim ağırlığı. İtki (Ka·γ·z) ve topuk üstündeki dolgunun dengeleyici ağırlığı bununla hesaplanır. Sıkıştırılmış granüler dolgu için tipik 18–20 kN/m³.',
+    'back.gsat': 'Suya doygun birim ağırlık; yalnız yeraltı suyu varsa kullanılır. Su altındaki dolgunun ağırlığı γsat ile, itkisi efektif γ′ = γsat − 9,81 ile hesaplanır. Tipik 19–21 kN/m³.',
+    'back.phi': 'Dolgunun içsel sürtünme açısı; aktif itki katsayısını belirler: φ = 25° → Ka 0,41 · 30° → 0,33 · 35° → 0,27. Drenajlı, iyi sıkıştırılmış kırmataş / kum-çakıl dolgu 32–36°. Killi dolgu önerilmez (kohezyon ihmal edilir).',
+    'back.beta': 'Duvar üstünden arkaya doğru dolgu yüzeyinin yatayla açısı. Hem Ka’yı hem itki düzleminin yüksekliğini (H + topuk·tanβ) artırır; β = 15°’de itki yaklaşık %50 artar. β < φ olmalı; depremde β ≤ φ − ψ.',
+    'back.q': 'Dolgu üstündeki düzgün yayılı yük (trafik, depolama, iş makinesi). Duvara Ka·q kadar sabit (dikdörtgen) basınç ekler. Değişken yüktür (γQ = 1,5); dolgu üstündeki ağırlığı kayma ve devrilmede dirence sayılmaz. Yaya ≈ 5, hafif trafik ≈ 10, ağır trafik ≈ 20 kPa.',
+    'back.hw': 'Duvar arkasındaki yeraltı suyunun taban altından yüksekliği. 0 = drenaj var (barbakan + drenaj borusu). Su; ½·γw·hw² hidrostatik basınç, tabanda kaldırma kuvveti ve su altında hafifleyen dolgu getirir. 3 m su varsayılan duvarda tabanı yaklaşık %55 büyütür: drenaj neredeyse her zaman en ekonomik çözümdür.',
+    'back.dw': 'Beton duvar yüzü ile dolgu arasındaki sürtünme açısı. Yalnız topuk üstünde dolgu yokken (ters L, düşey arka yüz) kullanılır; tipik 2/3·φ. Büyük δw itkiyi azaltır ve aşağı doğru dengeleyici bir bileşen verir. Topuk varsa itki sanal yüzde δ = β ile alınır ve bu değer kullanılmaz.',
+    'found.g': 'Temel zemininin birim ağırlığı; ön taraftaki ve diş önündeki pasif direnci (Kp·γ·z) belirler.',
+    'found.phi': 'Temel zemininin içsel sürtünme açısı. Taban sürtünmesini (δb = k·φ) ve pasif katsayıyı Kp = tan²(45 + φ/2) belirler.',
+    'found.c': 'Temel zemininin (drenajlı) kohezyonu. Tabanda adezyon (ca·B) ve pasif dirence katkı verir. Kumda 0; killerde uzun dönem için ihtiyatlı alınmalı.',
+    'found.qa': 'Zemin etüdünden izin verilen taban basıncı. Statikte qmax ≤ qa, depremde qmax ≤ qa × artış katsayısı.',
+    'found.kb': 'Taban–zemin sürtünme açısının φ’ye oranı (δb = k·φ). Yerinde dökme beton için 2/3 yaygındır; zemine doğrudan dökülen pürüzlü taban için 0,8–1,0 alınabilir.',
+    'found.kc': 'Taban adezyonunun kohezyona oranı (ca = k·c). Kilde 0,5 civarı ihtiyatlıdır.',
+    'found.front': 'İşaretlenirse ön dolgunun (Df yüksekliği) pasif direnci kaymada sayılır. Ön taraf ileride kazılabilir ya da yumuşayabilirse işaretlemeyin (varsayılan). Dişin taban altındaki kısmı her zaman sayılır.',
+    'found.fp': 'Pasif direncin ne kadarının kullanılacağı. Tam pasif direnç büyük yer değiştirme ister; 0,5 yaygın ihtiyatlı değerdir.',
+    'seis.on': 'Deprem durumunu Mononobe–Okabe yöntemiyle ayrıca kontrol eder; statik kontroller de geçerli kalır.',
+    'seis.kh': 'Yatay deprem katsayısı. Duvarın birkaç santimetre yer değiştirmesine izin veriliyorsa genelde kh ≈ 0,5·PGA/g; kaymayan rijit duvarlarda kh ≈ PGA/g. Ülkenin deprem yönetmeliğine göre alınmalı.',
+    'seis.kv': 'Düşey deprem katsayısı; genelde 0 ya da ±0,5·kh. Ağırlıkları (1 − kv) ile azaltır.',
+    'mat.fck': 'Betonun karakteristik silindir dayanımı. Zeminle temaslı yapılarda en az C25/30, tercihen C30/37.',
+    'mat.fyk': 'Donatı çeliğinin akma dayanımı (B500: 500 MPa).',
+    'mat.gc': 'Beton malzeme katsayısı (EC2 kalıcı durum: 1,5).', 'mat.gs': 'Çelik malzeme katsayısı (EC2: 1,15).',
+    'mat.wc': 'Betonarmenin birim ağırlığı (genelde 25 kN/m³).',
+    'mat.cover': 'Kalıplı yüzlerde (dolgu tarafı dahil) net beton örtüsü. Tipik 40–50 mm.',
+    'mat.coverSoil': 'Doğrudan zemine dökülen yüzlerde (taban altı, diş) beton örtüsü. EC2: 75 mm.',
+    'lim.FSo': 'Statik devrilme güvenlik sayısı (karşı koyan moment / devirici moment). Tipik 2,0; bazı şartnameler 1,5.',
+    'lim.FSs': 'Statik kayma güvenlik sayısı (direnç / yatay kuvvet). Tipik 1,5.',
+    'lim.eDiv': 'Bileşkenin tabanın orta üçte birinde kalması (e ≤ B/6): tabanda çekme, yani zeminden ayrılma olmaz.',
+    'lim.FSoE': 'Deprem durumunda devrilme güvenlik sayısı. Tipik 1,5 (bazı yönetmeliklerde 1,2).',
+    'lim.FSsE': 'Deprem durumunda kayma güvenlik sayısı. Tipik 1,1.',
+    'lim.eDivE': 'Depremde bileşke için gevşetilmiş sınır: e ≤ B/4.',
+    'lim.qaE': 'Depremde izin verilen taban basıncının artış katsayısı (tipik 1,33).',
+    'uls.gG': 'Kalıcı yükler (ağırlık, zemin ve su itkisi) için taşıma gücü katsayısı (EC: 1,35).',
+    'uls.gQ': 'Değişken yükler (sürşarj, üst yükler) için taşıma gücü katsayısı (EC: 1,5).',
+    'uls.psi2': 'Deprem anında sürşarjın ne kadarının bulunduğunun kabulü (trafik için 0,2–0,3).',
+    'opts.soilOnToe': 'İşaretlenirse ön ampatman üstündeki zeminin ağırlığı dirence sayılır. Kazılabileceği için varsayılan kapalıdır (ihtiyatlı).',
+    'opts.surchStab': 'İşaretlenirse sürşarjın ve duvar üstü yükün düşey ağırlığı devrilme ve kaymada dirence sayılır. Yük her zaman bulunmayabileceği için varsayılan kapalıdır.',
+    'opts.lean': 'Taban altına dökülen grobeton (temizlik betonu). Metraja ve kazı derinliğine eklenir.',
+    'opts.ws': 'Kazının taban dışına her yanda taşan çalışma payı (yalnız metraj için).',
+    rebarMode: 'Otomatik: her değişiklikte en hafif uygun çap ve aralık seçilir. Elle: tablodaki değerler kullanılır, kontroller yeterli olup olmadığını gösterir.',
+  };
+  const tipAttr = (k) => (TIPS[k] ? ` data-tip="${escH(TIPS[k])}"` : '');
   const RB_ITEMS = [['stemB', 'Gövde arka düşey (ana)'], ['stemF', 'Gövde ön düşey'], ['stemH', 'Gövde yatay (her yüz)'], ['baseB', 'Taban alt enine'], ['baseT', 'Taban üst enine'], ['baseL', 'Taban boyuna (her katman)'], ['key', 'Diş']];
   const OPEN = {};
   function typeCards() {
@@ -1016,10 +1078,11 @@ body.print-sheet #t-pafta .sheet{display:block!important;page:sheet;break-after:
       }).join('') + `</table></div>`;
     }
     const v = get(S, fd.k);
-    if (fd.t === 'txt') return `<div class="f ${fd.w2 ? 'w2' : ''}"><label>${fd.label}</label><input type="text" data-k="${fd.k}" value="${escH(v)}"></div>`;
-    if (fd.t === 'chk') return `<label class="f chk"><input type="checkbox" data-k="${fd.k}" ${v ? 'checked' : ''}> ${fd.label}</label>`;
-    if (fd.t === 'sel') return `<div class="f ${fd.w2 ? 'w2' : ''}"><label>${fd.label}</label><select data-k="${fd.k}">${fd.opts.map((o) => `<option value="${o[0]}" ${o[0] === v ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></div>`;
-    return `<div class="f"><label><span>${fd.label}</span><span class="u">${fd.unit || ''}</span></label><input type="number" data-k="${fd.k}" step="${fd.step || 'any'}" value="${v}"></div>`;
+    const ta = tipAttr(fd.k);
+    if (fd.t === 'txt') return `<div class="f ${fd.w2 ? 'w2' : ''}"${ta}><label>${fd.label}</label><input type="text" data-k="${fd.k}" value="${escH(v)}"></div>`;
+    if (fd.t === 'chk') return `<label class="f chk"${ta}><input type="checkbox" data-k="${fd.k}" ${v ? 'checked' : ''}> ${fd.label}</label>`;
+    if (fd.t === 'sel') return `<div class="f ${fd.w2 ? 'w2' : ''}"${ta}><label>${fd.label}</label><select data-k="${fd.k}">${fd.opts.map((o) => `<option value="${o[0]}" ${o[0] === v ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></div>`;
+    return `<div class="f"${ta}><label><span>${fd.label}</span><span class="u">${fd.unit || ''}</span></label><input type="number" data-k="${fd.k}" step="${fd.step || 'any'}" value="${v}"></div>`;
   }
   function tabGirdi() {
     return `<p class="note" style="margin:0 0 10px">Yükleri, zemini ve duvar tipini girin; boyutları “⚙ Optimum tasarla” bulur. Sonuç <b>Tasarım</b> sekmesinde canlı görünür.</p>` + saveBar() +
@@ -1041,9 +1104,9 @@ body.print-sheet #t-pafta .sheet{display:block!important;page:sheet;break-after:
   function tabTasarim() {
     const ctl = `<aside class="card dctl">${saveBar()}<h3>Boyutlar</h3><p class="note" style="margin:0 0 6px">Çubuğu sürükleyin ya da kutuya metre değerini yazın; çizim ve kontroller anında değişir.</p>` +
       `<div class="types" style="margin-bottom:6px">${['T', 'L', 'RL'].map((t) => `<button class="tcard ${S.type === t ? 'on' : ''}" data-type="${t}" style="min-width:80px">${D.typeIcon(t, S.stemShape, S.type === t)}<span>${{ T: 'T', L: 'L', RL: 'Ters L' }[t]}</span></button>`).join('')}</div>` +
-      `<div class="sl"><div class="sl1"><label>Gövde şekli</label></div><select data-k="stemShape" style="width:100%;font:inherit;padding:4px"><option value="front" ${S.stemShape === 'front' ? 'selected' : ''}>Ön yüz eğimli</option><option value="back" ${S.stemShape === 'back' ? 'selected' : ''}>Arka yüz eğimli</option><option value="none" ${S.stemShape === 'none' ? 'selected' : ''}>Sabit kalınlık</option></select></div>` +
-      DIMS.filter((d) => !d.show || d.show(S)).map((d) => { const v = get(S, d.k); return `<div class="sl"><div class="sl1"><label>${d.n}</label><span class="sn"><input type="number" data-dz="${d.k}" step="0.05" value="${(+v).toFixed(2)}"><em>m</em></span></div><input type="range" data-dr="${d.k}" min="${d.lo}" max="${d.hi}" step="0.05" value="${v}"></div>`; }).join('') +
-      `<label class="chk2"><input type="checkbox" data-k="key.on" ${S.key.on ? 'checked' : ''}> Kayma dişi</label><label class="chk2"><input type="checkbox" data-k="seis.on" ${S.seis.on ? 'checked' : ''}> Deprem durumu</label>` +
+      `<div class="sl"${tipAttr('stemShape')}><div class="sl1"><label>Gövde şekli</label></div><select data-k="stemShape" style="width:100%;font:inherit;padding:4px"><option value="front" ${S.stemShape === 'front' ? 'selected' : ''}>Ön yüz eğimli</option><option value="back" ${S.stemShape === 'back' ? 'selected' : ''}>Arka yüz eğimli</option><option value="none" ${S.stemShape === 'none' ? 'selected' : ''}>Sabit kalınlık</option></select></div>` +
+      DIMS.filter((d) => !d.show || d.show(S)).map((d) => { const v = get(S, d.k); return `<div class="sl"${tipAttr(d.k)}><div class="sl1"><label>${d.n}</label><span class="sn"><input type="number" data-dz="${d.k}" step="0.05" value="${(+v).toFixed(2)}"><em>m</em></span></div><input type="range" data-dr="${d.k}" min="${d.lo}" max="${d.hi}" step="0.05" value="${v}"></div>`; }).join('') +
+      `<label class="chk2"${tipAttr('key.on')}><input type="checkbox" data-k="key.on" ${S.key.on ? 'checked' : ''}> Kayma dişi</label><label class="chk2"${tipAttr('seis.on')}><input type="checkbox" data-k="seis.on" ${S.seis.on ? 'checked' : ''}> Deprem durumu</label>` +
       `<p class="note" style="margin-top:8px">Yükler, zemin, malzeme: <button class="btn" data-tab="girdi">Girdiler</button><br>En ekonomik boyutlar: <button class="btn" data-tab="opt">Optimizasyon</button></p></aside>`;
     return `<div class="dsn">${ctl}<div id="live"></div></div>`;
   }
@@ -1316,6 +1379,21 @@ body.print-sheet #t-pafta .sheet{display:block!important;page:sheet;break-after:
     el.innerHTML = escH(t) + (name && name !== true ? ` <b>${escH(name)}</b>` : '');
     el.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('show'), 3500);
   }
+
+  /* ---------------- açıklama kutusu ---------------- */
+  let TIPEL = null, TIPON = null;
+  function tipShow(el, e) {
+    if (!TIPEL) { TIPEL = document.createElement('div'); TIPEL.id = 'tip'; document.body.appendChild(TIPEL); }
+    if (TIPON !== el) { TIPON = el; TIPEL.textContent = el.getAttribute('data-tip'); TIPEL.style.display = 'block'; }
+    const w = TIPEL.offsetWidth, h = TIPEL.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+    let x = e.clientX + 16, y = e.clientY + 18;
+    if (x + w > vw - 8) x = Math.max(8, e.clientX - w - 12);
+    if (y + h > vh - 8) y = Math.max(8, e.clientY - h - 12);
+    TIPEL.style.left = x + 'px'; TIPEL.style.top = y + 'px';
+  }
+  const tipHide = () => { TIPON = null; if (TIPEL) TIPEL.style.display = 'none'; };
+  document.addEventListener('mousemove', (e) => { const el = e.target.closest && e.target.closest('[data-tip]'); if (el) tipShow(el, e); else if (TIPON) tipHide(); });
+  document.addEventListener('mousedown', tipHide); document.addEventListener('scroll', tipHide, true);
 
   /* ---------------- olaylar ---------------- */
   document.addEventListener('input', (e) => {
