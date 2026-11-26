@@ -1,0 +1,1397 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta name="robots" content="noindex,nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>İstinat Duvarı Hesap Aracı</title>
+<style>
+:root{--navy:#1F4E78;--blue:#4C78A8;--orange:#F58518;--green:#2E8B57;--red:#D64541;--bg:#F4F6F9;--card:#fff;--line:#D9DEE5;--ink:#1C2733;--mut:#5B6B7B}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Arial,sans-serif;color:var(--ink);background:var(--bg);font-size:14px}
+header{background:var(--navy);color:#fff;padding:10px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+header h1{font-size:17px;margin:0;font-weight:600}
+header .sp{flex:1}
+header select,header button{font:inherit;padding:6px 10px;border-radius:6px;border:1px solid #fff3;background:#ffffff1f;color:#fff}
+header select option{color:#000}
+header button{cursor:pointer}header button:hover{background:#ffffff40}
+header button.go{background:var(--orange);border-color:var(--orange);font-weight:600}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;background:#ffffff26}
+.chip.ok{background:#2E8B5777}.chip.bad{background:#D6454199}
+#desChip{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}#desChip b{color:#FFC36B}
+#selDesign{max-width:270px}
+main{padding:14px 18px;min-width:0;max-width:1700px;margin:0 auto}
+details{border:1px solid var(--line);border-radius:8px;background:#fff}
+details>summary{padding:8px 10px;cursor:pointer;font-weight:600;color:var(--navy);list-style:none}
+details>summary::before{content:"▸ ";color:var(--mut)}details[open]>summary::before{content:"▾ "}
+.fields{padding:4px 10px 10px;display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.f{display:flex;flex-direction:column;font-size:12px;color:var(--mut)}
+.f.w2{grid-column:1/3}
+.f input,.f select{font:inherit;color:var(--ink);padding:5px 6px;border:1px solid var(--line);border-radius:5px;width:100%}
+.f label{display:flex;justify-content:space-between;gap:4px}
+.f .u{color:#8896A5}
+.f.chk{flex-direction:row;align-items:center;gap:6px;grid-column:1/3;color:var(--ink)}
+.f.chk input{width:auto}
+.hint{grid-column:1/3;font-size:11.5px;color:var(--mut);background:#F2F6FB;border-radius:6px;padding:6px 8px;line-height:1.4}
+.btnrow{grid-column:1/3;display:flex;gap:6px;flex-wrap:wrap}
+.btn{font:inherit;font-size:12px;padding:5px 9px;border-radius:6px;border:1px solid var(--blue);background:#fff;color:var(--blue);cursor:pointer}
+.btn:hover{background:#EAF1F8}.btn.p{background:var(--blue);color:#fff}.btn.on{background:var(--navy);border-color:var(--navy);color:#fff}
+nav.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:12px;flex-wrap:wrap}
+nav.tabs button{font:inherit;padding:8px 14px;border:0;background:none;cursor:pointer;color:var(--mut);border-bottom:3px solid transparent;margin-bottom:-2px;font-weight:600}
+nav.tabs button.on{color:var(--navy);border-bottom-color:var(--orange)}
+.tab{display:none}.tab.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.card h3{margin:0 0 6px;color:var(--navy);font-size:15.5px;display:flex;align-items:center;gap:8px}
+.card h3 .no{background:var(--navy);color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+.aim{margin:4px 0 8px;color:#33475B;line-height:1.5;background:#F7FAFD;border-left:3px solid var(--blue);padding:6px 10px;border-radius:0 6px 6px 0}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:4px 7px;border-bottom:1px solid #E7EBF0;text-align:start;vertical-align:top}
+th{background:#F0F4F8;color:var(--navy);font-weight:600;font-size:12px}
+td.r,th.r{text-align:end;font-variant-numeric:tabular-nums}
+td.f2{color:#556;font-size:12px}
+tr.tot td{font-weight:700;background:#F7FAFD}
+tr.bad td{background:#FCE9E8}
+.res{margin-top:8px;padding:7px 10px;border-radius:7px;font-weight:600}
+.res.ok{background:#E6F4EC;color:#1B6B3F}.res.bad{background:#FCE9E8;color:#A12622}.res.warn{background:#FFF4DE;color:#8A5A00}
+.bar{height:9px;background:#E9EEF3;border-radius:5px;overflow:hidden;min-width:80px}
+.bar i{display:block;height:100%;background:var(--green)}.bar i.hi{background:var(--orange)}.bar i.over{background:var(--red)}
+.gov{outline:2px solid var(--orange)}
+.note{font-size:12.5px;color:var(--mut);line-height:1.5}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:1100px){.grid2{grid-template-columns:1fr}}
+.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px;align-items:start}
+.dsn{display:grid;grid-template-columns:minmax(290px,340px) 1fr;gap:14px;align-items:start}
+.dctl{position:sticky;top:64px;max-height:calc(100vh - 80px);overflow:auto;margin:0}
+.sl{padding:5px 0 7px;border-bottom:1px dashed #E7EBF0}
+.sl1{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:2px}
+.sl1 label{font-size:12.5px;color:#33475B}
+.sl .sn{display:flex;align-items:center;gap:4px}.sl .sn em{font-style:normal;color:var(--mut);font-size:11.5px;min-width:16px}
+.sl input[type=number]{font:inherit;padding:3px 6px;border:1px solid var(--line);border-radius:5px;width:78px;text-align:right}
+.sl input[type=range]{width:100%;accent-color:var(--blue);margin:0}
+.chk2{display:flex;gap:6px;align-items:center;font-size:12.5px;margin-top:8px;color:#33475B}
+@media(max-width:1000px){.dsn{grid-template-columns:1fr}.dctl{position:static;max-height:none}}
+.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}.kpi{flex:1;min-width:130px;background:#F4F7FB;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.kpi b{display:block;font-size:19px;color:var(--navy)}.kpi span{font-size:11.5px;color:var(--mut)}
+.kpi.ok{background:#E6F4EC}.kpi.bad{background:#FCE9E8}
+.types{display:flex;gap:8px;flex-wrap:wrap;grid-column:1/3}
+.tcard{border:2px solid var(--line);border-radius:9px;background:#fff;padding:4px 8px 6px;cursor:pointer;text-align:center;font:inherit;font-size:12px;color:var(--ink);min-width:96px}
+.tcard.on{border-color:var(--orange);background:#FFF8EE}.tcard span{display:block}
+.prog{height:8px;background:#E9EEF3;border-radius:5px;overflow:hidden}.prog i{display:block;height:100%;background:var(--blue);width:0}
+.sbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+svg text{user-select:none}
+#dlg{position:fixed;inset:0;background:#0007;z-index:60;display:none;align-items:center;justify-content:center;padding:16px}
+.dlgbox{background:#fff;border-radius:12px;padding:16px 18px;width:min(460px,100%);box-shadow:0 10px 40px #0005}
+.dlgbox h3{margin:0 0 10px;color:var(--navy);font-size:16px}.dlgbox .btnrow{margin-top:12px}
+#toast{position:fixed;right:18px;bottom:18px;background:#1B6B3F;color:#fff;padding:9px 14px;border-radius:8px;box-shadow:0 4px 18px #0004;z-index:70;opacity:0;pointer-events:none;transform:translateY(8px);transition:.2s}
+#toast.show{opacity:1;transform:none}
+#busy{position:fixed;inset:0;background:#F4F6F9E6;z-index:80;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-size:15px;color:var(--navy)}
+#busy .prog{width:min(360px,80vw)}
+@page sheet{size:A3 landscape;margin:0}
+#t-pafta .sheet{display:none}#t-pafta .sheet.on{display:block}
+#t-pafta .sheet svg{width:100%;height:auto;display:block;background:#fff;box-shadow:0 1px 8px #0003}
+@media print{header,nav.tabs,.btn,.sbar,#dlg,#toast{display:none!important}.tab{display:block!important;page-break-before:always}.tab:first-of-type{page-break-before:auto}main{padding:0}.card{break-inside:avoid}.dctl{display:none}
+body.print-sheet .tab{display:none!important}body.print-sheet #t-pafta{display:block!important}body.print-sheet #t-pafta .ctrl{display:none}
+body.print-sheet #t-pafta .sheet{display:block!important;page:sheet;break-after:page}body.print-sheet #t-pafta .sheet svg{width:420mm;height:297mm;box-shadow:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>İstinat Duvarı Hesap Aracı</h1>
+  <select id="selType" title="Duvar tipi">
+    <option value="T">T – ön ve arka ampatmanlı</option>
+    <option value="L">L – yalnız arka ampatman (ön yüz sınırda)</option>
+    <option value="RL">Ters L – yalnız ön ampatman (arka yüz sınırda)</option>
+  </select>
+  <div class="chips" id="chips"></div>
+  <span class="chip" id="desChip" style="display:none"></span>
+  <div class="sp"></div>
+  <button id="btnSave" title="Güncel tasarımı bir adla kaydeder (Ctrl+S)">💾 Kaydet</button>
+  <select id="selDesign" title="Kayıtlı bir tasarımı aç"></select>
+  <button id="btnOpt" class="go" title="Yüklere göre en ekonomik boyutları bulur">⚙ Optimum tasarla</button>
+  <button id="btnPrint">Yazdır / PDF</button>
+</header>
+<main>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="t-girdi" class="tab"></div>
+  <div id="t-tasarim" class="tab"></div>
+  <div id="t-opt" class="tab"></div>
+  <div id="t-adim" class="tab"></div>
+  <div id="t-liste" class="tab"></div>
+  <div id="t-pafta" class="tab"></div>
+  <div id="t-kayit" class="tab"></div>
+</main>
+<div id="busy"><div id="busyTxt">Optimum tasarım hesaplanıyor…</div><div class="prog"><i id="busyProg"></i></div></div>
+<input type="file" id="desOpenFile" accept=".json,application/json" style="display:none">
+<script>
+/* İstinat duvarı hesap motoru – betonarme konsol duvar (T, L, ters L), isteğe bağlı kayma dişi.
+   Birimler: m, kN, kPa (kN/m²), kN/m³, derece; donatı Φ mm, aralık mm, alan mm²/m. Hesap duvarın 1 m boyu için yapılır.
+   Stabilite: güvenlik sayıları (servis yükleri; deprem durumunda ayrı sınırlar).
+   Toprak itkisi: sanal arka yüzde (topuk ucundan geçen düşey düzlem) Coulomb; topuk üstünde dolgu varsa δ = β (Rankine ile aynı).
+   Deprem: Mononobe–Okabe (ΔPAE 0,6·H’de), duvar ve topuk üstü dolgu ataleti kh·W, düşey kv.
+   Betonarme: EC2 (fcd = 0,85·fck/γc), etriyesiz kesme VRd,c; taşıma gücü katsayıları γG / γQ. */
+(function (root) {
+  'use strict';
+  const PI = Math.PI, rad = (d) => (d * PI) / 180, deg = (r) => (r * 180) / PI;
+  const GW = 9.81;                                   // su birim ağırlığı kN/m³
+  const clone = (x) => JSON.parse(JSON.stringify(x));
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const NF = {}, LOCF = () => (root.I18N ? root.I18N.loc() : 'tr-TR');
+  const fm = (x, d = 0) => { if (!isFinite(x)) return '–'; const k = LOCF() + d; return (NF[k] || (NF[k] = new Intl.NumberFormat(LOCF(), { minimumFractionDigits: d, maximumFractionDigits: d }))).format(x); };
+
+  /* ---------------- varsayılan girdiler ---------------- */
+  const DEFAULTS = {
+    type: 'T',                    // T: ön + arka ampatman · L: yalnız arka (ön yüz sınırda) · RL: yalnız ön (arka yüz sınırda)
+    stemShape: 'front',           // front: ön yüz eğimli · back: arka yüz eğimli · none: sabit kalınlık
+    geo: { H: 5.0, Df: 1.0, tb: 0.50, toe: 1.00, heel: 2.50, ttop: 0.25, tbot: 0.45 },
+    key: { on: false, h: 0.50, b: 0.40, pos: 'stem' },
+    back: { g: 18, gsat: 20, phi: 30, beta: 0, q: 10, hw: 0, dw: 20 },
+    found: { g: 18, phi: 30, c: 0, qa: 200, kb: 0.67, kc: 0.5, front: false, fp: 0.5 },
+    seis: { on: false, kh: 0.15, kv: 0 },
+    top: { P: 0, Ht: 0 },
+    mat: { fck: 30, fyk: 500, gc: 1.5, gs: 1.15, wc: 25, cover: 50, coverSoil: 75 },
+    lim: { FSs: 1.5, FSo: 2.0, eDiv: 6, FSsE: 1.1, FSoE: 1.5, eDivE: 4, qaE: 1.33 },
+    uls: { gG: 1.35, gQ: 1.5, psi2: 0.3 },
+    opts: { soilOnToe: false, surchStab: false, lean: 0.10, ws: 0.50 },
+    L: 20,
+    price: { conc: 120, steel: 1.2, form: 25, exc: 8, fill: 10, lean: 80 },
+    rebarMode: 'auto',
+    rebar: null,
+    meta: { project: '', name: 'İstinat duvarı İD-1', drawn: '', checked: '', rev: 'A' },
+  };
+
+  /* ---------------- yardımcılar ---------------- */
+  function polyAC(p) {
+    let A = 0, cx = 0, cy = 0;
+    for (let i = 0; i < p.length; i++) { const a = p[i], b = p[(i + 1) % p.length], c = a[0] * b[1] - b[0] * a[1]; A += c; cx += (a[0] + b[0]) * c; cy += (a[1] + b[1]) * c; }
+    if (Math.abs(A) < 1e-12) return { A: 0, x: 0, y: 0 };
+    return { A: Math.abs(A) / 2, x: cx / (3 * A), y: cy / (3 * A) };
+  }
+  function clipY(p, yc, below) {     // yatay çizgiyle kırp (below: y ≤ yc kısmı)
+    const ins = (q) => (below ? q[1] <= yc + 1e-12 : q[1] >= yc - 1e-12), out = [];
+    for (let i = 0; i < p.length; i++) {
+      const a = p[i], b = p[(i + 1) % p.length], ia = ins(a), ib = ins(b);
+      if (ia) out.push(a);
+      if (ia !== ib) { const t = (yc - a[1]) / (b[1] - a[1]); out.push([a[0] + t * (b[0] - a[0]), yc]); }
+    }
+    return out;
+  }
+  /* Coulomb aktif katsayısı, düşey yüz (θ = 0); δ = β iken Rankine ile aynıdır */
+  function kaC(phi, delta, beta) {
+    const f = rad(phi), d = rad(delta), b = rad(beta);
+    if (f - b < 0) return NaN;
+    const r = (Math.sin(f + d) * Math.sin(f - b)) / (Math.cos(d) * Math.cos(b));
+    return Math.cos(f) ** 2 / (Math.cos(d) * (1 + Math.sqrt(r)) ** 2);
+  }
+  /* Mononobe–Okabe, düşey yüz */
+  function kaeMO(phi, delta, beta, kh, kv) {
+    const f = rad(phi), d = rad(delta), b = rad(beta), psi = Math.atan(kh / (1 - kv));
+    if (f - b - psi < 0) return NaN;
+    const r = (Math.sin(f + d) * Math.sin(f - b - psi)) / (Math.cos(d + psi) * Math.cos(b));
+    return Math.cos(f - psi) ** 2 / (Math.cos(psi) * Math.cos(d + psi) * (1 + Math.sqrt(r)) ** 2);
+  }
+  const kpR = (phi) => Math.tan(rad(45 + phi / 2)) ** 2;
+  /* üçgen + su altı itki: düzlem boyu Hv, su seviyesi düzlem tabanından hw yukarıda; y düzlem tabanından */
+  function soilForce(K, g, gsub, Hv, hw) {
+    const h2 = clamp(hw, 0, Hv), zw = Hv - h2;
+    const P1 = 0.5 * K * g * zw * zw, P2 = K * g * zw * h2, P3 = 0.5 * K * gsub * h2 * h2;
+    const P = P1 + P2 + P3;
+    return { P, y: P > 0 ? (P1 * (h2 + zw / 3) + P2 * (h2 / 2) + P3 * (h2 / 3)) / P : 0, sTop: 0, sWT: K * g * zw, sBot: K * g * zw + K * gsub * h2 };
+  }
+
+  /* ---------------- geometri ---------------- */
+  function geom(s) {
+    const g = s.geo, t = s.type;
+    const toe = t === 'L' ? 0 : Math.max(0, +g.toe || 0), heel = t === 'RL' ? 0 : Math.max(0, +g.heel || 0);
+    const ttop = +g.ttop, tbot = s.stemShape === 'none' ? ttop : Math.max(+g.tbot, ttop);
+    const H = +g.H, tb = +g.tb, Hs = H - tb, B = toe + tbot + heel, dx = tbot - ttop;
+    const err = !(H > 0) ? 'Duvar yüksekliği H sıfırdan büyük olmalı.' : !(tb > 0) ? 'Taban kalınlığı sıfırdan büyük olmalı.' : !(Hs > 0.2) ? 'Taban kalınlığı duvar yüksekliğinden küçük olmalı.' : !(ttop > 0.1) ? 'Gövde üst kalınlığı en az 0,10 m olmalı.' : !(B > 0) ? 'Taban genişliği sıfırdan büyük olmalı.' : '';
+    const xf0 = toe, xb0 = toe + tbot;
+    const xfT = s.stemShape === 'front' ? toe + dx : toe;
+    const xbT = s.stemShape === 'back' ? xb0 - dx : xb0;
+    const tanB = Math.tan(rad(+s.back.beta || 0));
+    const ySurf = (x) => H + Math.max(0, x - xbT) * tanB;
+    const Hv = ySurf(B);
+    const stem = [[xf0, tb], [xb0, tb], [xbT, H], [xfT, H]];
+    const base = [[0, 0], [B, 0], [B, tb], [0, tb]];
+    const k = s.key, keyOn = !!k.on && k.h > 0 && k.b > 0;
+    const kb = Math.min(+k.b, B), xk = !keyOn ? 0 : k.pos === 'heel' ? B - kb : k.pos === 'toe' ? 0 : clamp(toe + tbot / 2 - kb / 2, 0, B - kb);
+    const key = keyOn ? [[xk, -k.h], [xk + kb, -k.h], [xk + kb, 0], [xk, 0]] : null;
+    const soilHeel = [[xb0, tb], [B, tb], [B, Hv], [xbT, H]];
+    const Df = Math.max(0, +g.Df || 0);
+    const soilToe = Df > tb && toe > 0 ? [[0, tb], [toe, tb], [toe, Df], [0, Df]] : null;
+    const thick = (y) => tbot + ((ttop - tbot) * (y - tb)) / Hs;
+    return { ok: !err, err, toe, heel, ttop, tbot, H, tb, Hs, B, dx, xf0, xb0, xfT, xbT, tanB, ySurf, Hv, stem, base, key, keyOn, keyH: keyOn ? +k.h : 0, keyB: kb, xk, soilHeel, soilToe, Df, thick };
+  }
+
+  /* ---------------- toprak itkisi ---------------- */
+  function pressure(s, gm) {
+    const b = s.back, virt = gm.B - gm.xbT > 0.005;
+    const dDeg = virt ? +b.beta : Math.min(+b.dw, +b.phi), d = rad(dDeg);
+    const K = kaC(b.phi, dDeg, b.beta);
+    const hw = clamp(+b.hw || 0, 0, gm.Hv), gsub = b.gsat - GW;
+    const soil = soilForce(K, b.g, gsub, gm.Hv, hw);
+    const q = { P: K * b.q * gm.Hv, y: gm.Hv / 2 };
+    const w = { P: 0.5 * GW * hw * hw, y: hw / 3 };
+    let E = null;
+    if (s.seis.on) {
+      const KE = kaeMO(b.phi, dDeg, b.beta, s.seis.kh, s.seis.kv), dK = (1 - s.seis.kv) * KE - K;
+      E = { KE, dK, psi: deg(Math.atan(s.seis.kh / (1 - s.seis.kv))), P: 0.5 * b.g * gm.Hv * gm.Hv * dK, y: 0.6 * gm.Hv, Pq: b.q * gm.Hv * dK, yq: gm.Hv / 2 };
+    }
+    return { virt, dDeg, d, K, hw, gsub, soil, q, w, E };
+  }
+  function passive(s, gm) {
+    const f = s.found, Kp = kpR(f.phi), Df = gm.Df, hk = gm.keyH;
+    const z1 = f.front ? 0 : Df, z2 = Df + hk;
+    const seg = (a, b) => {
+      if (!(b > a + 1e-9)) return { P: 0, z: 0 };
+      const P1 = 0.5 * Kp * f.g * (b * b - a * a), P2 = 2 * f.c * Math.sqrt(Kp) * (b - a), P = P1 + P2;
+      const m = (Kp * f.g * (b ** 3 - a ** 3)) / 3 + f.c * Math.sqrt(Kp) * (b * b - a * a);
+      return { P, z: m / P };
+    };
+    const all = seg(z1, z2), key = seg(Df, Df + hk);
+    return { Kp, z1, z2, P: all.P, y: Df - all.z, keyP: key.P, keyArm: key.P ? key.z - Df : 0 };
+  }
+
+  /* ---------------- etkiler (1 m duvar) ----------------
+     V: düşey (aşağı +), x tabanın ön ucundan · H: yatay (dolgudan dışa +), y taban altından.
+     cat: G kalıcı · Q değişken (sürşarj, üst yükler) · E deprem.  stab: devrilme/kaymada sayılır · bear: taban basıncında sayılır */
+  function actions(s, gm, seis) {
+    const b = s.back, f = s.found, wc = s.mat.wc, V = [], H = [], W = {};
+    const kv = seis ? +s.seis.kv : 0, kh = seis ? +s.seis.kh : 0;
+    const addW = (id, n, poly, gam) => {
+      const c = polyAC(poly); if (!c.A) return null;
+      const w = c.A * gam; V.push({ n, v: w, x: c.x, cat: 'G', stab: true, bear: true });
+      if (seis && kv) V.push({ n: n + ' – düşey deprem (−kv·W)', v: -kv * w, x: c.x, cat: 'E', stab: true, bear: true });
+      if (seis && kh) H.push({ n: n + ' – atalet (kh·W)', h: kh * w, y: c.y, cat: 'E' });
+      W[id] = { n, A: c.A, w, x: c.x, y: c.y }; return W[id];
+    };
+    addW('stem', 'Gövde', gm.stem, wc); addW('base', 'Taban', gm.base, wc); if (gm.key) addW('key', 'Diş', gm.key, wc);
+    const ep = pressure(s, gm), hw = ep.hw;
+    if (hw > 0) {
+      const up = clipY(gm.soilHeel, hw, false), dn = clipY(gm.soilHeel, hw, true);
+      if (up.length > 2) addW('soil', 'Dolgu (arka)', up, b.g);
+      if (dn.length > 2) addW('soilW', 'Dolgu (arka, su altı, γsat)', dn, b.gsat);
+    } else addW('soil', 'Dolgu (arka)', gm.soilHeel, b.g);
+    if (s.opts.soilOnToe && gm.soilToe) addW('soilToe', 'Dolgu (ön, ampatman üstü)', gm.soilToe, f.g);
+    const ls = gm.B - gm.xbT;
+    if (b.q > 0 && ls > 0) V.push({ n: 'Sürşarj (dolgu üstü q·l)', v: b.q * ls, x: (gm.xbT + gm.B) / 2, cat: 'Q', stab: !!s.opts.surchStab, bear: true });
+    if (+s.top.P) V.push({ n: 'Duvar üstü düşey yük P', v: +s.top.P, x: (gm.xfT + gm.xbT) / 2, cat: 'Q', stab: !!s.opts.surchStab, bear: true });
+    if (+s.top.Ht) H.push({ n: 'Duvar üstü yatay yük', h: +s.top.Ht, y: gm.H, cat: 'Q' });
+    const cd = Math.cos(ep.d), sd = Math.sin(ep.d);
+    H.push({ n: 'Aktif toprak itkisi Pa (yatay)', h: ep.soil.P * cd, y: ep.soil.y, cat: 'G' });
+    if (sd > 1e-9) V.push({ n: 'Aktif toprak itkisi Pa (düşey bileşen)', v: ep.soil.P * sd, x: gm.B, cat: 'G', stab: true, bear: true });
+    if (ep.q.P > 0) {
+      H.push({ n: 'Sürşarj itkisi Pq (yatay)', h: ep.q.P * cd, y: ep.q.y, cat: 'Q' });
+      if (sd > 1e-9) V.push({ n: 'Sürşarj itkisi Pq (düşey bileşen)', v: ep.q.P * sd, x: gm.B, cat: 'Q', stab: true, bear: true });
+    }
+    if (ep.w.P > 0) H.push({ n: 'Su basıncı Pw', h: ep.w.P, y: ep.w.y, cat: 'G' });
+    if (seis && ep.E) {
+      H.push({ n: 'Deprem itki artışı ΔPAE (yatay)', h: ep.E.P * cd, y: ep.E.y, cat: 'E' });
+      if (sd > 1e-9) V.push({ n: 'ΔPAE düşey bileşen', v: ep.E.P * sd, x: gm.B, cat: 'E', stab: true, bear: true });
+      if (ep.E.Pq) H.push({ n: 'Deprem sürşarj itki artışı (yatay)', h: ep.E.Pq * cd, y: ep.E.yq, cat: 'E' });
+    }
+    const U = hw > 0 ? { n: 'Taban su kaldırması U', v: 0.5 * GW * hw * gm.B, x: (2 * gm.B) / 3, cat: 'G' } : null;
+    return { V, H, U, W, ep, pp: passive(s, gm), seis };
+  }
+
+  /* ---------------- taban basıncı dağılımı ---------------- */
+  function bearing(N, xr, B) {
+    const bad = { qmax: Infinity, qmin: 0, qToe: Infinity, qHeel: 0, Lc: 0, full: false, ok: false, at: () => 0 };
+    if (!(N > 0) || !(xr > 0) || !(xr < B)) return bad;
+    const e = B / 2 - xr;
+    if (Math.abs(e) <= B / 6 + 1e-12) {
+      const qT = (N / B) * (1 + (6 * e) / B), qH = (N / B) * (1 - (6 * e) / B);
+      return { qmax: Math.max(qT, qH), qmin: Math.min(qT, qH), qToe: qT, qHeel: qH, Lc: B, full: true, ok: true, at: (x) => qT + ((qH - qT) * x) / B };
+    }
+    if (e > 0) { const Lc = 3 * xr, q0 = (2 * N) / Lc; return { qmax: q0, qmin: 0, qToe: q0, qHeel: 0, Lc, full: false, ok: true, at: (x) => (x < Lc ? q0 * (1 - x / Lc) : 0) }; }
+    const Lc = 3 * (B - xr), q0 = (2 * N) / Lc;
+    return { qmax: q0, qmin: 0, qToe: 0, qHeel: q0, Lc, full: false, ok: true, at: (x) => (B - x < Lc ? q0 * (1 - (B - x) / Lc) : 0) };
+  }
+  /* bir yük birleşimi: fac(cat) çarpanı; stabilite büyüklükleri + taban basıncı */
+  function combo(s, gm, A, fac) {
+    let Vst = 0, MRst = 0, Vb = 0, MRb = 0, Hh = 0, MO = 0;
+    A.V.forEach((it) => { const v = it.v * fac(it.cat); if (it.stab) { Vst += v; MRst += v * it.x; } if (it.bear) { Vb += v; MRb += v * it.x; } });
+    A.H.forEach((it) => { const h = it.h * fac(it.cat); Hh += h; MO += h * it.y; });
+    const U = A.U ? A.U.v * fac('G') : 0, MU = A.U ? U * A.U.x : 0;
+    const f = s.found, dB = f.kb * f.phi, tanb = Math.tan(rad(dB)), ca = f.kc * f.c;
+    const FSo = MRst / (MO + MU);
+    const N = Vst - U, R = Math.max(0, N) * tanb + ca * gm.B + f.fp * A.pp.P;
+    const FSs = Hh > 0 ? R / Hh : Infinity;
+    const Nb = Vb - U, Mb = MRb - MO - MU, xr = Mb / Nb, e = gm.B / 2 - xr;
+    const bp = bearing(Nb, xr, gm.B);
+    return { Vst, MRst, Vb, MRb, H: Hh, MO, U, MU, FSo, N, dB, tanb, ca, Rf: Math.max(0, N) * tanb, Rc: ca * gm.B, Rp: f.fp * A.pp.P, R, FSs, Nb, Mb, xr, e, bp };
+  }
+  const FAC_STAT = () => (c) => (c === 'E' ? 0 : 1);
+  const facSeis = (s) => (c) => (c === 'Q' ? s.uls.psi2 : 1);
+  const facUls = (s) => (c) => (c === 'G' ? s.uls.gG : c === 'Q' ? s.uls.gQ : 0);
+
+  /* ---------------- betonarme ---------------- */
+  function mats(m) {
+    const fcd = (0.85 * m.fck) / m.gc, fyd = m.fyk / m.gs, fctm = 0.3 * Math.pow(m.fck, 2 / 3);
+    return { fcd, fyd, fctm, rhoMin: Math.max((0.26 * fctm) / m.fyk, 0.0013) };
+  }
+  /* eğilme (1 m genişlik): MEd kNm/m, h m, örtü mm, Φ mm → gereken As mm²/m */
+  function flex(MEd, h, cov, phi, mt) {
+    const d = h * 1000 - cov - phi / 2;
+    if (!(d > 30)) return { d, mu: 99, AsReq: Infinity, AsMin: 0, over: true };
+    const mu = (Math.abs(MEd) * 1e6) / (1000 * d * d * mt.fcd), over = mu > 0.372;
+    const om = over ? NaN : 1 - Math.sqrt(1 - 2 * mu);
+    const AsCalc = over ? Infinity : (om * 1000 * d * mt.fcd) / mt.fyd, AsMin = mt.rhoMin * 1000 * d;
+    return { d, mu, AsCalc, AsMin, AsReq: Math.max(AsCalc, AsMin), over };
+  }
+  /* etriyesiz kesme dayanımı VRd,c (kN/m) */
+  function vrdc(d, As, m) {
+    const k = Math.min(2, 1 + Math.sqrt(200 / d)), rho = Math.min(0.02, As / (1000 * d));
+    const v = Math.max((0.18 / m.gc) * k * Math.pow(100 * rho * m.fck, 1 / 3), 0.035 * Math.pow(k, 1.5) * Math.sqrt(m.fck));
+    return { k, rho, v, V: (v * 1000 * d) / 1000 };
+  }
+  const PHIS = [10, 12, 14, 16, 20, 25, 32], SPS = [100, 125, 150, 175, 200, 250, 300];
+  const barA = (phi) => (PI * phi * phi) / 4;
+  const asProv = (b) => (b ? (barA(b.phi) * 1000) / b.s : 0);
+  function pickBars(AsReq, minPhi, maxS) {
+    let best = null;
+    PHIS.filter((p) => p >= minPhi).forEach((phi) => SPS.filter((x) => x <= maxS).forEach((sp) => {
+      const A = (barA(phi) * 1000) / sp;
+      if (A + 1e-9 < AsReq) return;
+      if (!best || A < best.A - 1e-6 || (Math.abs(A - best.A) < 1e-6 && sp > best.s)) best = { phi, s: sp, A };
+    }));
+    return best ? { phi: best.phi, s: best.s } : { phi: 32, s: 100 };
+  }
+
+  /* gövde kesit kuvvetleri, kesit kotu yc (taban altından) */
+  function stemCut(s, gm, ep, yc) {
+    const b = s.back, h = gm.H - yc;
+    const Kh = ep.K * Math.cos(ep.d), hw = clamp(ep.hw - yc, 0, h);
+    const so = soilForce(Kh, b.g, ep.gsub, h, hw);
+    const MG = so.P * so.y + (0.5 * GW * hw * hw * hw) / 3, VG = so.P + 0.5 * GW * hw * hw;
+    const MQ = (Kh * b.q * h * h) / 2 + (+s.top.Ht || 0) * h, VQ = Kh * b.q * h + (+s.top.Ht || 0);
+    let ME = 0, VE = 0;
+    if (s.seis.on && ep.E && isFinite(ep.E.dK)) {
+      const dKh = ep.E.dK * Math.cos(ep.d), P = 0.5 * b.g * h * h * dKh, Pq = b.q * h * dKh;
+      const t1 = gm.thick(yc), t2 = gm.ttop, A = ((t1 + t2) / 2) * h, yb = (h * (t1 + 2 * t2)) / (3 * (t1 + t2)), Wst = A * s.mat.wc;
+      ME = P * 0.6 * h + (Pq * h) / 2 + s.seis.kh * Wst * yb; VE = P + Pq + s.seis.kh * Wst;
+    }
+    const u = s.uls, Ms = u.gG * MG + u.gQ * MQ, Vs = u.gG * VG + u.gQ * VQ;
+    const Me = MG + u.psi2 * MQ + ME, Ve = VG + u.psi2 * VQ + VE;
+    return { yc, h, t: gm.thick(yc), MG, VG, MQ, VQ, ME, VE, Ms, Vs, Me, Ve, MEd: Math.max(Ms, Me), VEd: Math.max(Vs, Ve), seisGov: Me > Ms };
+  }
+  /* taban: ULS taban basıncı altında ön/arka ampatman kesit kuvvetleri */
+  function baseCut(s, gm, A, fac, Gf, Qf) {
+    const c = combo(s, gm, A, fac), q = c.bp.at, b = s.back, hw = A.ep.hw, tb = gm.tb, n = 80;
+    const u = (x) => (hw > 0 ? (GW * hw * x) / gm.B * Gf : 0);
+    const wBase = Gf * s.mat.wc * tb, wToeSoil = s.opts.soilOnToe && gm.soilToe ? Gf * s.found.g * (gm.Df - tb) : 0;
+    const soilCol = (x) => { const top = gm.ySurf(x), h = Math.max(0, top - tb); if (!(hw > tb)) return b.g * h; const hs = clamp(hw - tb, 0, h); return b.gsat * hs + b.g * (h - hs); };
+    const integ = (a, bb, f) => { if (!(bb > a)) return 0; let S = 0; const dx = (bb - a) / n; for (let i = 0; i < n; i++) { const x = a + (i + 0.5) * dx; S += f(x) * dx; } return S; };
+    // ön ampatman: x 0..toe, kesit x = toe ; + = alt lif çekme
+    const toe = gm.toe, pToe = (x) => q(x) + u(x) - wBase - wToeSoil;
+    const Mtoe = integ(0, toe, (x) => pToe(x) * (toe - x));
+    const Vtoe = (d) => integ(0, Math.max(0, toe - d), pToe);
+    // arka ampatman: x xb0..B, kesit x = xb0 ; + = üst lif çekme
+    const x0 = gm.xb0, pHeel = (x) => wBase + Gf * soilCol(x) + Qf * b.q - q(x) - u(x);
+    const Mheel = integ(x0, gm.B, (x) => pHeel(x) * (x - x0));
+    const Vheel = (d) => integ(Math.min(gm.B, x0 + d), gm.B, pHeel);
+    return { c, Mtoe, Vtoe, Mheel, Vheel };
+  }
+
+  /* ---------------- tüm betonarme + donatı ---------------- */
+  function structure(s, gm, A0, A1) {
+    const m = s.mat, mt = mats(m), ep = A0.ep;
+    const st = stemCut(s, gm, ep, gm.tb);
+    const lev = [gm.tb + gm.Hs / 3, gm.tb + (2 * gm.Hs) / 3].map((y) => stemCut(s, gm, ep, y));
+    const bU = baseCut(s, gm, A0, facUls(s), s.uls.gG, s.uls.gQ);
+    const bE = s.seis.on && A1 ? baseCut(s, gm, A1, facSeis(s), 1, s.uls.psi2) : null;
+    const pick = (a, b) => (b && Math.abs(b) > Math.abs(a) ? b : a);
+    const Mtoe = pick(bU.Mtoe, bE && bE.Mtoe), Mheel = pick(bU.Mheel, bE && bE.Mheel);
+    const pp = A0.pp, Vkey = gm.keyOn ? s.uls.gG * s.found.fp * pp.keyP : 0, Mkey = Vkey * pp.keyArm;
+    return { mt, st, lev, bU, bE, Mtoe, Mheel, Vkey, Mkey };
+  }
+  function autoRebar(s, gm, sr) {
+    const m = s.mat, mt = sr.mt, sb = gm.tbot * 1e6, tb = gm.tb;
+    const iter = (M, h, cov, minPhi, maxS) => { let b = pickBars(flex(M, h, cov, 16, mt).AsReq, minPhi, maxS); const f2 = flex(M, h, cov, b.phi, mt); b = pickBars(f2.AsReq, minPhi, maxS); return b; };
+    const stemB = iter(sr.st.MEd, gm.tbot, m.cover, 12, 250);
+    const stemF = pickBars(0.001 * sb, 10, 300);
+    const hz = Math.max(0.25 * (asProv(stemB) + asProv(stemF)), 0.001 * ((gm.ttop + gm.tbot) / 2) * 1e6) / 2;
+    const stemH = pickBars(hz, 10, 300);
+    const botM = Math.max(Math.max(0, sr.Mtoe), Math.max(0, -sr.Mheel)), topM = Math.max(Math.max(0, sr.Mheel), Math.max(0, -sr.Mtoe));
+    const baseB = iter(botM, tb, m.coverSoil, 12, 250), baseT = iter(topM, tb, m.cover, 12, 250);
+    const baseL = pickBars(Math.max(0.2 * Math.max(asProv(baseB), asProv(baseT)), 0.001 * tb * 1e6 / 2), 10, 300);
+    const key = gm.keyOn ? iter(sr.Mkey, gm.keyB, m.coverSoil, 12, 250) : null;
+    return { stemB, stemF, stemH, baseB, baseT, baseL, key };
+  }
+  /* donatıyla kontroller (kullanım oranları) */
+  function rcChecks(s, gm, sr, rb) {
+    const m = s.mat, mt = sr.mt, out = {};
+    const one = (id, n, M, V, h, cov, bar, Vfn) => {
+      const f = flex(M, h, cov, bar.phi, mt), Ap = asProv(bar), vr = vrdc(f.d, Ap, m), VEd = typeof Vfn === 'function' ? Math.abs(Vfn(f.d / 1000)) : Math.abs(V);
+      out[id] = { n, M, VEd, h, d: f.d, mu: f.mu, AsCalc: f.AsCalc, AsMin: f.AsMin, AsReq: f.AsReq, Ap, bar, uF: f.over ? 9.99 : f.AsReq / Ap, VRd: vr.V, vr, uV: VEd / vr.V, over: f.over };
+    };
+    one('stem', 'Gövde (taban kesiti)', sr.st.MEd, sr.st.VEd, gm.tbot, m.cover, rb.stemB);
+    if (gm.toe > 0.01) { const Vf = (d) => Math.max(Math.abs(sr.bU.Vtoe(d)), sr.bE ? Math.abs(sr.bE.Vtoe(d)) : 0); one('toe', 'Ön ampatman', sr.Mtoe, 0, gm.tb, m.coverSoil, sr.Mtoe >= 0 ? rb.baseB : rb.baseT, Vf); }
+    if (gm.heel > 0.01) { const Vf = (d) => Math.max(Math.abs(sr.bU.Vheel(d)), sr.bE ? Math.abs(sr.bE.Vheel(d)) : 0); one('heel', 'Arka ampatman', sr.Mheel, 0, gm.tb, m.cover, sr.Mheel >= 0 ? rb.baseT : rb.baseB, Vf); }
+    if (gm.keyOn && rb.key) one('key', 'Kayma dişi', sr.Mkey, sr.Vkey, gm.keyB, m.coverSoil, rb.key);
+    return out;
+  }
+
+  /* ---------------- metraj ve donatı listesi ---------------- */
+  const unitW = (phi) => (phi * phi) / 162.2;
+  function quantities(s, gm, rb) {
+    const L = Math.max(0.5, +s.L || 1), c = s.mat.cover / 1000, cs = s.mat.coverSoil / 1000, bars = [];
+    const lap = (phi, len) => { const n = Math.max(0, Math.ceil(len / 12) - 1); return len + n * 50 * phi / 1000; };
+    const cnt = (len, sp) => Math.floor((len * 1000) / sp) + 1;
+    const add = (mark, desc, b, n, len) => { if (!b) return; const tot = n * len; bars.push({ mark, desc, phi: b.phi, s: b.s, n, len, tot, kg: tot * unitW(b.phi) }); };
+    const foot = (phi) => Math.max(0.30, (15 * phi) / 1000);
+    const vLen = (phi) => gm.H - c - cs + foot(phi);
+    add(1, 'Gövde arka yüz düşey (ana)', rb.stemB, cnt(L - 2 * c, rb.stemB.s), vLen(rb.stemB.phi));
+    add(2, 'Gövde ön yüz düşey', rb.stemF, cnt(L - 2 * c, rb.stemF.s), vLen(rb.stemF.phi));
+    add(3, 'Gövde yatay (arka yüz)', rb.stemH, cnt(gm.Hs - c, rb.stemH.s), lap(rb.stemH.phi, L - 2 * c));
+    add(4, 'Gövde yatay (ön yüz)', rb.stemH, cnt(gm.Hs - c, rb.stemH.s), lap(rb.stemH.phi, L - 2 * c));
+    const leg = Math.max(0.15, gm.tb - cs - c);
+    add(5, 'Taban alt enine (ön ampatman ana)', rb.baseB, cnt(L - 2 * c, rb.baseB.s), gm.B - 2 * c + 2 * leg);
+    add(6, 'Taban üst enine (arka ampatman ana)', rb.baseT, cnt(L - 2 * c, rb.baseT.s), gm.B - 2 * c + 2 * leg);
+    add(7, 'Taban boyuna (alt)', rb.baseL, cnt(gm.B - 2 * c, rb.baseL.s), lap(rb.baseL.phi, L - 2 * c));
+    add(8, 'Taban boyuna (üst)', rb.baseL, cnt(gm.B - 2 * c, rb.baseL.s), lap(rb.baseL.phi, L - 2 * c));
+    if (gm.keyOn && rb.key) {
+      add(9, 'Diş U çubuğu', rb.key, cnt(L - 2 * c, rb.key.s), 2 * (gm.keyH + gm.tb - cs - c) + Math.max(0.1, gm.keyB - 2 * cs));
+      add(10, 'Diş boyuna', { phi: 12, s: 0 }, 4, lap(12, L - 2 * c));
+    }
+    const steel = bars.reduce((a, x) => a + x.kg, 0);
+    const Astem = polyAC(gm.stem).A, Abase = gm.B * gm.tb, Akey = gm.keyOn ? gm.keyH * gm.keyB : 0;
+    const concM = Astem + Abase + Akey;
+    const lenF = Math.hypot(gm.xfT - gm.xf0, gm.Hs), lenB = Math.hypot(gm.xbT - gm.xb0, gm.Hs);
+    const formM = lenF + lenB + 2 * gm.tb;
+    const lean = +s.opts.lean || 0, ws = +s.opts.ws || 0;
+    const leanM = lean > 0 ? (gm.B + 0.2) * lean : 0;
+    const excM = (gm.B + 2 * ws) * (gm.Df + lean) + Akey;
+    const fillM = polyAC(gm.soilHeel).A + (gm.soilToe ? polyAC(gm.soilToe).A : 0);
+    const per = { conc: concM, steel: steel / L, form: formM, exc: excM, fill: fillM, lean: leanM };
+    const tot = { conc: concM * L, steel, form: formM * L, exc: excM * L, fill: fillM * L, lean: leanM * L };
+    const p = s.price, cost = tot.conc * p.conc + tot.steel * p.steel + tot.form * p.form + tot.exc * p.exc + tot.fill * p.fill + tot.lean * p.lean;
+    return { L, bars, per, tot, cost, costM: cost / L, kgm3: steel / Math.max(1e-9, tot.conc) };
+  }
+
+  /* donatısız hızlı metraj (optimizasyonda alt sınır için) */
+  function quickQty(s, gm) {
+    const Akey = gm.keyOn ? gm.keyH * gm.keyB : 0, conc = polyAC(gm.stem).A + gm.B * gm.tb + Akey;
+    const form = Math.hypot(gm.xfT - gm.xf0, gm.Hs) + Math.hypot(gm.xbT - gm.xb0, gm.Hs) + 2 * gm.tb;
+    const lean = +s.opts.lean || 0, ws = +s.opts.ws || 0, leanM = lean > 0 ? (gm.B + 0.2) * lean : 0;
+    const exc = (gm.B + 2 * ws) * (gm.Df + lean) + Akey, fill = polyAC(gm.soilHeel).A + (gm.soilToe ? polyAC(gm.soilToe).A : 0), p = s.price;
+    return { conc, exc, lb: conc * p.conc + form * p.form + exc * p.exc + fill * p.fill + leanM * p.lean };
+  }
+  /* ---------------- kontrol listesi ---------------- */
+  function checkList(s, o) {
+    if (!o.ok) return [{ n: 'Geometri', v: 9.99, ok: false, txt: o.err, key: 'geo' }];
+    const L = s.lim, st = o.stat, out = [];
+    const fs = (n, F, lim, key) => out.push({ n, v: isFinite(F) && F > 0 ? lim / F : 9.99, ok: F >= lim, txt: `FS = ${fm(F, 2)} ≥ ${fm(lim, 2)}`, key });
+    fs('Devrilme', st.FSo, L.FSo, 'ot');
+    fs('Kayma', st.FSs, L.FSs, 'sl');
+    out.push({ n: 'Taban basıncı', v: st.bp.qmax / s.found.qa, ok: st.bp.ok && st.bp.qmax <= s.found.qa, txt: `qmax = ${fm(st.bp.qmax, 0)} ≤ ${fm(s.found.qa, 0)} kPa`, key: 'bp' });
+    out.push({ n: 'Eksantrisite', v: Math.abs(st.e) / (o.gm.B / L.eDiv), ok: Math.abs(st.e) <= o.gm.B / L.eDiv + 1e-9, txt: `|e| = ${fm(Math.abs(st.e), 2)} ≤ B/${fm(L.eDiv)} = ${fm(o.gm.B / L.eDiv, 2)} m`, key: 'ec' });
+    if (o.seis) {
+      const E = o.seis, qaE = s.found.qa * L.qaE;
+      if (o.A1 && o.A1.ep.E && !isFinite(o.A1.ep.E.KE)) out.push({ n: 'Deprem itkisi (M–O)', v: 9.99, ok: false, txt: 'φ − β − ψ < 0: Mononobe–Okabe çözümsüz (kh çok büyük ya da şev çok dik)', key: 'mo' });
+      fs('Devrilme (deprem)', E.FSo, L.FSoE, 'otE');
+      fs('Kayma (deprem)', E.FSs, L.FSsE, 'slE');
+      out.push({ n: 'Taban basıncı (deprem)', v: E.bp.qmax / qaE, ok: E.bp.ok && E.bp.qmax <= qaE, txt: `qmax = ${fm(E.bp.qmax, 0)} ≤ ${fm(qaE, 0)} kPa`, key: 'bpE' });
+      out.push({ n: 'Eksantrisite (deprem)', v: Math.abs(E.e) / (o.gm.B / L.eDivE), ok: Math.abs(E.e) <= o.gm.B / L.eDivE + 1e-9, txt: `|e| = ${fm(Math.abs(E.e), 2)} ≤ B/${fm(L.eDivE)} = ${fm(o.gm.B / L.eDivE, 2)} m`, key: 'ecE' });
+    }
+    Object.keys(o.rc).forEach((k) => {
+      const r = o.rc[k];
+      out.push({ n: r.n + ' – eğilme', v: r.uF, ok: !r.over && r.uF <= 1 + 1e-9, txt: r.over ? `μ = ${fm(r.mu, 3)} > 0,372: kesit yetersiz` : `As gerekli ${fm(r.AsReq, 0)} ≤ ${fm(r.Ap, 0)} mm²/m (Φ${r.bar.phi}/${r.bar.s})`, key: k + 'M' });
+      out.push({ n: r.n + ' – kesme', v: r.uV, ok: r.uV <= 1 + 1e-9, txt: `VEd ${fm(r.VEd, 0)} ≤ VRd,c ${fm(r.VRd, 0)} kN/m`, key: k + 'V' });
+    });
+    return out;
+  }
+
+  /* ---------------- ana hesap ---------------- */
+  function compute(s) {
+    const gm = geom(s);
+    if (!gm.ok) return { ok: false, err: gm.err, gm };
+    const A0 = actions(s, gm, false), stat = combo(s, gm, A0, FAC_STAT());
+    let A1 = null, seis = null;
+    if (s.seis.on) { A1 = actions(s, gm, true); seis = combo(s, gm, A1, facSeis(s)); }
+    const sr = structure(s, gm, A0, A1);
+    const rb = s.rebarMode === 'manual' && s.rebar && s.rebar.stemB ? Object.assign(autoRebar(s, gm, sr), s.rebar, { key: gm.keyOn ? (s.rebar.key || autoRebar(s, gm, sr).key) : null }) : autoRebar(s, gm, sr);
+    const rc = rcChecks(s, gm, sr, rb);
+    const qty = quantities(s, gm, rb);
+    const o = { ok: true, gm, A0, A1, stat, seis, sr, rb, rc, qty, ep: A0.ep };
+    o.checks = checkList(s, o);
+    o.bad = o.checks.filter((x) => !x.ok).length;
+    o.gov = o.checks.reduce((a, b) => (b.v > a.v ? b : a), o.checks[0]);
+    return o;
+  }
+  /* yalnız stabilite (optimizasyonda hızlı tarama için) */
+  function stabOnly(s) {
+    const gm = geom(s); if (!gm.ok) return { ok: false };
+    const L = s.lim, A0 = actions(s, gm, false), st = combo(s, gm, A0, FAC_STAT());
+    let ok = st.FSo >= L.FSo && st.FSs >= L.FSs && st.bp.ok && st.bp.qmax <= s.found.qa && Math.abs(st.e) <= gm.B / L.eDiv + 1e-9;
+    if (ok && s.seis.on) {
+      const A1 = actions(s, gm, true), E = combo(s, gm, A1, facSeis(s));
+      ok = isFinite(A1.ep.E.KE) && E.FSo >= L.FSoE && E.FSs >= L.FSsE && E.bp.ok && E.bp.qmax <= s.found.qa * L.qaE && Math.abs(E.e) <= gm.B / L.eDivE + 1e-9;
+    }
+    return { ok };
+  }
+  /* yalnız gövde (en küçük gövde kalınlığı için) */
+  function stemOnly(s) {
+    const gm = geom(s); if (!gm.ok) return { ok: false };
+    const ep = pressure(s, gm), m = s.mat, mt = mats(m), st = stemCut(s, gm, ep, gm.tb);
+    let f = flex(st.MEd, gm.tbot, m.cover, 16, mt); if (f.over) return { ok: false };
+    const b = pickBars(f.AsReq, 12, 250); f = flex(st.MEd, gm.tbot, m.cover, b.phi, mt);
+    const vr = vrdc(f.d, asProv(b), m);
+    return { ok: !f.over && asProv(b) >= f.AsReq && st.VEd <= vr.V, st, f, b, vr };
+  }
+
+  const api = { fm, quickQty, DEFAULTS, GW, clone, rad, deg, polyAC, clipY, kaC, kaeMO, kpR, soilForce, geom, pressure, passive, actions, bearing, combo, mats, flex, vrdc, pickBars, asProv, barA, unitW, stemCut, baseCut, structure, autoRebar, rcChecks, quantities, checkList, compute, stabOnly, stemOnly, PHIS, SPS, facSeis, facUls };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.Wall = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Optimum tasarım araması.
+   Taranan: taban kalınlığı tb, gövde kalınlığı (en küçük uygun + 2 adım), kayma dişi derinliği (yok / 0,3…), ön ampatman.
+   Her kombinasyon için tüm stabilite kontrollerini sağlayan en kısa arka ampatman ikiye bölmeyle bulunur (ters L’de en kısa ön ampatman);
+   sonra tam hesap (betonarme + donatı + metraj) yapılır ve amaç fonksiyonuna göre sıralanır. */
+(function (root) {
+  'use strict';
+  const W = root.Wall || (typeof require !== 'undefined' ? require('./engine.js') : null);
+  const r2 = (x) => Math.round(x * 100) / 100;
+  const range = (a, b, st) => { const o = []; for (let x = a; x <= b + 1e-9; x += st) o.push(r2(x)); return o; };
+
+  function defaults(s) {
+    const H = s.geo.H;
+    return { objective: 'cost', tryKey: true, keyHs: [0.3, 0.4, 0.5, 0.6, 0.8, 1.0], step: 0.05, tbMin: 0.30, tbMax: r2(Math.max(0.6, Math.min(1.5, 0.12 * H + 0.4))),
+      toeMax: r2(Math.max(0.5, Math.min(4, 0.6 * H))), heelMax: r2(Math.max(3, 1.6 * H)), stemExtra: 2, ttopMin: 0.25 };
+  }
+  const score = (o, obj) => (obj === 'conc' ? o.qty.per.conc : obj === 'steel' ? o.qty.per.steel : obj === 'exc' ? o.qty.per.exc : o.qty.costM);
+  function summary(s, o, w) {
+    return { type: w.type, stemShape: w.stemShape, geo: Object.assign({}, w.geo), key: Object.assign({}, w.key),
+      conc: o.qty.per.conc, steel: o.qty.per.steel, exc: o.qty.per.exc, costM: o.qty.costM, B: o.gm.B, gov: o.gov.n, govV: o.gov.v };
+  }
+  /* en küçük uygun gövde kalınlıkları */
+  function stemCands(w, cfg) {
+    const out = [];
+    if (w.stemShape === 'none') {
+      for (let t = Math.max(0.2, cfg.ttopMin); t <= 1.8; t = r2(t + cfg.step)) { w.geo.ttop = t; w.geo.tbot = t; if (W.stemOnly(w).ok) { for (let k = 0; k <= cfg.stemExtra; k++) out.push({ ttop: r2(t + k * cfg.step), tbot: r2(t + k * cfg.step) }); break; } }
+    } else {
+      const tt = Math.max(w.geo.ttop, 0.15);
+      for (let t = tt; t <= 2.0; t = r2(t + cfg.step)) { w.geo.ttop = tt; w.geo.tbot = t; if (W.stemOnly(w).ok) { for (let k = 0; k <= cfg.stemExtra; k++) out.push({ ttop: tt, tbot: r2(t + k * cfg.step) }); break; } }
+    }
+    return out;
+  }
+  /* v ∈ [lo, hi] ızgarasında stabiliteyi sağlayan en küçük değer (monoton kabul) */
+  function minFeasible(w, set, lo, hi, st) {
+    set(hi); if (!W.stabOnly(w).ok) return null;
+    set(lo); if (W.stabOnly(w).ok) return lo;
+    let a = Math.round(lo / st), b = Math.round(hi / st);
+    while (b - a > 1) { const m = (a + b) >> 1; set(r2(m * st)); if (W.stabOnly(w).ok) b = m; else a = m; }
+    return r2(b * st);
+  }
+
+  /* listede tutulan 12 en iyinin en kötüsü (budama eşiği) */
+  function worstKept(list) { return list[Math.min(11, list.length - 1)].score; }
+  /* sıralı, en çok 40 öğelik liste */
+  function insertTop(list, it) {
+    let a = 0, b = list.length; while (a < b) { const m = (a + b) >> 1; if (list[m].score <= it.score) a = m + 1; else b = m; }
+    if (a >= 40) return; list.splice(a, 0, it); if (list.length > 40) list.pop();
+  }
+  /* üretici: her taban kalınlığı adımında ilerleme bildirir */
+  function* search(s, cfg0) {
+    const cfg = Object.assign(defaults(s), cfg0 || {}), w = W.clone(s), t0 = Date.now();
+    const types = cfg.types || [s.type], keys = cfg.tryKey ? [0].concat(cfg.keyHs) : cfg.noKey ? [0] : [s.key.on ? s.key.h : 0];
+    const tbs = range(cfg.tbMin, cfg.tbMax, cfg.step), list = [], seen = new Set();
+    let best = null, nFull = 0, nFeas = 0, step = 0;
+    const total = types.length * tbs.length;
+    for (const ty of types) {
+      w.type = ty;
+      for (const tb of tbs) {
+        w.geo.tb = tb;
+        const stems = stemCands(w, cfg);
+        for (const sc of stems) {
+          w.geo.ttop = sc.ttop; w.geo.tbot = sc.tbot;
+          for (const hk of keys) {
+            w.key.on = hk > 0; if (hk > 0) w.key.h = hk;
+            const pairs = [];
+            if (ty === 'RL') { w.geo.heel = 0; const t = minFeasible(w, (v) => { w.geo.toe = v; }, 0.2, cfg.heelMax, cfg.step); if (t != null) pairs.push([t, 0]); }
+            else if (ty === 'L') { w.geo.toe = 0; const h = minFeasible(w, (v) => { w.geo.heel = v; }, 0.2, cfg.heelMax, cfg.step); if (h != null) pairs.push([0, h]); }
+            else { let hint = null; for (const toe of range(0.2, cfg.toeMax, cfg.step)) {
+              w.geo.toe = toe; const setH = (v) => { w.geo.heel = v; };
+              let h = hint != null ? minFeasible(w, setH, 0.2, hint, cfg.step) : null;
+              if (h == null) h = minFeasible(w, setH, 0.2, cfg.heelMax, cfg.step);
+              if (h != null) { pairs.push([toe, h]); hint = h; }
+            } }
+            for (const [toe, heel] of pairs) {
+              w.geo.toe = toe; w.geo.heel = heel;
+              if (best && cfg.objective !== 'steel' && list.length >= 12) { const qq = W.quickQty(w, W.geom(w)), lb = cfg.objective === 'conc' ? qq.conc : cfg.objective === 'exc' ? qq.exc : qq.lb; if (lb >= worstKept(list, cfg)) continue; }
+              nFull++;
+              const o = W.compute(w); if (!o.ok || o.bad) continue;
+              nFeas++;
+              const sum = summary(s, o, w), sc2 = score(o, cfg.objective); sum.score = sc2;
+              const id = [ty, tb, sc.ttop, sc.tbot, hk, toe, heel].join('|'); if (seen.has(id)) continue; seen.add(id);
+              insertTop(list, sum); if (!best || sc2 < best.score) best = sum;
+            }
+          }
+        }
+        step++;
+        yield { p: step / total, best, nFull, nFeas };
+      }
+    }
+    return { best, list, nFull, nFeas, ms: Date.now() - t0, cfg };
+  }
+  function runSync(s, cfg) { const it = search(s, cfg); let r; while (!(r = it.next()).done); return r.value; }
+  async function run(s, cfg, onProgress) {
+    const it = search(s, cfg); let r, last = Date.now();
+    while (!(r = it.next()).done) { if (Date.now() - last > 40) { if (onProgress) onProgress(r.value); await new Promise((ok) => setTimeout(ok, 0)); last = Date.now(); } }
+    if (onProgress) onProgress({ p: 1 });
+    return r.value;
+  }
+  /* tasarımı duruma uygula */
+  function apply(s, d) { s.type = d.type; s.stemShape = d.stemShape; Object.assign(s.geo, d.geo); Object.assign(s.key, d.key); }
+
+  const api = { defaults, search, run, runSync, apply, stemCands };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.WallSolve = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Çizimler: duvar kesiti (ölçüler, toprak itkisi, taban basıncı, donatı), tip simgeleri. SVG metni döner. */
+(function (root) {
+  'use strict';
+  const W = root.Wall;
+  const f2 = (x) => W.fm(x, 2), f0 = (x) => W.fm(x, 0);
+  const C = { conc: '#C9CED6', concL: '#7D8794', back: '#E9DDBF', backL: '#B39B62', found: '#D9CBAA', front: '#E3D7B6', water: '#2E86C1', dim: '#34495E', press: '#E67E22', bear: '#8E44AD', reb: '#C0392B', reb2: '#2471A3', key: '#AAB2BD' };
+
+  /* ölçü çizgisi */
+  function dimH(x1, x2, y, txt, up) {
+    const t = 4, ty = up ? y - 6 : y + 13;
+    return `<g stroke="${C.dim}" stroke-width="0.9"><line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"/><line x1="${x1}" y1="${y - t}" x2="${x1}" y2="${y + t}"/><line x1="${x2}" y1="${y - t}" x2="${x2}" y2="${y + t}"/></g>` +
+      (Math.abs(x2 - x1) > 18 ? `<text x="${(x1 + x2) / 2}" y="${ty}" text-anchor="middle" font-size="11" fill="${C.dim}">${txt}</text>` : '');
+  }
+  function dimV(x, y1, y2, txt, left) {
+    const t = 4, tx = left ? x - 5 : x + 5;
+    return `<g stroke="${C.dim}" stroke-width="0.9"><line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}"/><line x1="${x - t}" y1="${y1}" x2="${x + t}" y2="${y1}"/><line x1="${x - t}" y1="${y2}" x2="${x + t}" y2="${y2}"/></g>` +
+      (Math.abs(y2 - y1) > 14 ? `<text x="${tx}" y="${(y1 + y2) / 2 + 4}" text-anchor="${left ? 'end' : 'start'}" font-size="11" fill="${C.dim}">${txt}</text>` : '');
+  }
+  const arrow = (x1, y1, x2, y2, col, w = 1.6) => {
+    const a = Math.atan2(y2 - y1, x2 - x1), L = 7, p1 = [x2 - L * Math.cos(a - 0.4), y2 - L * Math.sin(a - 0.4)], p2 = [x2 - L * Math.cos(a + 0.4), y2 - L * Math.sin(a + 0.4)];
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${w}"/><polygon points="${x2},${y2} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}" fill="${col}"/>`;
+  };
+
+  /* kesit: opt { w, h, press, bear, rebar, dims, forces } */
+  function section(s, o, opt) {
+    opt = Object.assign({ w: 760, h: 520, press: true, bear: true, rebar: false, dims: true, forces: true, pad: 46 }, opt || {});
+    if (!o || !o.ok) return `<svg viewBox="0 0 ${opt.w} 120" width="100%"><text x="20" y="60" fill="#A12622">${(o && o.err) || 'Geometri hatalı'}</text></svg>`;
+    const gm = o.gm, st = o.stat, ep = o.ep;
+    const xL = -Math.max(1.1, 0.3 * gm.B), xR = gm.B + Math.max(1.0, 0.35 * gm.B) + (opt.press ? 0.18 * gm.H : 0);
+    const yTop = Math.max(gm.Hv, gm.H) + 0.35 * gm.H * 0.25 + 0.3, yBot = -(gm.keyH || 0) - (opt.bear ? 0.28 * gm.H : 0.3) - 0.25;
+    const k = Math.min((opt.w - 2 * opt.pad) / (xR - xL), (opt.h - 2 * opt.pad) / (yTop - yBot));
+    const X = (x) => opt.pad + (x - xL) * k, Y = (y) => opt.h - opt.pad - (y - yBot) * k;
+    const P = (pts) => pts.map((p) => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(' ');
+    let g = '';
+    // temel zemini, ön dolgu, arka dolgu
+    const yFb = -(gm.keyH || 0) - 0.25;
+    g += `<rect x="${X(xL)}" y="${Y(0)}" width="${(xR - xL) * k}" height="${(0 - yFb) * k}" fill="${C.found}"/>`;
+    const Df = gm.Df;
+    if (Df > 0) {
+      const pts = Df > gm.tb ? [[xL, 0], [0, 0], [0, gm.tb], [gm.toe, gm.tb], [gm.xf0 + (gm.xfT - gm.xf0) * Math.max(0, (Df - gm.tb) / gm.Hs), Df], [xL, Df]] : [[xL, 0], [0, 0], [0, Df], [xL, Df]];
+      g += `<polygon points="${P(pts)}" fill="${C.front}" stroke="${C.backL}" stroke-width="0.8"/>`;
+    }
+    const ys = gm.ySurf(xR);
+    g += `<polygon points="${P([[gm.xbT, gm.H], [xR, ys], [xR, 0], [gm.B, 0], [gm.B, gm.tb], [gm.xb0, gm.tb]])}" fill="${C.back}" stroke="${C.backL}" stroke-width="0.8"/>`;
+    // su
+    if (ep.hw > 0) g += `<line x1="${X(gm.B)}" y1="${Y(ep.hw)}" x2="${X(xR)}" y2="${Y(ep.hw)}" stroke="${C.water}" stroke-width="1.4" stroke-dasharray="6 3"/><text x="${X(xR) - 4}" y="${Y(ep.hw) - 4}" text-anchor="end" font-size="11" fill="${C.water}">YAS ▽</text>`;
+    // sürşarj
+    if (s.back.q > 0) { const n = 7; for (let i = 0; i < n; i++) { const x = gm.xbT + ((xR - gm.xbT) * (i + 0.5)) / n, y = gm.ySurf(x); g += arrow(X(x), Y(y) - 22, X(x), Y(y) - 2, '#7F8C8D', 1.1); } g += `<text x="${X((gm.xbT + xR) / 2)}" y="${Y(gm.ySurf((gm.xbT + xR) / 2)) - 26}" text-anchor="middle" font-size="11" fill="#566573">q = ${f0(s.back.q)} kPa</text>`; }
+    // beton
+    g += `<polygon points="${P(gm.stem)}" fill="${C.conc}" stroke="${C.concL}" stroke-width="1.2"/><polygon points="${P(gm.base)}" fill="${C.conc}" stroke="${C.concL}" stroke-width="1.2"/>`;
+    if (gm.key) g += `<polygon points="${P(gm.key)}" fill="${C.key}" stroke="${C.concL}" stroke-width="1.2"/>`;
+    // donatı
+    if (opt.rebar && o.rb) g += rebarLines(s, o, X, Y);
+    // sanal arka yüz ve basınç diyagramı
+    if (opt.press) {
+      g += `<line x1="${X(gm.B)}" y1="${Y(0)}" x2="${X(gm.B)}" y2="${Y(gm.Hv)}" stroke="${C.press}" stroke-width="1" stroke-dasharray="4 3"/>`;
+      const sBot = ep.K * s.back.q + ep.soil.sBot + 9.81 * ep.hw, sc = (0.16 * gm.H) / Math.max(1, sBot) ;
+      const zw = gm.Hv - ep.hw, pts = [[gm.B, gm.Hv], [gm.B + ep.K * s.back.q * sc, gm.Hv]];
+      if (ep.hw > 0) pts.push([gm.B + (ep.K * s.back.q + ep.soil.sWT) * sc, ep.hw]);
+      pts.push([gm.B + sBot * sc, 0], [gm.B, 0]);
+      g += `<polygon points="${P(pts)}" fill="${C.press}" fill-opacity="0.22" stroke="${C.press}" stroke-width="1"/>`;
+      g += `<text x="${X(gm.B + sBot * sc) + 4}" y="${Y(0) - 3}" font-size="10.5" fill="${C.press}">${f0(sBot)} kPa</text>`;
+      if (zw >= 0 && opt.forces) {
+        const Ph = st.H, yR = o.A0.H.reduce((a, it) => a + it.h * it.y, 0) / Math.max(1e-9, o.A0.H.reduce((a, it) => a + it.h, 0));
+        g += arrow(X(gm.B + 0.22 * gm.H), Y(yR), X(gm.B) + 3, Y(yR), C.press, 2.2) + `<text x="${X(gm.B + 0.22 * gm.H)}" y="${Y(yR) - 6}" font-size="11.5" font-weight="600" fill="${C.press}">ΣH = ${f0(Ph)} kN/m</text>`;
+      }
+    }
+    // taban basıncı
+    if (opt.bear && st.bp.ok) {
+      const top = yFb - 0.08, sc = (0.18 * gm.H) / Math.max(1, st.bp.qmax), n = 24, pts = [[0, top]];
+      for (let i = 0; i <= n; i++) { const x = (gm.B * i) / n; pts.push([x, top - st.bp.at(x) * sc]); }
+      pts.push([gm.B, top]);
+      g += `<polygon points="${P(pts)}" fill="${C.bear}" fill-opacity="0.18" stroke="${C.bear}" stroke-width="1"/>`;
+      g += `<text x="${X(0)}" y="${Y(top - st.bp.qToe * sc) + 13}" font-size="10.5" fill="${C.bear}">${f0(st.bp.qToe)}</text><text x="${X(gm.B)}" y="${Y(top - st.bp.qHeel * sc) + 13}" text-anchor="end" font-size="10.5" fill="${C.bear}">${f0(st.bp.qHeel)} kPa</text>`;
+    }
+    // ölçüler
+    if (opt.dims) {
+      const y1 = Y(yBot) + 8, y2 = Y(yBot) + 30, seg = (a, b, t) => { const w = X(b) - X(a); return w > 1 ? dimH(X(a), X(b), y1, w < 34 ? '' : t) + (w < 34 && t ? `<text x="${(X(a) + X(b)) / 2}" y="${y1 - 6}" text-anchor="middle" font-size="10" fill="${C.dim}">${t}</text>` : '') : ''; };
+      g += seg(0, gm.xf0, gm.toe > 0 ? f2(gm.toe) : '') + seg(gm.xf0, gm.xb0, f2(gm.tbot)) + seg(gm.xb0, gm.B, gm.heel > 0 ? f2(gm.heel) : '');
+      g += dimH(X(0), X(gm.B), y2, 'B = ' + f2(gm.B));
+      g += dimH(X(gm.xfT), X(gm.xbT), Y(gm.H) - 10, f2(gm.ttop), true) + (X(gm.xbT) - X(gm.xfT) < 18 ? `<text x="${X(gm.xbT) + 4}" y="${Y(gm.H) - 13}" font-size="10" fill="${C.dim}">${f2(gm.ttop)}</text>` : '');
+      g += dimV(X(xL) + 12, Y(0), Y(gm.H), 'H = ' + f2(gm.H), false);
+      g += dimV(X(gm.B) + 8, Y(0), Y(gm.tb), 'tb ' + f2(gm.tb), false);
+      if (Df > 0) g += `<text x="${X(xL) + 4}" y="${Y(Df) - 5}" font-size="10.5" fill="#6E5A2E">▽ ön zemin · Df = ${f2(Df)}</text>`;
+      if (gm.key) g += dimV(X(gm.xk) - 6, Y(0), Y(-gm.keyH), f2(gm.keyH), true);
+    }
+    const lab = `<text x="${X(gm.toe + gm.tbot / 2)}" y="${Y(gm.H) - 26}" text-anchor="middle" font-size="11" fill="#566573">${s.back.beta ? 'β = ' + f0(s.back.beta) + '°' : ''}</text>`;
+    return `<svg viewBox="0 0 ${opt.w} ${opt.h}" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">${g}${lab}</svg>`;
+  }
+
+  /* donatı çizgileri (şematik) */
+  function rebarLines(s, o, X, Y) {
+    const gm = o.gm, c = s.mat.cover / 1000, cs = s.mat.coverSoil / 1000, rb = o.rb;
+    const ln = (pts, col, w) => `<polyline points="${pts.map((p) => X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' ')}" fill="none" stroke="${col}" stroke-width="${w}"/>`;
+    const tag = (x, y, n) => `<circle cx="${X(x)}" cy="${Y(y)}" r="8" fill="#fff" stroke="${C.reb}" stroke-width="1"/><text x="${X(x)}" y="${Y(y) + 3.5}" text-anchor="middle" font-size="9.5" font-weight="700" fill="${C.reb}">${n}</text>`;
+    let g = '';
+    const foot = Math.max(0.3, 15 * rb.stemB.phi / 1000);
+    const bx = (y) => gm.xb0 + ((gm.xbT - gm.xb0) * (y - gm.tb)) / gm.Hs, fx = (y) => gm.xf0 + ((gm.xfT - gm.xf0) * (y - gm.tb)) / gm.Hs;
+    // 1 arka düşey (ana) – tabana L ile iner, topuğa doğru ayak
+    g += ln([[bx(gm.H - c) - c, gm.H - c], [gm.xb0 - c, gm.tb], [gm.xb0 - c, cs + 0.02], [Math.min(gm.B - c, gm.xb0 - c + foot), cs + 0.02]], C.reb, 2.2);
+    // 2 ön düşey
+    g += ln([[fx(gm.H - c) + c, gm.H - c], [gm.xf0 + c, gm.tb], [gm.xf0 + c, cs + 0.04], [Math.max(c, gm.xf0 + c - foot), cs + 0.04]], C.reb2, 1.6);
+    // 5 taban alt, 6 taban üst (uçlar kıvrık)
+    g += ln([[c, gm.tb - c], [c, cs], [gm.B - c, cs], [gm.B - c, gm.tb - c]], C.reb, 1.8);
+    g += ln([[c, cs + 0.05], [c, gm.tb - c], [gm.B - c, gm.tb - c], [gm.B - c, cs + 0.05]], C.reb2, 1.8);
+    // yatay (3, 4) ve boyuna (7, 8) noktalar
+    const nH = Math.max(3, Math.min(14, Math.round(gm.Hs / (rb.stemH.s / 1000))));
+    for (let i = 1; i < nH; i++) { const y = gm.tb + (gm.Hs * i) / nH; g += `<circle cx="${X(bx(y) - c - 0.03)}" cy="${Y(y)}" r="1.6" fill="${C.reb}"/><circle cx="${X(fx(y) + c + 0.03)}" cy="${Y(y)}" r="1.6" fill="${C.reb2}"/>`; }
+    const nL = Math.max(3, Math.min(16, Math.round(gm.B / (rb.baseL.s / 1000))));
+    for (let i = 1; i < nL; i++) { const x = (gm.B * i) / nL; g += `<circle cx="${X(x)}" cy="${Y(cs + 0.035)}" r="1.6" fill="${C.reb}"/><circle cx="${X(x)}" cy="${Y(gm.tb - c - 0.035)}" r="1.6" fill="${C.reb2}"/>`; }
+    if (gm.key && rb.key) g += ln([[gm.xk + cs, gm.tb - c - 0.05], [gm.xk + cs, -gm.keyH + cs], [gm.xk + gm.keyB - cs, -gm.keyH + cs], [gm.xk + gm.keyB - cs, gm.tb - c - 0.05]], C.reb, 1.8) + tag(gm.xk + gm.keyB / 2, -gm.keyH / 2, 9);
+    g += tag(bx(gm.tb + gm.Hs * 0.62) + 0.25, gm.tb + gm.Hs * 0.62, 1) + tag(fx(gm.tb + gm.Hs * 0.45) - 0.25, gm.tb + gm.Hs * 0.45, 2);
+    g += tag(bx(gm.tb + gm.Hs * 0.3) + 0.25, gm.tb + gm.Hs * 0.3, 3) + tag(fx(gm.tb + gm.Hs * 0.25) - 0.25, gm.tb + gm.Hs * 0.25, 4);
+    g += tag(gm.B * 0.25, -0.12, 5) + tag(gm.B * 0.75, gm.tb + 0.16, 6) + tag(gm.B * 0.55, -0.12, 7) + tag(gm.B * 0.9, gm.tb + 0.16, 8);
+    return g;
+  }
+
+  /* tip simgesi (T / L / ters L) */
+  function typeIcon(type, shape, on) {
+    const s = { T: [18, 14, 36], L: [0, 14, 50], RL: [36, 14, 0] }[type] || [18, 14, 36];
+    const toe = s[0], st = s[1], heel = s[2], B = toe + st + heel, x0 = (70 - B) / 2, top = 6, bot = 46, tb = 8;
+    const sf = shape === 'front' ? 5 : 0, sb = shape === 'back' ? 5 : 0;
+    const col = on ? '#1F4E78' : '#7D8794';
+    return `<svg viewBox="0 0 70 52" width="70" height="52"><polygon points="${x0},${bot} ${x0 + B},${bot} ${x0 + B},${bot - tb} ${x0 + toe + st},${bot - tb} ${x0 + toe + st - sb},${top} ${x0 + toe + sf},${top} ${x0 + toe},${bot - tb} ${x0},${bot - tb}" fill="${on ? '#C9D8EA' : '#E5E8EC'}" stroke="${col}" stroke-width="1.5"/>` +
+      `<line x1="${x0 + toe + st}" y1="${top}" x2="68" y2="${top}" stroke="#B39B62" stroke-width="1"/></svg>`;
+  }
+
+  root.WallDraw = { section, typeIcon, C };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* A3 paftalar (420 × 297 mm, SVG): 1 = kesit + donatı + donatı çizelgesi + metraj, 2 = hesap çizelgesi */
+(function (root) {
+  'use strict';
+  const W = root.Wall, D = root.WallDraw;
+  const f = (x, d = 0) => W.fm(x, d);
+  const esc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const TX = (x, y, t, o = {}) => `<text x="${x}" y="${y}" font-size="${o.s || 2.6}" ${o.b ? 'font-weight="700"' : ''} ${o.a ? `text-anchor="${o.a}"` : ''} fill="${o.c || '#1C2733'}">${esc(t)}</text>`;
+  /* tablo: cols = [[başlık, genişlik, hizalama]], rows = [[...]] → { svg, h } */
+  function tbl(x, y, cols, rows, o = {}) {
+    const rh = o.rh || 4.6, fs = o.fs || 2.45, wTot = cols.reduce((a, c) => a + c[1], 0);
+    let g = `<rect x="${x}" y="${y}" width="${wTot}" height="${rh}" fill="#E8EEF5"/>`, cx = x;
+    cols.forEach((c) => { g += TX(c[2] === 'r' ? cx + c[1] - 1 : cx + 1, y + rh - 1.4, c[0], { s: fs, b: 1, a: c[2] === 'r' ? 'end' : null, c: '#1F4E78' }); cx += c[1]; });
+    rows.forEach((r, i) => {
+      const yy = y + rh * (i + 1); cx = x;
+      if (r.head) { g += `<rect x="${x}" y="${yy}" width="${wTot}" height="${rh}" fill="#F4F6F9"/>` + TX(x + 1, yy + rh - 1.4, r.head, { s: fs, b: 1 }); return; }
+      if (r.bad) g += `<rect x="${x}" y="${yy}" width="${wTot}" height="${rh}" fill="#FCE9E8"/>`;
+      r.forEach((v, j) => { const c = cols[j]; g += TX(c[2] === 'r' ? cx + c[1] - 1 : cx + 1, yy + rh - 1.4, v, { s: fs, a: c[2] === 'r' ? 'end' : null, b: r.bold }); cx += c[1]; });
+      g += `<line x1="${x}" y1="${yy + rh}" x2="${x + wTot}" y2="${yy + rh}" stroke="#D9DEE5" stroke-width="0.2"/>`;
+    });
+    g += `<rect x="${x}" y="${y}" width="${wTot}" height="${rh * (rows.length + 1)}" fill="none" stroke="#9AA7B5" stroke-width="0.3"/>`;
+    return { svg: g, h: rh * (rows.length + 1) };
+  }
+  function frame(s, no, total, title) {
+    const m = s.meta || {}, x = 238, y = 262, w = 172, h = 25;
+    return `<rect x="0" y="0" width="420" height="297" fill="#fff"/><rect x="10" y="10" width="400" height="277" fill="none" stroke="#1C2733" stroke-width="0.6"/>` +
+      `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="#1C2733" stroke-width="0.4"/>` +
+      `<line x1="${x}" y1="${y + 9}" x2="${x + w}" y2="${y + 9}" stroke="#1C2733" stroke-width="0.3"/><line x1="${x + 120}" y1="${y + 9}" x2="${x + 120}" y2="${y + h}" stroke="#1C2733" stroke-width="0.3"/>` +
+      TX(x + 2, y + 6, (m.project || 'Proje') + ' – ' + (m.name || 'İstinat duvarı'), { s: 3.2, b: 1 }) +
+      TX(x + 2, y + 14, title, { s: 3.4, b: 1, c: '#1F4E78' }) + TX(x + 2, y + 19.5, `Betonarme konsol istinat duvarı · tip ${({ T: 'T', L: 'L', RL: 'ters L' })[s.type]} · H = ${f(s.geo.H, 2)} m · L = ${f(s.L, 1)} m`, { s: 2.4 }) +
+      TX(x + 2, y + 23.5, `Çizen: ${m.drawn || '–'} · Kontrol: ${m.checked || '–'} · Rev. ${m.rev || 'A'}`, { s: 2.2, c: '#5B6B7B' }) +
+      TX(x + 146, y + 16, `Pafta ${no} / ${total}`, { s: 3.2, b: 1, a: 'middle' }) + TX(x + 146, y + 22, 'A3 · ölçüler m, mm', { s: 2.2, a: 'middle', c: '#5B6B7B' });
+  }
+  const embed = (svg, x, y, w, h) => svg.replace(/^<svg viewBox="0 0 (\d+) (\d+)" width="100%"/, (m0, a, b) => `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="0 0 ${a} ${b}"`);
+
+  function sheet1(s, o, total) {
+    let g = frame(s, 1, total, 'Kesit, donatı ve metraj');
+    g += TX(16, 18, 'KESİT VE DONATI (1 m duvar)', { s: 3.4, b: 1, c: '#1F4E78' });
+    g += embed(D.section(s, o, { w: 820, h: 640, rebar: true, press: false, bear: false, forces: false }), 12, 20, 222, 174);
+    // malzeme ve notlar
+    const m = s.mat, notes = [`Beton C${m.fck}/${Math.round(m.fck * 1.25 / 5) * 5} · Donatı B${m.fyk} · pas payı ${m.cover} mm (zemine dökülen yüzler ${m.coverSoil} mm)`,
+      `Grobeton ${f((s.opts.lean || 0) * 100)} cm · Arka dolgu drenajlı granüler malzeme (φ = ${f(s.back.phi)}°, γ = ${f(s.back.g)} kN/m³), barbakan ve drenaj borusu önerilir.`,
+      `Taban zemini izin verilen basınç ${f(s.found.qa)} kPa; uygulamada zemin etüdüyle doğrulanmalı.`,
+      'Bindirmeler 50Φ; düşey ana donatı tabana L ile ankre edilir. Genleşme/derz aralığı en çok 10–12 m.'];
+    notes.forEach((t, i) => { g += TX(16, 202 + i * 4.6, '• ' + t, { s: 2.35 }); });
+    // donatı çizelgesi
+    const bars = o.qty.bars;
+    const t1 = tbl(240, 20, [['Poz', 10, 'l'], ['Tanım', 62, 'l'], ['Φ', 8, 'r'], ['Aralık', 13, 'r'], ['Adet', 13, 'r'], ['Boy (m)', 14, 'r'], ['Top. (m)', 16, 'r'], ['kg', 14, 'r']],
+      bars.map((b) => [String(b.mark), b.desc, String(b.phi), b.s ? String(b.s) : '–', f(b.n), f(b.len, 2), f(b.tot, 1), f(b.kg, 0)]).concat([Object.assign(['', 'TOPLAM', '', '', '', '', '', f(o.qty.tot.steel, 0)], { bold: true })]));
+    g += TX(240, 17, `DONATI ÇİZELGESİ (duvar boyu L = ${f(s.L, 1)} m)`, { s: 3.2, b: 1, c: '#1F4E78' }) + t1.svg;
+    let y = 20 + t1.h + 10;
+    const q = o.qty, p = s.price;
+    const t2 = tbl(240, y, [['Kalem', 62, 'l'], ['1 m için', 28, 'r'], ['Toplam', 30, 'r'], ['Birim', 16, 'l']], [
+      ['Beton', f(q.per.conc, 2), f(q.tot.conc, 1), 'm³'], ['Donatı', f(q.per.steel, 0), f(q.tot.steel, 0), 'kg'], ['Kalıp', f(q.per.form, 2), f(q.tot.form, 1), 'm²'],
+      ['Kazı', f(q.per.exc, 2), f(q.tot.exc, 1), 'm³'], ['Geri dolgu', f(q.per.fill, 2), f(q.tot.fill, 1), 'm³'], ['Grobeton', f(q.per.lean, 2), f(q.tot.lean, 1), 'm³'],
+      ['Donatı oranı', f(q.kgm3, 0), '', 'kg/m³'], Object.assign(['Yaklaşık maliyet (birim fiyatlarla)', f(q.costM, 0), f(q.cost, 0), ''], { bold: true })]);
+    g += TX(240, y - 2, 'METRAJ', { s: 3.2, b: 1, c: '#1F4E78' }) + t2.svg;
+    y += t2.h + 8;
+    const L = s.lim, st = o.stat, okTxt = (b) => (b ? 'UYGUN' : 'YETERSİZ');
+    const rows = [['Devrilme', f(st.FSo, 2), '≥ ' + f(L.FSo, 2), okTxt(st.FSo >= L.FSo)], ['Kayma', f(st.FSs, 2), '≥ ' + f(L.FSs, 2), okTxt(st.FSs >= L.FSs)], ['qmax (kPa)', f(st.bp.qmax, 0), '≤ ' + f(s.found.qa, 0), okTxt(st.bp.qmax <= s.found.qa)]];
+    if (o.seis) rows.push(['Devrilme (deprem)', f(o.seis.FSo, 2), '≥ ' + f(L.FSoE, 2), okTxt(o.seis.FSo >= L.FSoE)], ['Kayma (deprem)', f(o.seis.FSs, 2), '≥ ' + f(L.FSsE, 2), okTxt(o.seis.FSs >= L.FSsE)]);
+    const t3 = tbl(240, y, [['Stabilite özeti', 62, 'l'], ['Değer', 28, 'r'], ['Sınır', 30, 'r'], ['', 16, 'l']], rows.map((r) => Object.assign(r, { bad: r[3] !== 'UYGUN' })));
+    g += t3.svg;
+    if (o.bad) g += TX(240, y + t3.h + 6, `Dikkat: ${o.bad} kontrol sağlanmıyor – bu pafta henüz uygun bir tasarıma ait değil.`, { s: 2.8, b: 1, c: '#A12622' });
+    return `<svg viewBox="0 0 420 297" width="420mm" height="297mm" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">${g}</svg>`;
+  }
+
+  function sheet2(s, o, total) {
+    let g = frame(s, 2, total, 'Hesap çizelgesi');
+    const b = s.back, fo = s.found, ep = o.ep, st = o.stat, gm = o.gm, L = s.lim;
+    g += TX(16, 18, 'HESAP ÇİZELGESİ (1 m duvar; stabilite güvenlik sayılarıyla, betonarme EC2 ile)', { s: 3.4, b: 1, c: '#1F4E78' });
+    // girdiler
+    const ti = tbl(16, 22, [['Girdi', 58, 'l'], ['Değer', 36, 'r']], [
+      { head: 'Geometri' }, ['Duvar yüksekliği H / gövde Hs', `${f(gm.H, 2)} / ${f(gm.Hs, 2)} m`], ['Taban B (ön + gövde + arka)', `${f(gm.B, 2)} m`], ['Ön / arka ampatman', `${f(gm.toe, 2)} / ${f(gm.heel, 2)} m`],
+      ['Gövde üst / alt kalınlık', `${f(gm.ttop, 2)} / ${f(gm.tbot, 2)} m`], ['Taban kalınlığı tb', `${f(gm.tb, 2)} m`], ['Ön zemin derinliği Df', `${f(gm.Df, 2)} m`], ['Kayma dişi (derinlik × genişlik)', gm.keyOn ? `${f(gm.keyH, 2)} × ${f(gm.keyB, 2)} m` : 'yok'],
+      { head: 'Arka dolgu' }, ['γ / γsat', `${f(b.g, 1)} / ${f(b.gsat, 1)} kN/m³`], ['φ / şev β', `${f(b.phi)}° / ${f(b.beta)}°`], ['Sürşarj q', `${f(b.q, 1)} kPa`], ['Yeraltı suyu (taban altından)', b.hw > 0 ? `${f(b.hw, 2)} m` : 'yok (drenajlı)'],
+      { head: 'Temel zemini' }, ['γ / φ / c', `${f(fo.g, 1)} / ${f(fo.phi)}° / ${f(fo.c, 1)}`], ['İzin verilen basınç qa', `${f(fo.qa)} kPa`], ['Taban sürtünmesi δb = k·φ', `${f(fo.kb * fo.phi, 1)}°`], ['Pasif azaltma katsayısı', f(fo.fp, 2)],
+      { head: 'Deprem' }, ['kh / kv', s.seis.on ? `${f(s.seis.kh, 2)} / ${f(s.seis.kv, 2)}` : 'hesaba katılmadı'],
+      { head: 'Malzeme' }, ['Beton fck / çelik fyk', `${f(s.mat.fck)} / ${f(s.mat.fyk)} MPa`], ['γc / γs · γG / γQ', `${f(s.mat.gc, 2)} / ${f(s.mat.gs, 2)} · ${f(s.uls.gG, 2)} / ${f(s.uls.gQ, 2)}`]], { rh: 4.3, fs: 2.35 });
+    g += ti.svg;
+    // toprak itkisi
+    const tp = tbl(16, 22 + ti.h + 6, [['Toprak itkisi', 58, 'l'], ['Değer', 36, 'r']], [
+      [ep.virt ? 'Sanal arka yüz (topuk ucu), δ = β' : 'Duvar arka yüzü, δ = δw', `δ = ${f(ep.dDeg, 1)}°`], ['Aktif katsayı Ka (Coulomb)', f(ep.K, 4)], ['Düzlem yüksekliği Hv', `${f(gm.Hv, 2)} m`],
+      ['Pa (zemin) / Pq (sürşarj)', `${f(ep.soil.P, 1)} / ${f(ep.q.P, 1)} kN/m`], ['Su basıncı Pw', `${f(ep.w.P, 1)} kN/m`], ['Pasif direnç Pp (Kp = ' + f(o.A0.pp.Kp, 2) + ')', `${f(o.A0.pp.P, 1)} kN/m`]]
+      .concat(o.seis && ep.E ? [['KAE (Mononobe–Okabe) / ψ', `${f(ep.E.KE, 4)} / ${f(ep.E.psi, 1)}°`], ['ΔPAE (0,6·Hv’de)', `${f(ep.E.P, 1)} kN/m`]] : []), { rh: 4.3, fs: 2.35 });
+    g += tp.svg;
+    // stabilite
+    const rowsS = [['Devrilme: ΣMr / ΣMo', `${f(st.MRst, 1)} / ${f(st.MO + st.MU, 1)}`, f(st.FSo, 2), '≥ ' + f(L.FSo, 2)], ['Kayma: R / ΣH', `${f(st.R, 1)} / ${f(st.H, 1)}`, f(st.FSs, 2), '≥ ' + f(L.FSs, 2)],
+      ['Taban basıncı qmax / qmin (kPa)', `${f(st.bp.qmax, 0)} / ${f(st.bp.qmin, 0)}`, '', '≤ ' + f(fo.qa, 0)], ['Eksantrisite e (m)', f(st.e, 3), '', '≤ B/' + f(L.eDiv) + ' = ' + f(gm.B / L.eDiv, 2)]];
+    if (o.seis) { const E = o.seis; rowsS.push({ head: 'Deprem durumu' }, ['Devrilme', `${f(E.MRst, 1)} / ${f(E.MO + E.MU, 1)}`, f(E.FSo, 2), '≥ ' + f(L.FSoE, 2)], ['Kayma', `${f(E.R, 1)} / ${f(E.H, 1)}`, f(E.FSs, 2), '≥ ' + f(L.FSsE, 2)], ['qmax (kPa)', f(E.bp.qmax, 0), '', '≤ ' + f(fo.qa * L.qaE, 0)], ['Eksantrisite e (m)', f(E.e, 3), '', '≤ B/' + f(L.eDivE) + ' = ' + f(gm.B / L.eDivE, 2)]); }
+    const ts = tbl(120, 22, [['Stabilite (servis)', 60, 'l'], ['Talep / kapasite', 36, 'r'], ['FS', 14, 'r'], ['Sınır', 28, 'r']], rowsS, { rh: 4.3, fs: 2.35 });
+    g += ts.svg;
+    // ağırlıklar
+    const ww = o.A0.V.filter((v) => v.cat === 'G' && v.n.indexOf('itki') < 0).map((v) => [v.n, f(v.v, 1), f(v.x, 2), f(v.v * v.x, 1)]);
+    const tw = tbl(120, 22 + ts.h + 6, [['Düşey kuvvet (kalıcı)', 60, 'l'], ['W (kN/m)', 26, 'r'], ['x (m)', 24, 'r'], ['W·x', 28, 'r']], ww, { rh: 4.3, fs: 2.35 });
+    g += tw.svg;
+    // betonarme
+    const rcRows = Object.keys(o.rc).map((k) => { const r = o.rc[k]; return Object.assign([r.n, f(r.M, 1), f(r.VEd, 1), f(r.h * 1000, 0), f(r.AsReq, 0), `Φ${r.bar.phi}/${r.bar.s}`, f(r.Ap, 0), '%' + f(Math.max(r.uF, r.uV) * 100, 0)], { bad: r.uF > 1 || r.uV > 1 || r.over }); });
+    const tr = tbl(266, 22, [['Betonarme (ULS)', 30, 'l'], ['MEd', 14, 'r'], ['VEd', 14, 'r'], ['h mm', 13, 'r'], ['As gerek', 16, 'r'], ['Seçilen', 17, 'r'], ['As', 13, 'r'], ['Oran', 13, 'r']], rcRows, { rh: 4.3, fs: 2.3 });
+    g += tr.svg + TX(266, 22 + tr.h + 4, 'MEd kNm/m · VEd kN/m · As mm²/m. Kesme: etriyesiz VRd,c (EC2 6.2.2).', { s: 2.1, c: '#5B6B7B' });
+    const stc = o.sr.st, notes2 = [`Gövde: MEd = max(γG·MG + γQ·MQ ; MG + ψ2·MQ + ME) = ${f(stc.MEd, 1)} kNm/m`, `fcd = 0,85·fck/γc = ${f(o.sr.mt.fcd, 2)} MPa · fyd = ${f(o.sr.mt.fyd, 1)} MPa`, `As,min = max(0,26·fctm/fyk ; 0,0013)·b·d`,
+      'Toprak itkisi sanal arka yüzde (topuk ucu) alınmıştır; topuk üstündeki dolgu duvarla birlikte çalışır.', 'Taban ve ampatmanlar ULS taban basıncıyla (γG/γQ çarpanlı) boyutlandırılmıştır.', 'Genel (şev) stabilitesi bu hesabın kapsamında değildir; gerekiyorsa ayrıca kontrol edilmelidir.'];
+    notes2.forEach((t, i) => { g += TX(266, 22 + tr.h + 12 + i * 4.4, '• ' + t, { s: 2.25 }); });
+    const yD = Math.max(22 + ts.h + 6 + tw.h + 8, 150);
+    g += TX(120, yD, 'İTKİ VE TABAN BASINCI', { s: 3.2, b: 1, c: '#1F4E78' }) + embed(D.section(s, o, { w: 760, h: 520, rebar: false, press: true, bear: true, forces: true }), 118, yD + 2, 140, Math.min(96, 258 - yD));
+    if (o.bad) g += TX(266, 250, `Dikkat: ${o.bad} kontrol sağlanmıyor.`, { s: 3, b: 1, c: '#A12622' });
+    return `<svg viewBox="0 0 420 297" width="420mm" height="297mm" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">${g}</svg>`;
+  }
+  function build(s, o) { return [sheet1(s, o, 2), sheet2(s, o, 2)]; }
+  root.WallPafta = { build, sheet1, sheet2 };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* İstinat duvarı aracı – arayüz: girdiler, canlı tasarım, optimizasyon, hesap adımları, metraj, A3 paftalar, kayıtlı tasarımlar */
+(function () {
+  'use strict';
+  const W = window.Wall, SV = window.WallSolve, D = window.WallDraw, PF = window.WallPafta;
+  const $ = (q) => document.querySelector(q);
+  const f = (x, d = 0) => W.fm(x, d);
+  const clone = W.clone;
+  const get = (o, p) => p.split('.').reduce((a, k) => (a == null ? a : a[k]), o);
+  const set = (o, p, v) => { const ks = p.split('.'), l = ks.pop(); ks.reduce((a, k) => (a[k] = a[k] == null ? {} : a[k]), o)[l] = v; };
+  const escH = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const KEY = 'istinatV1', DES_KEY = 'istinatDesigns', CUR_KEY = 'istinatCurDesign';
+  const TYPE_NAMES = { T: 'T – ön ve arka ampatmanlı', L: 'L – yalnız arka ampatman', RL: 'Ters L – yalnız ön ampatman' };
+  let S = null, OUT = null, TAB = 'tasarim', SHOWN = null, SHEET = 1;
+  const OPT = { cfg: { objective: 'cost', tryKey: true, keyMax: 1.0, tbMin: 0.3, tbMax: null, toeMax: null, step: 0.05 }, res: null, cmp: null, running: false };
+
+  /* ---------------- durum ---------------- */
+  function merge(a, b) { if (!b || typeof b !== 'object') return a; Object.keys(b).forEach((k) => { if (a[k] && typeof a[k] === 'object' && !Array.isArray(a[k]) && b[k] && typeof b[k] === 'object') merge(a[k], b[k]); else if (b[k] !== undefined) a[k] = b[k]; }); return a; }
+  function init() {
+    let saved = null; try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { /* yok */ }
+    S = merge(clone(W.DEFAULTS), saved && saved.geo ? saved : null);
+    return !!(saved && saved.geo);
+  }
+  const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sessiz */ } };
+  function recalc() {
+    OUT = W.compute(S); persist(); renderChips();
+    if ((TAB === 'girdi' || TAB === 'opt') && SHOWN === TAB) return;      // girdi kutuları yerinde kalsın
+    if (TAB === 'tasarim' && SHOWN === 'tasarim') liveUpdate(); else renderTab();
+  }
+  function renderChips() {
+    const o = OUT; let h = '';
+    if (!o.ok) h = `<span class="chip bad">${escH(o.err)}</span>`;
+    else h = `<span class="chip ${o.bad ? 'bad' : 'ok'}">${o.bad ? o.bad + ' kontrol sağlanmıyor' : 'tüm kontroller sağlanıyor'}</span><span class="chip">belirleyici: ${escH(o.gov.n)} (%${f(o.gov.v * 100)})</span>` +
+      `<span class="chip">B ${f(o.gm.B, 2)} m · beton ${f(o.qty.per.conc, 2)} m³/m · demir ${f(o.qty.per.steel)} kg/m</span>`;
+    $('#chips').innerHTML = h; $('#selType').value = S.type; renderDesignUi();
+  }
+
+  /* ---------------- girdi şeması ---------------- */
+  const SCHEMA = [
+    { title: 'Duvar tipi ve yükseklik', fields: [
+      { types: true },
+      { k: 'stemShape', t: 'sel', label: 'Gövde şekli', w2: 1, opts: [['front', 'Ön yüz eğimli (arka yüz düşey)'], ['back', 'Arka yüz eğimli (ön yüz düşey)'], ['none', 'Sabit kalınlık']] },
+      { k: 'geo.H', label: 'Duvar yüksekliği H (taban altından üst kota)', unit: 'm', step: 0.05 }, { k: 'geo.Df', label: 'Ön zemin derinliği Df (taban altından)', unit: 'm', step: 0.05 },
+      { k: 'L', label: 'Duvar boyu L (metraj için)', unit: 'm', step: 1 },
+      { k: 'top.P', label: 'Duvar üstü düşey yük P', unit: 'kN/m', step: 1 }, { k: 'top.Ht', label: 'Duvar üstü yatay yük (korkuluk vb.)', unit: 'kN/m', step: 1 },
+    ] },
+    { title: 'Geometri (optimizasyonda değişir)', fields: [
+      { k: 'geo.toe', label: 'Ön ampatman (toe)', unit: 'm', step: 0.05, show: (s) => s.type !== 'L' }, { k: 'geo.heel', label: 'Arka ampatman (heel)', unit: 'm', step: 0.05, show: (s) => s.type !== 'RL' },
+      { k: 'geo.tb', label: 'Taban kalınlığı tb', unit: 'm', step: 0.05 }, { k: 'geo.ttop', label: 'Gövde üst kalınlığı', unit: 'm', step: 0.05 },
+      { k: 'geo.tbot', label: 'Gövde alt kalınlığı', unit: 'm', step: 0.05, show: (s) => s.stemShape !== 'none' },
+      { note: 'Bu boyutları elle girebilir ya da üstteki “⚙ Optimum tasarla” ile yüklere göre en ekonomik değerleri buldurabilirsiniz.' },
+    ] },
+    { title: 'Kayma dişi', fields: [
+      { k: 'key.on', t: 'chk', label: 'Taban altında kayma dişi olsun' },
+      { k: 'key.h', label: 'Diş derinliği (taban altından)', unit: 'm', step: 0.05, show: (s) => s.key.on }, { k: 'key.b', label: 'Diş genişliği', unit: 'm', step: 0.05, show: (s) => s.key.on },
+      { k: 'key.pos', t: 'sel', label: 'Diş konumu', w2: 1, show: (s) => s.key.on, opts: [['stem', 'Gövde altında'], ['heel', 'Arka uçta (topuk ucu)'], ['toe', 'Ön uçta']] },
+      { note: 'Diş, önündeki zeminin pasif direncini devreye sokar (Kp, azaltma katsayısıyla). Kayma zorlandığında topuğu uzatmaktan genellikle daha ekonomiktir. Optimizasyon dişli ve dişsiz çözümleri ayrıca dener.' },
+    ] },
+    { title: 'Arka dolgu', fields: [
+      { k: 'back.g', label: 'Birim ağırlık γ', unit: 'kN/m³', step: 0.5 }, { k: 'back.gsat', label: 'Doygun birim ağırlık γsat', unit: 'kN/m³', step: 0.5 },
+      { k: 'back.phi', label: 'İçsel sürtünme açısı φ', unit: '°', step: 1 }, { k: 'back.beta', label: 'Dolgu yüzeyi eğimi β', unit: '°', step: 1 },
+      { k: 'back.q', label: 'Sürşarj q (trafik, depolama)', unit: 'kPa', step: 1 }, { k: 'back.hw', label: 'Yeraltı suyu (taban altından; 0 = drenajlı)', unit: 'm', step: 0.1 },
+      { k: 'back.dw', label: 'Duvar–zemin sürtünmesi δw (yalnız topuksuz)', unit: '°', step: 1 },
+      { note: 'İtki, topuk ucundan geçen düşey sanal yüzde hesaplanır; topuk üstündeki dolgu duvarla birlikte çalışır (δ = β). Topuk yoksa itki duvar yüzüne δw ile etkir.' },
+    ] },
+    { title: 'Temel zemini', fields: [
+      { k: 'found.g', label: 'Birim ağırlık γ', unit: 'kN/m³', step: 0.5 }, { k: 'found.phi', label: 'İçsel sürtünme açısı φ', unit: '°', step: 1 },
+      { k: 'found.c', label: 'Kohezyon c', unit: 'kPa', step: 1 }, { k: 'found.qa', label: 'İzin verilen taban basıncı qa', unit: 'kPa', step: 10 },
+      { k: 'found.kb', label: 'Taban sürtünmesi δb/φ', step: 0.05 }, { k: 'found.kc', label: 'Taban adezyonu ca/c', step: 0.05 },
+      { k: 'found.front', t: 'chk', label: 'Ön dolgunun pasif direncini say (kazılabilir ise işaretlemeyin)' },
+      { k: 'found.fp', label: 'Pasif direnç azaltma katsayısı', step: 0.05 },
+    ] },
+    { title: 'Deprem', fields: [
+      { k: 'seis.on', t: 'chk', label: 'Deprem durumunu hesaba kat (Mononobe–Okabe)' },
+      { k: 'seis.kh', label: 'Yatay katsayı kh', step: 0.01, show: (s) => s.seis.on }, { k: 'seis.kv', label: 'Düşey katsayı kv', step: 0.01, show: (s) => s.seis.on },
+      { note: 'Tipik: kh ≈ 0,5·PGA/g (duvarın yer değiştirmesine izin verilen durum). Deprem itki artışı 0,6·H’de; duvar ve topuk üstü dolgu ataleti kh·W olarak eklenir.', show: (s) => s.seis.on },
+    ] },
+    { title: 'Malzeme ve pas payı', open: false, fields: [
+      { k: 'mat.fck', label: 'Beton fck', unit: 'MPa', step: 5 }, { k: 'mat.fyk', label: 'Donatı fyk', unit: 'MPa', step: 20 },
+      { k: 'mat.gc', label: 'γc', step: 0.05 }, { k: 'mat.gs', label: 'γs', step: 0.05 }, { k: 'mat.wc', label: 'Betonarme birim ağırlığı', unit: 'kN/m³', step: 0.5 },
+      { k: 'mat.cover', label: 'Pas payı (kalıplı yüzler)', unit: 'mm', step: 5 }, { k: 'mat.coverSoil', label: 'Pas payı (zemine dökülen)', unit: 'mm', step: 5 },
+    ] },
+    { title: 'Güvenlik sayıları ve katsayılar', open: false, fields: [
+      { k: 'lim.FSo', label: 'Devrilme FS (statik)', step: 0.1 }, { k: 'lim.FSs', label: 'Kayma FS (statik)', step: 0.1 }, { k: 'lim.eDiv', label: 'Eksantrisite sınırı B/…', step: 1 },
+      { k: 'lim.FSoE', label: 'Devrilme FS (deprem)', step: 0.1 }, { k: 'lim.FSsE', label: 'Kayma FS (deprem)', step: 0.05 }, { k: 'lim.eDivE', label: 'Eksantrisite (deprem) B/…', step: 1 },
+      { k: 'lim.qaE', label: 'Depremde qa artış katsayısı', step: 0.05 },
+      { k: 'uls.gG', label: 'γG (kalıcı)', step: 0.05 }, { k: 'uls.gQ', label: 'γQ (değişken)', step: 0.05 }, { k: 'uls.psi2', label: 'ψ2 (depremde sürşarj)', step: 0.1 },
+    ] },
+    { title: 'Seçenekler ve metraj', open: false, fields: [
+      { k: 'opts.soilOnToe', t: 'chk', label: 'Ön ampatman üstündeki zemini dirence say' },
+      { k: 'opts.surchStab', t: 'chk', label: 'Sürşarjın düşey yükünü devrilme/kaymada dirence say' },
+      { k: 'opts.lean', label: 'Grobeton kalınlığı', unit: 'm', step: 0.05 }, { k: 'opts.ws', label: 'Kazı çalışma payı (her yan)', unit: 'm', step: 0.1 },
+    ] },
+    { title: 'Donatı', open: false, fields: [
+      { k: 'rebarMode', t: 'sel', label: 'Donatı seçimi', w2: 1, opts: [['auto', 'Otomatik (her değişiklikte yeniden seçilir)'], ['manual', 'Elle (aşağıdaki çap/aralıklar kullanılır)']] },
+      { rebar: true },
+    ] },
+    { title: 'Pafta bilgileri', open: false, fields: [
+      { k: 'meta.project', t: 'txt', label: 'Proje', w2: 1 }, { k: 'meta.name', t: 'txt', label: 'Duvar adı', w2: 1 }, { k: 'meta.drawn', t: 'txt', label: 'Çizen' }, { k: 'meta.checked', t: 'txt', label: 'Kontrol' }, { k: 'meta.rev', t: 'txt', label: 'Revizyon' },
+    ] },
+  ];
+  const RB_ITEMS = [['stemB', 'Gövde arka düşey (ana)'], ['stemF', 'Gövde ön düşey'], ['stemH', 'Gövde yatay (her yüz)'], ['baseB', 'Taban alt enine'], ['baseT', 'Taban üst enine'], ['baseL', 'Taban boyuna (her katman)'], ['key', 'Diş']];
+  const OPEN = {};
+  function typeCards() {
+    return `<div class="types">${['T', 'L', 'RL'].map((t) => `<button class="tcard ${S.type === t ? 'on' : ''}" data-type="${t}">${D.typeIcon(t, S.stemShape, S.type === t)}<span>${TYPE_NAMES[t]}</span></button>`).join('')}</div>`;
+  }
+  function fieldHtml(fd) {
+    if (fd.show && !fd.show(S)) return '';
+    if (fd.types) return typeCards();
+    if (fd.note) return `<div class="hint">${fd.note}</div>`;
+    if (fd.rebar) {
+      const rb = OUT && OUT.rb ? OUT.rb : {}, man = S.rebarMode === 'manual';
+      return `<div class="f w2"><table><tr><th>Eleman</th><th>Φ (mm)</th><th>Aralık (mm)</th></tr>` + RB_ITEMS.filter((x) => x[0] !== 'key' || (OUT && OUT.gm && OUT.gm.keyOn)).map(([id, n]) => {
+        const b = (man && S.rebar && S.rebar[id]) || rb[id] || { phi: 12, s: 200 };
+        return `<tr><td>${n}</td><td><select data-rb="${id}.phi" ${man ? '' : 'disabled'}>${W.PHIS.map((p) => `<option ${p === b.phi ? 'selected' : ''}>${p}</option>`).join('')}</select></td><td><select data-rb="${id}.s" ${man ? '' : 'disabled'}>${W.SPS.map((p) => `<option ${p === b.s ? 'selected' : ''}>${p}</option>`).join('')}</select></td></tr>`;
+      }).join('') + `</table></div>`;
+    }
+    const v = get(S, fd.k);
+    if (fd.t === 'txt') return `<div class="f ${fd.w2 ? 'w2' : ''}"><label>${fd.label}</label><input type="text" data-k="${fd.k}" value="${escH(v)}"></div>`;
+    if (fd.t === 'chk') return `<label class="f chk"><input type="checkbox" data-k="${fd.k}" ${v ? 'checked' : ''}> ${fd.label}</label>`;
+    if (fd.t === 'sel') return `<div class="f ${fd.w2 ? 'w2' : ''}"><label>${fd.label}</label><select data-k="${fd.k}">${fd.opts.map((o) => `<option value="${o[0]}" ${o[0] === v ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></div>`;
+    return `<div class="f"><label><span>${fd.label}</span><span class="u">${fd.unit || ''}</span></label><input type="number" data-k="${fd.k}" step="${fd.step || 'any'}" value="${v}"></div>`;
+  }
+  function tabGirdi() {
+    return `<p class="note" style="margin:0 0 10px">Yükleri, zemini ve duvar tipini girin; boyutları “⚙ Optimum tasarla” bulur. Sonuç <b>Tasarım</b> sekmesinde canlı görünür.</p>` + saveBar() +
+      `<div class="igrid">` + SCHEMA.map((sec, i) => { const op = OPEN[i] != null ? OPEN[i] : sec.open !== false; return `<details ${op ? 'open' : ''} data-s="${i}"><summary>${sec.title}</summary><div class="fields">${sec.fields.map(fieldHtml).join('')}</div></details>`; }).join('') + `</div>`;
+  }
+
+  /* ---------------- TASARIM (canlı) ---------------- */
+  const DIMS = [
+    { k: 'geo.H', n: 'Duvar yüksekliği H', lo: 1, hi: 12 },
+    { k: 'geo.toe', n: 'Ön ampatman', lo: 0, hi: 6, show: (s) => s.type !== 'L' },
+    { k: 'geo.heel', n: 'Arka ampatman', lo: 0, hi: 12, show: (s) => s.type !== 'RL' },
+    { k: 'geo.tb', n: 'Taban kalınlığı tb', lo: 0.2, hi: 2 },
+    { k: 'geo.ttop', n: 'Gövde üst kalınlığı', lo: 0.15, hi: 1.5 },
+    { k: 'geo.tbot', n: 'Gövde alt kalınlığı', lo: 0.15, hi: 2, show: (s) => s.stemShape !== 'none' },
+    { k: 'geo.Df', n: 'Ön zemin derinliği Df', lo: 0, hi: 4 },
+    { k: 'key.h', n: 'Diş derinliği', lo: 0.1, hi: 2, show: (s) => s.key.on },
+    { k: 'key.b', n: 'Diş genişliği', lo: 0.2, hi: 1.5, show: (s) => s.key.on },
+  ];
+  function tabTasarim() {
+    const ctl = `<aside class="card dctl">${saveBar()}<h3>Boyutlar</h3><p class="note" style="margin:0 0 6px">Çubuğu sürükleyin ya da kutuya metre değerini yazın; çizim ve kontroller anında değişir.</p>` +
+      `<div class="types" style="margin-bottom:6px">${['T', 'L', 'RL'].map((t) => `<button class="tcard ${S.type === t ? 'on' : ''}" data-type="${t}" style="min-width:80px">${D.typeIcon(t, S.stemShape, S.type === t)}<span>${{ T: 'T', L: 'L', RL: 'Ters L' }[t]}</span></button>`).join('')}</div>` +
+      `<div class="sl"><div class="sl1"><label>Gövde şekli</label></div><select data-k="stemShape" style="width:100%;font:inherit;padding:4px"><option value="front" ${S.stemShape === 'front' ? 'selected' : ''}>Ön yüz eğimli</option><option value="back" ${S.stemShape === 'back' ? 'selected' : ''}>Arka yüz eğimli</option><option value="none" ${S.stemShape === 'none' ? 'selected' : ''}>Sabit kalınlık</option></select></div>` +
+      DIMS.filter((d) => !d.show || d.show(S)).map((d) => { const v = get(S, d.k); return `<div class="sl"><div class="sl1"><label>${d.n}</label><span class="sn"><input type="number" data-dz="${d.k}" step="0.05" value="${(+v).toFixed(2)}"><em>m</em></span></div><input type="range" data-dr="${d.k}" min="${d.lo}" max="${d.hi}" step="0.05" value="${v}"></div>`; }).join('') +
+      `<label class="chk2"><input type="checkbox" data-k="key.on" ${S.key.on ? 'checked' : ''}> Kayma dişi</label><label class="chk2"><input type="checkbox" data-k="seis.on" ${S.seis.on ? 'checked' : ''}> Deprem durumu</label>` +
+      `<p class="note" style="margin-top:8px">Yükler, zemin, malzeme: <button class="btn" data-tab="girdi">Girdiler</button><br>En ekonomik boyutlar: <button class="btn" data-tab="opt">Optimizasyon</button></p></aside>`;
+    return `<div class="dsn">${ctl}<div id="live"></div></div>`;
+  }
+  /* bu boyutlarla gereken en kısa arka (ya da ters L’de ön) ampatman */
+  function needLen() {
+    const w = clone(S), heelMode = S.type !== 'RL', k = heelMode ? 'heel' : 'toe';
+    for (let v = 0.2; v <= 15; v = Math.round((v + 0.05) * 100) / 100) { w.geo[k] = v; if (W.stabOnly(w).ok) return { k, v }; }
+    return { k, v: null };
+  }
+  function checksTable(o) {
+    return `<table><tr><th>Kontrol</th><th>Sonuç</th><th>Doluluk</th><th></th></tr>` + o.checks.map((x) => `<tr class="${x === o.gov ? 'gov' : ''}"><td>${escH(x.n)}${x === o.gov ? ' <b style="color:#C25E00">(belirleyici)</b>' : ''}</td><td>${escH(x.txt)}</td>` +
+      `<td style="width:150px"><div class="bar"><i class="${x.v > 1 ? 'over' : x.v > 0.9 ? 'hi' : ''}" style="width:${Math.min(100, x.v * 100)}%"></i></div></td><td class="r">%${f(Math.min(999, x.v * 100))} ${x.ok ? '✔' : '✘'}</td></tr>`).join('') + `</table>`;
+  }
+  function liveUpdate() {
+    const el = $('#live'); if (!el) return;
+    const o = OUT;
+    if (!o.ok) { el.innerHTML = `<div class="res bad">${escH(o.err)}</div>`; return; }
+    const nd = needLen(), cur = S.geo[nd.k];
+    const needH = nd.v == null ? `<div class="res bad">Bu boyutlarla (tb, gövde, diş) stabilite sağlanamıyor – diş ekleyin ya da “⚙ Optimum tasarla”yı kullanın.</div>` :
+      `<div class="res ${cur < nd.v - 1e-9 ? 'bad' : cur > nd.v + 0.3 ? 'warn' : 'ok'}">Stabilite için gereken en kısa ${nd.k === 'heel' ? 'arka' : 'ön'} ampatman: <b>${f(nd.v, 2)} m</b> (şu an ${f(cur, 2)} m)` +
+      (Math.abs(cur - nd.v) > 1e-9 ? ` <button class="btn" data-act="needApply" data-k="${nd.k}" data-v="${nd.v}">uygula</button>` : '') + `</div>`;
+    const kp = (v, t, cls) => `<div class="kpi ${cls || ''}"><b>${v}</b><span>${t}</span></div>`;
+    el.innerHTML = `<div class="kpis">${kp(f(o.gm.B, 2) + ' m', 'taban genişliği B')}${kp(f(o.qty.per.conc, 2) + ' m³', 'beton / m')}${kp(f(o.qty.per.steel) + ' kg', 'donatı / m (' + f(o.qty.kgm3) + ' kg/m³)')}${kp(f(o.qty.costM), 'yaklaşık maliyet / m')}` +
+      kp(o.bad ? o.bad + ' ✘' : 'tümü ✔', o.bad ? 'sağlanmayan kontrol' : 'tüm kontroller sağlanıyor', o.bad ? 'bad' : 'ok') + `</div>` +
+      (o.bad ? `<div class="res warn" style="margin:0 0 10px">Bazı kontroller sağlanmıyor. Boyutları değiştirin ya da <button class="btn p" data-act="optNow">⚙ Optimum tasarla</button></div>` : '') +
+      `<div class="grid2"><section class="card"><h3>Kesit, itki ve taban basıncı</h3>${D.section(S, o, { w: 760, h: 560 })}<p class="note">Turuncu: sanal arka yüzdeki itki (zemin + sürşarj + su). Mor: taban basıncı (kPa). Ölçüler m.</p></section>` +
+      `<section class="card"><h3>Kontroller</h3>${needH}${checksTable(o)}<p class="note">Doluluk = talep / kapasite (güvenlik sayılarında sınır / FS). Belirleyici kontrol en yüksek dolulukla çalışandır.</p></section></div>`;
+  }
+
+  /* ---------------- OPTİMİZASYON ---------------- */
+  function cfgFor(types) {
+    const c = OPT.cfg, d = SV.defaults(S), keys = d.keyHs.filter((h) => h <= c.keyMax + 1e-9);
+    return { objective: c.objective, tryKey: c.tryKey, noKey: !!c.noKey, keyHs: keys.length ? keys : [0.3], tbMin: c.tbMin, tbMax: c.tbMax || d.tbMax, toeMax: c.toeMax || d.toeMax, step: c.step, types };
+  }
+  function busy(on, txt) { const b = $('#busy'); b.style.display = on ? 'flex' : 'none'; if (txt) $('#busyTxt').textContent = txt; $('#busyProg').style.width = '0'; }
+  async function runOpt(types, applyBest, txt) {
+    if (OPT.running) return null; OPT.running = true; busy(true, txt || 'Optimum tasarım hesaplanıyor…');
+    try {
+      const res = await SV.run(S, cfgFor(types), (p) => { $('#busyProg').style.width = Math.round(p.p * 100) + '%'; });
+      if (applyBest && res.best) { SV.apply(S, res.best); detachDesign(); renderSide(); }
+      return res;
+    } finally { OPT.running = false; busy(false); }
+  }
+  async function optNow() {
+    const res = await runOpt([S.type], true);
+    OPT.res = res;
+    if (res && res.best) { toast(`Optimum tasarım uygulandı (${{ cost: 'en az maliyet', conc: 'en az beton', steel: 'en az donatı', exc: 'en az kazı' }[OPT.cfg.objective]}):`, `B = ${f(res.best.B, 2)} m`); TAB = TAB === 'girdi' ? 'tasarim' : TAB; }
+    else toast('Bu yükler ve sınırlarla uygun tasarım bulunamadı. Diş derinliği, taban kalınlığı ya da ampatman sınırlarını büyütün.', false);
+    renderSide(); recalc();
+  }
+  async function optCompare() {
+    const rows = [];
+    for (const t of ['T', 'L', 'RL']) {
+      for (const tk of [false, true]) {
+        const keep = OPT.cfg.tryKey; OPT.cfg.tryKey = tk; OPT.cfg.noKey = !tk;
+        const r = await runOpt([t], false, `${TYPE_NAMES[t]} · ${tk ? 'dişli' : 'dişsiz'} hesaplanıyor…`);
+        OPT.cfg.tryKey = keep; OPT.cfg.noKey = false;
+        rows.push({ t, tk, best: r && r.best });
+      }
+    }
+    OPT.cmp = rows; renderTab();
+  }
+  const objName = { cost: 'en az maliyet', conc: 'en az beton', steel: 'en az donatı', exc: 'en az kazı' };
+  const dRow = (d, act, i, lab) => `<tr><td>${{ T: 'T', L: 'L', RL: 'Ters L' }[d.type]}${lab ? ' <span class="note">' + lab + '</span>' : ''}</td><td class="r">${f(d.geo.toe, 2)}</td><td class="r">${f(d.geo.heel, 2)}</td><td class="r">${f(d.B, 2)}</td><td class="r">${f(d.geo.tb, 2)}</td><td class="r">${f(d.geo.ttop, 2)} / ${f(d.geo.tbot, 2)}</td><td class="r">${d.key.on ? f(d.key.h, 2) : '–'}</td><td class="r">${f(d.conc, 2)}</td><td class="r">${f(d.steel)}</td><td class="r">${f(d.exc, 1)}</td><td class="r"><b>${f(d.costM)}</b></td><td>${escH(d.gov)} %${f(d.govV * 100)}</td><td><button class="btn" data-act="${act}" data-i="${i}">uygula</button></td></tr>`;
+  const dHead = `<tr><th>Tip</th><th class="r">Ön amp. (m)</th><th class="r">Arka amp. (m)</th><th class="r">B (m)</th><th class="r">tb (m)</th><th class="r">Gövde üst/alt</th><th class="r">Diş (m)</th><th class="r">Beton m³/m</th><th class="r">Donatı kg/m</th><th class="r">Kazı m³/m</th><th class="r">Maliyet /m</th><th>Belirleyici</th><th></th></tr>`;
+  function tabOpt() {
+    const c = OPT.cfg, d = SV.defaults(S), p = S.price;
+    let h = saveBar() + `<section class="card"><h3>En ekonomik tasarım</h3><p class="aim"><b>Amaç:</b> Girilen yükler ve zemin için tüm stabilite ve betonarme kontrollerini sağlayan, seçilen ölçüte göre en ekonomik boyutları bulmak. Taban kalınlığı, gövde kalınlığı, kayma dişi ve ön ampatman taranır; her kombinasyonda gereken en kısa arka ampatman bulunur ve donatı otomatik seçilir.</p>` +
+      `<div class="fields" style="grid-template-columns:repeat(4,1fr);padding:0">` +
+      `<div class="f"><label>Ölçüt</label><select data-oc="objective">${Object.keys(objName).map((k) => `<option value="${k}" ${c.objective === k ? 'selected' : ''}>${objName[k]}</option>`).join('')}</select></div>` +
+      `<div class="f"><label>Taban kalınlığı en az (m)</label><input type="number" step="0.05" data-oc="tbMin" value="${c.tbMin}"></div><div class="f"><label>Taban kalınlığı en çok (m)</label><input type="number" step="0.05" data-oc="tbMax" value="${c.tbMax || d.tbMax}"></div>` +
+      `<div class="f"><label>Ön ampatman en çok (m)</label><input type="number" step="0.05" data-oc="toeMax" value="${c.toeMax || d.toeMax}"></div>` +
+      `<label class="f chk" style="grid-column:auto"><input type="checkbox" data-oc="tryKey" ${c.tryKey ? 'checked' : ''}> Kayma dişini de dene</label>` +
+      `<div class="f"><label>Diş derinliği en çok (m)</label><input type="number" step="0.1" data-oc="keyMax" value="${c.keyMax}"></div><div class="f"><label>Boyut adımı (m)</label><input type="number" step="0.05" data-oc="step" value="${c.step}"></div></div>` +
+      `<h3 style="margin-top:10px">Birim fiyatlar (yalnızca maliyet ölçütü için)</h3><div class="fields" style="grid-template-columns:repeat(6,1fr);padding:0">` +
+      [['conc', 'Beton (/m³)'], ['steel', 'Donatı (/kg)'], ['form', 'Kalıp (/m²)'], ['exc', 'Kazı (/m³)'], ['fill', 'Geri dolgu (/m³)'], ['lean', 'Grobeton (/m³)']].map((x) => `<div class="f"><label>${x[1]}</label><input type="number" data-k="price.${x[0]}" value="${p[x[0]]}"></div>`).join('') + `</div>` +
+      `<div class="btnrow" style="margin-top:10px"><button class="btn p" data-act="optRun">Çöz (${TYPE_NAMES[S.type]})</button><button class="btn" data-act="optCmp">Tüm duvar tiplerini karşılaştır (T / L / ters L, dişli / dişsiz)</button></div></section>`;
+    const r = OPT.res;
+    if (r) h += `<section class="card"><h3>Sonuçlar – ${objName[r.cfg.objective]}</h3>` + (r.best ? `<p class="note">${f(r.nFull)} tasarım tam hesaplandı, ${f(r.nFeas)} tanesi tüm kontrolleri sağladı (${f(r.ms)} ms). İlk satır optimumdur.</p><div style="overflow-x:auto"><table>${dHead}${r.list.slice(0, 15).map((x, i) => dRow(x, 'optApply', i)).join('')}</table></div>` : `<div class="res bad">Uygun tasarım bulunamadı. Taban kalınlığı ve ön ampatman sınırlarını büyütün, dişi açın ya da zemin/yük değerlerini gözden geçirin.</div>`) + `</section>`;
+    if (OPT.cmp) h += `<section class="card"><h3>Duvar tiplerinin karşılaştırması</h3><p class="note">Her satır o tipin (dişli ya da dişsiz) en ekonomik çözümüdür. Arsa sınırı nedeniyle ön ya da arka ampatman yapılamıyorsa L / ters L satırına bakın.</p><div style="overflow-x:auto"><table>${dHead.replace('<th>Tip</th>', '<th>Tip</th>')}${OPT.cmp.map((x, i) => (x.best ? dRow(x.best, 'cmpApply', i, x.tk ? 'dişli' : 'dişsiz') : `<tr><td>${{ T: 'T', L: 'L', RL: 'Ters L' }[x.t]} ${x.tk ? '(dişli)' : '(dişsiz)'}</td><td colspan="12" style="color:#A12622">uygun çözüm yok</td></tr>`)).join('')}</table></div></section>`;
+    return h;
+  }
+
+  /* ---------------- HESAP ADIMLARI ---------------- */
+  const rowsT = (arr) => `<table>${arr.map((r) => (r.head ? `<tr><th colspan="3">${r.head}</th></tr>` : `<tr class="${r.cls || ''}"><td>${r[0]}</td><td class="f2">${r[1] || ''}</td><td class="r">${r[2] == null ? '' : r[2]}</td></tr>`)).join('')}</table>`;
+  const card = (no, title, aim, body) => `<section class="card"><h3><span class="no">${no}</span>${title}</h3><p class="aim"><b>Amaç:</b> ${aim}</p>${body}</section>`;
+  function tabAdim() {
+    const o = OUT; if (!o.ok) return `<div class="res bad">${escH(o.err)}</div>`;
+    const gm = o.gm, ep = o.ep, st = o.stat, A = o.A0, b = S.back, fo = S.found, L = S.lim;
+    let h = '';
+    h += card(1, 'Ağırlıklar ve düşey kuvvetler', 'Duvarın ve topuk üstündeki dolgunun ağırlıklarını ve ön uca (x = 0) göre kollarını bulmak.',
+      `<table><tr><th>Kuvvet</th><th class="r">V (kN/m)</th><th class="r">x (m)</th><th class="r">V·x (kNm/m)</th><th>Stabilitede</th></tr>` + A.V.map((v) => `<tr><td>${escH(v.n)}</td><td class="r">${f(v.v, 2)}</td><td class="r">${f(v.x, 3)}</td><td class="r">${f(v.v * v.x, 2)}</td><td>${v.stab ? 'sayılır' : 'yalnız taban basıncında'}</td></tr>`).join('') + `</table>`);
+    h += card(2, 'Aktif toprak itkisi', 'Dolgunun duvarı itme kuvvetini ve etki noktasını bulmak.', rowsT([
+      [ep.virt ? 'Sanal arka yüz (topuk ucundan geçen düşey düzlem)' : 'Duvar arka yüzü (topuk yok)', ep.virt ? 'topuk üstündeki dolgu duvarla birlikte çalışır' : '', `δ = ${f(ep.dDeg, 1)}°`],
+      ['Coulomb aktif katsayısı', `Ka = cos²φ / [cosδ·(1 + √(sin(φ+δ)·sin(φ−β) / (cosδ·cosβ)))²], φ = ${f(b.phi)}°, β = ${f(b.beta)}°`, `<b>${f(ep.K, 4)}</b>`],
+      ['Düzlem yüksekliği', 'Hv = H + l·tanβ', f(gm.Hv, 3) + ' m'],
+      ['Zemin itkisi', ep.hw > 0 ? 'su üstü γ, su altı γ′ = γsat − γw' : 'Pa = ½·Ka·γ·Hv²', `${f(ep.soil.P, 2)} kN/m, y = ${f(ep.soil.y, 3)} m`],
+      ['Sürşarj itkisi', 'Pq = Ka·q·Hv', `${f(ep.q.P, 2)} kN/m, y = ${f(ep.q.y, 3)} m`],
+      ['Su basıncı', 'Pw = ½·γw·hw²', `${f(ep.w.P, 2)} kN/m`],
+      ['Yatay / düşey bileşen', 'P·cosδ / P·sinδ', `${f((ep.soil.P + ep.q.P) * Math.cos(ep.d), 2)} / ${f((ep.soil.P + ep.q.P) * Math.sin(ep.d), 2)} kN/m`],
+      ['Pasif direnç (ön)', `Kp = tan²(45 + φ/2) = ${f(A.pp.Kp, 3)}; derinlik ${f(A.pp.z1, 2)} → ${f(A.pp.z2, 2)} m`, `${f(A.pp.P, 2)} kN/m × ${f(fo.fp, 2)}`],
+    ]));
+    if (o.seis && o.A1.ep.E) {
+      const E = o.A1.ep.E;
+      h += card('2b', 'Deprem itkisi (Mononobe–Okabe)', 'Deprem sırasında artan itkiyi ve atalet kuvvetlerini bulmak.', rowsT([
+        ['ψ = atan(kh / (1 − kv))', `kh = ${f(S.seis.kh, 2)}, kv = ${f(S.seis.kv, 2)}`, f(E.psi, 2) + '°'], ['KAE', 'Mononobe–Okabe', `<b>${f(E.KE, 4)}</b>`],
+        ['İtki artışı', 'ΔPAE = ½·γ·Hv²·[(1 − kv)·KAE − Ka], 0,6·Hv’de', `${f(E.P, 2)} kN/m`], ['Sürşarj artışı', 'q·Hv·ΔK', `${f(E.Pq, 2)} kN/m`],
+      ].concat(o.A1.H.filter((x) => x.cat === 'E').map((x) => [escH(x.n), `y = ${f(x.y, 2)} m`, f(x.h, 2) + ' kN/m']))));
+    }
+    const stabCard = (no, t, c, lim) => card(no, t, 'Duvarın devrilmeye, kaymaya ve taban basıncına karşı güvenliğini göstermek.', rowsT([
+      { head: 'Devrilme (ön uç etrafında)' }, ['Karşı koyan moment', 'ΣV·x (stabilitede sayılan)', f(c.MRst, 2) + ' kNm/m'], ['Devirici moment', 'ΣH·y + U·xU', f(c.MO + c.MU, 2) + ' kNm/m'],
+      { cls: c.FSo >= lim.o ? 'tot' : 'bad', 0: 'FS devrilme', 1: '≥ ' + f(lim.o, 2), 2: f(c.FSo, 3), length: 3 },
+      { head: 'Kayma' }, ['Düşey kuvvet N', 'ΣV − U', f(c.N, 2) + ' kN/m'], ['Sürtünme', `N·tan δb, δb = ${f(c.dB, 1)}°`, f(c.Rf, 2)], ['Adezyon', 'ca·B', f(c.Rc, 2)], ['Pasif (azaltılmış)', 'fp·Pp', f(c.Rp, 2)],
+      ['Toplam direnç R / itici ΣH', '', `${f(c.R, 2)} / ${f(c.H, 2)} kN/m`], { cls: c.FSs >= lim.s ? 'tot' : 'bad', 0: 'FS kayma', 1: '≥ ' + f(lim.s, 2), 2: f(c.FSs, 3), length: 3 },
+      { head: 'Taban basıncı' }, ['Bileşke yeri', 'x = (ΣV·x − ΣH·y − U·xU) / N', f(c.xr, 3) + ' m'], ['Eksantrisite', 'e = B/2 − x', f(c.e, 3) + ' m (sınır B/' + f(lim.e) + ' = ' + f(gm.B / lim.e, 2) + ')'],
+      ['qmax / qmin', c.bp.full ? 'N/B·(1 ± 6e/B)' : 'çekme var: 2N / (3x)', `${f(c.bp.qmax, 1)} / ${f(c.bp.qmin, 1)} kPa`], { cls: c.bp.qmax <= lim.q ? 'tot' : 'bad', 0: 'qmax ≤ qa', 1: f(lim.q, 0) + ' kPa', 2: f(c.bp.qmax, 1), length: 3 },
+    ]));
+    h += stabCard(3, 'Stabilite – statik', st, { o: L.FSo, s: L.FSs, e: L.eDiv, q: fo.qa });
+    if (o.seis) h += stabCard('3b', 'Stabilite – deprem', o.seis, { o: L.FSoE, s: L.FSsE, e: L.eDivE, q: fo.qa * L.qaE });
+    const sr = o.sr, s0 = sr.st;
+    h += card(4, 'Gövde (taban kesiti)', 'Gövdeyi dolgu itkisine karşı boyutlandırmak ve donatısını seçmek.', rowsT([
+      ['Kalıcı (zemin + su) / değişken (sürşarj) momenti', '', `${f(s0.MG, 2)} / ${f(s0.MQ, 2)} kNm/m`], ['Statik ULS', `γG·MG + γQ·MQ`, f(s0.Ms, 2)], ['Deprem', 'MG + ψ2·MQ + ME', f(s0.Me, 2)],
+      ['Tasarım momenti MEd', s0.seisGov ? 'deprem belirleyici' : 'statik belirleyici', `<b>${f(s0.MEd, 2)} kNm/m</b>`],
+    ]) + rcBlock(o.rc.stem) + `<p class="note">Gövde boyunca moment: H/3’te ${f(sr.lev[0].MEd, 1)}, 2H/3’te ${f(sr.lev[1].MEd, 1)} kNm/m (ana donatının yarısı üst bölgede kesilebilir).</p>`);
+    if (o.rc.toe) h += card(5, 'Ön ampatman', 'ULS taban basıncı altında ön ampatmanın eğilme ve kesmesini kontrol etmek (alt lif çekme).', rcBlock(o.rc.toe));
+    if (o.rc.heel) h += card(6, 'Arka ampatman', 'Üstündeki dolgu ve sürşarj ile aşağı yüklenen arka ampatmanı kontrol etmek (üst lif çekme).', rcBlock(o.rc.heel));
+    if (o.rc.key) h += card(7, 'Kayma dişi', 'Dişin önündeki pasif direnci taşıyabildiğini göstermek.', rowsT([['Dişe gelen pasif kuvvet', 'γG·fp·Pp,diş', f(sr.Vkey, 2) + ' kN/m'], ['Kol (diş kökünden)', '', f(A.pp.keyArm, 3) + ' m']]) + rcBlock(o.rc.key));
+    return h;
+  }
+  function rcBlock(r) {
+    if (!r) return '';
+    return rowsT([
+      ['MEd / VEd', '', `${f(r.M, 2)} kNm/m / ${f(r.VEd, 2)} kN/m`], ['Faydalı yükseklik', 'd = h − pas payı − Φ/2', f(r.d, 0) + ' mm'],
+      ['μ = MEd / (b·d²·fcd)', '≤ 0,372', f(r.mu, 4)], ['Gerekli As', `max(hesap ${f(r.AsCalc, 0)} ; en az ${f(r.AsMin, 0)})`, f(r.AsReq, 0) + ' mm²/m'],
+      { cls: r.uF <= 1 ? 'tot' : 'bad', 0: 'Seçilen donatı', 1: `Φ${r.bar.phi} / ${r.bar.s} mm`, 2: f(r.Ap, 0) + ' mm²/m', length: 3 },
+      { cls: r.uV <= 1 ? 'tot' : 'bad', 0: 'Etriyesiz kesme VRd,c', 1: `k = ${f(r.vr.k, 2)}, ρ = ${f(r.vr.rho * 100, 2)} %`, 2: `${f(r.VEd, 1)} ≤ ${f(r.VRd, 1)} kN/m`, length: 3 },
+    ]);
+  }
+
+  /* ---------------- DONATI VE METRAJ ---------------- */
+  function tabListe() {
+    const o = OUT; if (!o.ok) return `<div class="res bad">${escH(o.err)}</div>`;
+    const q = o.qty, p = S.price;
+    return `<section class="card"><h3>Donatı çizelgesi (duvar boyu L = ${f(S.L, 1)} m)</h3><table><tr><th>Poz</th><th>Tanım</th><th class="r">Φ</th><th class="r">Aralık</th><th class="r">Adet</th><th class="r">Boy (m)</th><th class="r">Toplam (m)</th><th class="r">kg</th></tr>` +
+      q.bars.map((b) => `<tr><td>${b.mark}</td><td>${b.desc}</td><td class="r">${b.phi}</td><td class="r">${b.s || '–'}</td><td class="r">${f(b.n)}</td><td class="r">${f(b.len, 2)}</td><td class="r">${f(b.tot, 1)}</td><td class="r">${f(b.kg, 1)}</td></tr>`).join('') +
+      `<tr class="tot"><td></td><td>Toplam</td><td></td><td></td><td></td><td></td><td></td><td class="r">${f(q.tot.steel, 0)}</td></tr></table><p class="note">Bindirme 50Φ (12 m çubuk boyu), düşey donatı tabana L ile ankre. Çizimdeki poz numaraları bu çizelgeyle aynıdır. <button class="btn" data-act="csv">CSV indir</button></p></section>` +
+      `<section class="card"><h3>Metraj ve yaklaşık maliyet</h3><table><tr><th>Kalem</th><th class="r">1 m için</th><th class="r">Toplam</th><th>Birim</th><th class="r">Birim fiyat</th><th class="r">Tutar</th></tr>` +
+      [['Beton', 'conc', 'm³', 2], ['Donatı', 'steel', 'kg', 0], ['Kalıp', 'form', 'm²', 2], ['Kazı', 'exc', 'm³', 2], ['Geri dolgu', 'fill', 'm³', 2], ['Grobeton', 'lean', 'm³', 2]].map(([n, k, u, d]) => `<tr><td>${n}</td><td class="r">${f(q.per[k], d)}</td><td class="r">${f(q.tot[k], 1)}</td><td>${u}</td><td class="r">${f(p[k], 2)}</td><td class="r">${f(q.tot[k] * p[k], 0)}</td></tr>`).join('') +
+      `<tr class="tot"><td>Toplam</td><td class="r">${f(q.costM, 0)} /m</td><td></td><td></td><td></td><td class="r">${f(q.cost, 0)}</td></tr></table><p class="note">Donatı oranı ${f(q.kgm3)} kg/m³. Birim fiyatlar Optimizasyon sekmesinden değiştirilir.</p></section>` +
+      `<section class="card"><h3>Kesit ve donatı</h3>${D.section(S, o, { w: 820, h: 600, rebar: true, press: false, bear: false })}</section>`;
+  }
+  function csv() {
+    const rows = [['Poz', 'Tanım', 'Φ mm', 'Aralık mm', 'Adet', 'Boy m', 'Toplam m', 'kg']].concat(OUT.qty.bars.map((b) => [b.mark, b.desc, b.phi, b.s || '', b.n, b.len.toFixed(2), b.tot.toFixed(2), b.kg.toFixed(1)]));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + rows.map((r) => r.map((x) => '"' + String(x).replace(/"/g, '""') + '"').join(';')).join('\n')], { type: 'text/csv' })); a.download = 'istinat_donati.csv'; a.click();
+  }
+
+  /* ---------------- PAFTALAR ---------------- */
+  function tabPafta() {
+    if (!OUT.ok) return `<div class="res bad">${escH(OUT.err)}</div>`;
+    const sh = PF.build(S, OUT), nm = ['Pafta 1 – Kesit, donatı ve metraj', 'Pafta 2 – Hesap çizelgesi'];
+    if (SHEET > sh.length) SHEET = 1;
+    return saveBar() + `<div class="ctrl sbar">${sh.map((x, i) => `<button class="btn ${SHEET === i + 1 ? 'on' : ''}" data-act="sheet" data-v="${i + 1}">${nm[i]}</button>`).join('')}<span style="flex:1"></span><button class="btn p" data-act="printsheet">A3 PDF / Yazdır (${sh.length} pafta)</button>${sh.map((x, i) => `<button class="btn" data-act="svg" data-v="${i + 1}">Pafta ${i + 1} SVG</button>`).join('')}</div>` +
+      `<p class="note">A3 yatay. Tarayıcıda “PDF olarak kaydet”i seçip kenar boşluğunu “Yok”, ölçeği “%100” yapın.</p>` + sh.map((s, i) => `<div class="sheet ${i + 1 === SHEET ? 'on' : ''}">${s}</div>`).join('');
+  }
+  function printSheets() { document.body.classList.add('print-sheet'); const done = () => { document.body.classList.remove('print-sheet'); window.removeEventListener('afterprint', done); }; window.addEventListener('afterprint', done); window.print(); }
+  function downloadSvg(n) { const x = PF.build(S, OUT)[n - 1]; if (!x) return; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([x], { type: 'image/svg+xml' })); a.download = `Istinat_${(S.meta.name || 'duvar').replace(/[^\p{L}\p{N}\-]+/gu, '_')}_P${n}.svg`; a.click(); }
+
+  /* ---------------- KAYITLI TASARIMLAR ---------------- */
+  let DESLIB = [], CURID = null, DESSIG = '';
+  try { DESLIB = JSON.parse(localStorage.getItem(DES_KEY) || '[]').filter((x) => x && x.id && x.name && x.s && x.s.geo); } catch (e) { /* yok */ }
+  try { CURID = localStorage.getItem(CUR_KEY) || null; } catch (e) { /* yok */ }
+  if (CURID && !DESLIB.some((x) => x.id === CURID)) CURID = null;
+  const saveLib = () => { try { localStorage.setItem(DES_KEY, JSON.stringify(DESLIB)); } catch (e) { toast('Kayıt yapılamadı: tarayıcı depolaması dolu ya da kapalı. Dosyaya kaydedin.', false); } };
+  const setCur = (id) => { CURID = id; try { if (id) localStorage.setItem(CUR_KEY, id); else localStorage.removeItem(CUR_KEY); } catch (e) { /* sessiz */ } };
+  const stable = (o) => JSON.stringify(o, (k, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((a, x) => { a[x] = v[x]; return a; }, {}) : v));
+  const skey = (s) => { const c = clone(s); delete c.rebar; return stable(c); };
+  const curRec = () => DESLIB.find((x) => x.id === CURID) || null;
+  const dirty = () => { const r = curRec(); return !!r && skey(S) !== skey(r.s); };
+  const newId = () => 'w' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const sorted = () => DESLIB.slice().sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  const uniqueName = (n, ex) => { let x = n, i = 2; while (DESLIB.some((r) => r.id !== ex && r.name.toLowerCase() === x.toLowerCase())) x = `${n} (${i++})`; return x; };
+  const defName = () => `${S.meta.name || 'İstinat'} · ${{ T: 'T', L: 'L', RL: 'ters L' }[S.type]} H${f(S.geo.H, 2)}`;
+  function detachDesign() { if (CURID) setCur(null); }
+  function renderDesignUi() {
+    const list = sorted(), sig = list.map((r) => r.id + r.name).join(';') + CURID, sel = $('#selDesign');
+    if (sig !== DESSIG) { DESSIG = sig; sel.innerHTML = `<option value="">📂 Kayıtlı tasarım aç (${list.length})</option>` + list.map((r) => `<option value="${escH(r.id)}">${r.id === CURID ? '✔ ' : ''}${escH(r.name)}</option>`).join('') + '<option value="__file">💻 Bilgisayardaki dosyadan aç…</option>'; }
+    sel.value = '';
+    const ch = $('#desChip'), r = curRec();
+    if (r) { ch.style.display = ''; ch.innerHTML = `💾 ${escH(r.name)}` + (dirty() ? ' <b title="Kayıttan sonra değişiklik yapıldı">●</b>' : ''); } else ch.style.display = 'none';
+  }
+  const DLG = { mode: null, id: null, name: '', note: '', err: '' };
+  function dlgOpen(mode, id) { const r = mode === 'edit' ? DESLIB.find((x) => x.id === id) : curRec(); if (mode === 'edit' && !r) return; Object.assign(DLG, { mode, id: id || null, name: r ? r.name : defName(), note: r ? r.note || '' : '', err: '' }); dlgRender(); }
+  function dlgRender() {
+    let box = $('#dlg'); if (!box) { box = document.createElement('div'); box.id = 'dlg'; document.body.appendChild(box); }
+    if (!DLG.mode) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    const r = curRec(), ed = DLG.mode === 'edit';
+    box.style.display = 'flex';
+    box.innerHTML = `<div class="dlgbox"><h3>${ed ? 'Adı ve notu düzenle' : 'Tasarımı kaydet'}</h3><div class="f"><label>Tasarım adı</label><input type="text" id="dlgName" data-dl="name" value="${escH(DLG.name)}"></div>` +
+      `<div class="f" style="margin-top:6px"><label>Not (isteğe bağlı)</label><input type="text" data-dl="note" value="${escH(DLG.note)}"></div>` +
+      (ed ? '' : `<p class="note" style="margin:8px 0 0">${TYPE_NAMES[S.type]} · H = ${f(S.geo.H, 2)} m · B = ${OUT.ok ? f(OUT.gm.B, 2) : '–'} m · beton ${OUT.ok ? f(OUT.qty.per.conc, 2) : '–'} m³/m</p>` + (r ? `<p class="note" style="margin:6px 0 0">Açık kayıt: <b>${escH(r.name)}</b><br>“Güncelle” bu kaydın üzerine yazar; “Yeni kayıt olarak kaydet” ayrı bir kopya oluşturur.</p>` : '')) +
+      (DLG.err ? `<div class="res bad">${DLG.err}</div>` : '') +
+      `<div class="btnrow">${ed ? '<button class="btn p" data-act="dlgOk">Kaydet</button>' : (r ? '<button class="btn p" data-act="dlgUpd">Güncelle</button><button class="btn" data-act="dlgNew">Yeni kayıt olarak kaydet</button>' : '<button class="btn p" data-act="dlgNew">Kaydet</button>') + '<button class="btn" data-act="dlgFile">💻 Bilgisayara da kaydet</button>'}<button class="btn" data-act="dlgCancel">Vazgeç</button></div>` +
+      (ed ? '' : '<p class="note" style="margin:8px 0 0">Kayıt bu tarayıcıda saklanır. Dosya olarak bilgisayarınıza yazmak için “Bilgisayara da kaydet”i kullanın.</p>') + `</div>`;
+    setTimeout(() => { const i = $('#dlgName'); if (i) { i.focus(); i.select(); } }, 0);
+  }
+  const dlgClose = () => { DLG.mode = null; dlgRender(); };
+  function dlgCommit(asNew) {
+    const name = String(DLG.name || '').trim(), note = String(DLG.note || '').trim();
+    if (!name) { DLG.err = 'Tasarım adı gerekli.'; dlgRender(); return; }
+    const now = new Date().toISOString(); let msg, shown;
+    if (DLG.mode === 'edit') { const r = DESLIB.find((x) => x.id === DLG.id); r.name = uniqueName(name, r.id); r.note = note; r.updatedAt = now; msg = 'Kaydedildi:'; shown = r; }
+    else if (!asNew && curRec()) { const r = curRec(); r.name = uniqueName(name, r.id); r.note = note; r.s = clone(S); r.updatedAt = now; msg = 'Tasarım güncellendi:'; shown = r; }
+    else { const r = { id: newId(), name: uniqueName(name), note, savedAt: now, updatedAt: now, s: clone(S) }; DESLIB.push(r); setCur(r.id); msg = 'Tasarım kaydedildi:'; shown = r; }
+    saveLib(); dlgClose(); renderDesignUi(); if (TAB === 'kayit') renderTab(); toast(msg, shown.name);
+  }
+  function dsnOpen(id, goTab) {
+    const r = DESLIB.find((x) => x.id === id); if (!r) return;
+    if (CURID !== id && (CURID ? dirty() : true) && !confirm('Güncel girdilerdeki kaydedilmemiş değişiklikler kaybolacak. Devam edilsin mi?')) return;
+    S = merge(clone(W.DEFAULTS), clone(r.s)); setCur(id); OPT.res = null;
+    if (goTab) TAB = 'tasarim';
+    renderSide(); recalc(); toast('Tasarım açıldı:', r.name);
+  }
+  const FILETYPES = [{ description: 'İstinat duvarı tasarımı (.json)', accept: { 'application/json': ['.json'] } }];
+  async function saveFile() {
+    const r = curRec(), now = new Date().toISOString(), rec = { id: r ? r.id : newId(), name: r ? r.name : defName(), note: r ? r.note || '' : '', savedAt: now, updatedAt: now, s: clone(S) };
+    const base = rec.name.replace(/[^\p{L}\p{N}\-]+/gu, '_'), body = JSON.stringify({ app: 'istinat-hesap', version: 1, designs: [rec] }, null, 1);
+    if (window.showSaveFilePicker) { try { const h = await window.showSaveFilePicker({ suggestedName: base + '.json', types: FILETYPES }); const w = await h.createWritable(); await w.write(body); await w.close(); toast('Dosyaya kaydedildi:', h.name); } catch (e) { if (e && e.name !== 'AbortError') toast('Dosya kaydedilemedi.', false); } }
+    else { exportJson([rec], base); toast('Dosya indirilenler klasörüne indirildi:', base + '.json'); }
+  }
+  function exportJson(list, base) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'istinat-hesap', version: 1, designs: list }, null, 1)], { type: 'application/json' })); a.download = `${base || 'istinat_tasarimlari'}.json`; a.click(); }
+  function importText(text, openAfter) {
+    try {
+      const j = JSON.parse(text), arr = Array.isArray(j) ? j : j.designs, ids = [];
+      arr.forEach((x) => { if (!x || !x.name || !x.s || !x.s.geo) return; const same = DESLIB.find((y) => y.id === x.id); if (same && skey(same.s) === skey(merge(clone(W.DEFAULTS), x.s))) { ids.push(same.id); return; } const id = same || !x.id ? newId() : String(x.id); DESLIB.push({ id, name: uniqueName(String(x.name)), note: String(x.note || ''), savedAt: x.savedAt || new Date().toISOString(), updatedAt: x.updatedAt || new Date().toISOString(), s: x.s }); ids.push(id); });
+      if (!ids.length) throw new Error('boş');
+      saveLib(); renderDesignUi(); if (openAfter) dsnOpen(ids[0], true); else { renderTab(); toast('İçe aktarıldı.', true); }
+    } catch (e) { toast('Dosya açılamadı: geçerli bir tasarım dosyası değil.', false); }
+  }
+  async function openFile() {
+    if (window.showOpenFilePicker) { try { const [h] = await window.showOpenFilePicker({ types: FILETYPES }); importText(await (await h.getFile()).text(), true); } catch (e) { if (e && e.name !== 'AbortError') toast('Dosya açılamadı.', false); } }
+    else $('#desOpenFile').click();
+  }
+  const saveBar = () => `<div class="sbar"><button class="btn p" data-act="saveDlg">💾 Bu tasarımı kaydet</button></div>`;
+  function tabKayit() {
+    const list = sorted(), d = dirty();
+    const rows = list.map((r) => { const o = W.compute(merge(clone(W.DEFAULTS), clone(r.s))), open = r.id === CURID;
+      return `<tr class="${open ? 'tot' : ''}"><td><b>${escH(r.name)}</b>${r.note ? `<div class="note">${escH(r.note)}</div>` : ''}</td><td>${{ T: 'T', L: 'L', RL: 'Ters L' }[r.s.type] || ''}</td><td class="r">${f(r.s.geo.H, 2)}</td><td class="r">${o.ok ? f(o.gm.B, 2) : '–'}</td><td class="r">${o.ok ? f(o.qty.per.conc, 2) : '–'}</td><td class="r">${o.ok ? f(o.qty.per.steel) : '–'}</td><td class="r">${o.ok ? f(o.qty.costM) : '–'}</td><td>${o.ok ? (o.bad ? `<span style="color:#A12622">✘ ${o.bad}</span>` : '<span style="color:#1B6B3F">✔</span>') : '–'}</td>` +
+        `<td style="font-size:12px;color:#5B6B7B">${new Date(r.updatedAt).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</td><td>${open ? '<b style="color:#1B6B3F">Açık</b>' + (d ? ' <span style="color:#C25E00">· değişti</span>' : '') : ''}</td>` +
+        `<td style="min-width:170px;line-height:2"><button class="btn p" data-act="dOpen" data-id="${r.id}">Aç</button> <button class="btn" data-act="dDup" data-id="${r.id}">Kopyala</button> <button class="btn" data-act="dEdit" data-id="${r.id}">Adı düzenle</button> <button class="btn" data-act="dExp" data-id="${r.id}">İndir</button> <button class="btn" data-act="dDel" data-id="${r.id}">Sil</button></td></tr>`; }).join('');
+    return `<section class="card"><h3>Kayıtlı tasarımlar</h3><p class="aim"><b>Amaç:</b> Duvar tasarımlarını (tip, yükler, zemin, boyutlar, donatı) bir adla saklayıp sonra yeniden açmak. Benzer bir duvar için kaydı açın, değiştirin ve “Yeni kayıt olarak kaydet” deyin. Kayıtlar bu tarayıcıda saklanır; bilgisayara dosya olarak da kaydedebilirsiniz.</p>` +
+      `<div class="sbar"><button class="btn p" data-act="saveDlg">💾 Güncel tasarımı kaydet</button><button class="btn" data-act="saveFile">💻 Dosyaya kaydet</button><button class="btn" data-act="openFile">💻 Dosyadan aç</button></div>` +
+      (list.length ? `<div style="overflow-x:auto"><table><tr><th>Ad</th><th>Tip</th><th class="r">H (m)</th><th class="r">B (m)</th><th class="r">Beton m³/m</th><th class="r">Donatı kg/m</th><th class="r">Maliyet /m</th><th>Kontroller</th><th>Kayıt</th><th>Durum</th><th></th></tr>${rows}</table></div>` : '<p class="note">Henüz kayıtlı tasarım yok.</p>') +
+      `<div class="btnrow" style="margin-top:8px"><button class="btn" data-act="expAll">Tümünü indir</button></div></section>`;
+  }
+
+  /* ---------------- sekmeler ---------------- */
+  const TABS = [['girdi', 'Girdiler', tabGirdi], ['tasarim', 'Tasarım', tabTasarim], ['opt', 'Optimizasyon', tabOpt], ['adim', 'Hesap adımları', tabAdim], ['liste', 'Donatı ve metraj', tabListe], ['pafta', 'Paftalar (A3)', tabPafta], ['kayit', 'Kayıtlı tasarımlar', tabKayit]];
+  function renderTab() {
+    const keepY = window.scrollY; SHOWN = TAB;
+    TABS.forEach((t) => $('#t-' + t[0]).classList.toggle('on', t[0] === TAB));
+    $('#t-' + TAB).innerHTML = TABS.find((t) => t[0] === TAB)[2]();
+    $('#tabs').innerHTML = TABS.map((t) => `<button data-tab="${t[0]}" class="${t[0] === TAB ? 'on' : ''}">${t[1]}</button>`).join('');
+    if (TAB === 'tasarim') liveUpdate();
+    window.scrollTo(0, keepY);
+  }
+  const renderSide = () => { SHOWN = null; };
+  function toast(t, name, ok) {
+    let el = $('#toast'); if (!el) { el = document.createElement('div'); el.id = 'toast'; document.body.appendChild(el); }
+    el.style.background = name === false || ok === false ? '#A12622' : '#1B6B3F';
+    el.innerHTML = escH(t) + (name && name !== true ? ` <b>${escH(name)}</b>` : '');
+    el.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('show'), 3500);
+  }
+
+  /* ---------------- olaylar ---------------- */
+  document.addEventListener('input', (e) => {
+    const t = e.target, ds = t.dataset || {};
+    if (ds.dl) { DLG[ds.dl] = t.value; return; }
+    if (ds.oc) { const v = t.type === 'checkbox' ? t.checked : t.tagName === 'SELECT' ? t.value : parseFloat(t.value); if (t.type === 'number' && !isFinite(v)) return; OPT.cfg[ds.oc] = v; return; }
+    if (ds.rb) { const [id, k] = ds.rb.split('.'); if (!S.rebar) S.rebar = clone(OUT.rb); S.rebar[id] = S.rebar[id] || clone(OUT.rb[id] || { phi: 12, s: 200 }); S.rebar[id][k] = +t.value; recalc(); return; }
+    if (ds.dz || ds.dr) {
+      const k = ds.dz || ds.dr, v = parseFloat(t.value); if (!isFinite(v)) return;
+      set(S, k, Math.round(v * 100) / 100); detachIfNeeded();
+      const twin = document.querySelector(ds.dz ? `[data-dr="${k}"]` : `[data-dz="${k}"]`); if (twin) twin.value = ds.dz ? v : v.toFixed(2);
+      recalc(); return;
+    }
+    const k = ds.k; if (!k) return;
+    let v = t.type === 'checkbox' ? t.checked : t.type === 'number' ? parseFloat(t.value) : t.value;
+    if (t.type === 'number' && !isFinite(v)) return;
+    set(S, k, v);
+    if (k === 'rebarMode' && v === 'manual' && OUT && OUT.rb) S.rebar = clone(OUT.rb);
+    if (t.tagName === 'SELECT' || t.type === 'checkbox') renderSide();
+    recalc();
+  });
+  const detachIfNeeded = () => {};
+  document.addEventListener('toggle', (e) => { const d = e.target; if (d && d.dataset && d.dataset.s != null) OPEN[d.dataset.s] = d.open; }, true);
+  document.addEventListener('click', (e) => {
+    if (e.target.id === 'dlg') { dlgClose(); return; }
+    const ty = e.target.closest('[data-type]'); if (ty) { S.type = ty.dataset.type; renderSide(); recalc(); return; }
+    const tb = e.target.closest('[data-tab]'); if (tb) { TAB = tb.dataset.tab; renderTab(); window.scrollTo(0, 0); return; }
+    const a = e.target.closest('[data-act]'); if (!a) return;
+    const act = a.dataset.act, i = +a.dataset.i;
+    if (act === 'needApply') { S.geo[a.dataset.k] = +a.dataset.v; recalc(); }
+    if (act === 'optNow') optNow();
+    if (act === 'optRun') runOpt([S.type], false).then((r) => { OPT.res = r; renderTab(); });
+    if (act === 'optCmp') optCompare();
+    if (act === 'optApply' && OPT.res) { SV.apply(S, OPT.res.list[i]); TAB = 'tasarim'; renderSide(); recalc(); toast('Tasarım uygulandı.', true); }
+    if (act === 'cmpApply' && OPT.cmp) { SV.apply(S, OPT.cmp[i].best); TAB = 'tasarim'; renderSide(); recalc(); toast('Tasarım uygulandı.', true); }
+    if (act === 'csv') csv();
+    if (act === 'sheet') { SHEET = +a.dataset.v; renderTab(); }
+    if (act === 'printsheet') printSheets();
+    if (act === 'svg') downloadSvg(+a.dataset.v);
+    if (act === 'saveDlg') dlgOpen('save');
+    if (act === 'dlgNew') dlgCommit(true);
+    if (act === 'dlgUpd' || act === 'dlgOk') dlgCommit(false);
+    if (act === 'dlgFile') { dlgCommit(false); if (!DLG.mode) saveFile(); }
+    if (act === 'dlgCancel') dlgClose();
+    if (act === 'saveFile') saveFile();
+    if (act === 'openFile') openFile();
+    if (act === 'expAll' && DESLIB.length) exportJson(DESLIB, 'istinat_tasarimlari_' + new Date().toISOString().slice(0, 10));
+    const id = a.dataset.id, r = id && DESLIB.find((x) => x.id === id);
+    if (act === 'dOpen') dsnOpen(id, true);
+    if (act === 'dEdit') dlgOpen('edit', id);
+    if (act === 'dDup' && r) { const c = { id: newId(), name: uniqueName(r.name + ' (2)'), note: r.note, savedAt: new Date().toISOString(), updatedAt: new Date().toISOString(), s: clone(r.s) }; DESLIB.push(c); saveLib(); renderDesignUi(); renderTab(); toast('Kopyalandı:', c.name); }
+    if (act === 'dExp' && r) exportJson([r], 'istinat_' + r.name.replace(/[^\p{L}\p{N}\-]+/gu, '_'));
+    if (act === 'dDel' && r && confirm('Silmek istediğinize emin misiniz?')) { DESLIB = DESLIB.filter((x) => x.id !== id); if (CURID === id) setCur(null); saveLib(); renderDesignUi(); renderTab(); toast('Silindi.', true); }
+  });
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); if (!DLG.mode) dlgOpen('save'); return; }
+    if (!DLG.mode) return;
+    if (e.key === 'Escape') dlgClose(); else if (e.key === 'Enter' && e.target.dataset && e.target.dataset.dl) { e.preventDefault(); dlgCommit(false); }
+  });
+  document.addEventListener('change', (e) => { if (e.target.id === 'desOpenFile' && e.target.files[0]) { const rd = new FileReader(); rd.onload = () => importText(rd.result, true); rd.readAsText(e.target.files[0]); e.target.value = ''; } });
+  $('#selType').addEventListener('change', (e) => { S.type = e.target.value; renderSide(); recalc(); });
+  $('#selDesign').addEventListener('change', (e) => { const id = e.target.value; e.target.value = ''; if (id === '__file') openFile(); else if (id) dsnOpen(id, false); });
+  $('#desChip').addEventListener('click', () => { TAB = 'kayit'; renderTab(); });
+  $('#btnSave').addEventListener('click', () => dlgOpen('save'));
+  $('#btnOpt').addEventListener('click', () => optNow());
+  $('#btnPrint').addEventListener('click', () => window.print());
+
+  /* ---------------- başlat ---------------- */
+  const hadSaved = init();
+  OUT = W.compute(S); renderTab(); renderChips();
+  if (!hadSaved) {
+    runOpt([S.type], true, 'İlk tasarım yüklere göre hesaplanıyor…').then((r) => { OPT.res = r; recalc(); if (r && r.best) toast('İlk tasarım yüklere göre otomatik yapıldı (en az maliyet). Yükleri ve zemini Girdiler sekmesinde değiştirip “⚙ Optimum tasarla”ya basın.', true); });
+  }
+  window.__S = () => S; window.__OUT = () => OUT;
+})();
+
+</script>
+</body>
+</html>
