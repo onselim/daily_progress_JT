@@ -2643,6 +2643,18 @@ I18N.addText("ku", "0|Amûra hesabkirina bingehan\n1|Cureyê bircê\n2|B-# (birc
     mesh(rb.padBotN, pb, B, c + pb / 2, c + pb * 1.5, false, '#B03A2E', T1, undefined, 'A');
     mesh(rb.padTopN, pt, B, T1 - c - pt / 2, T1 - c - pt * 1.5, true, '#1E7B34', T1, '6 3', 'B');
     mesh(rb.pad2N, p2, B1, T1 + T2 - c - p2 / 2, T1 + T2 - c - p2 * 1.5, true, '#7B3FA0', T2, undefined, 'D');
+    // sehpalar (Π): S1 alt hasırın üstünde durur, taban ayağı üst hasırını taşır; S2 üst hasırın üstünde durur, 2. ayak hasırını taşır
+    (rbd ? rbd.bars.filter((b) => b.group === 'sehpa' && b.grid) : []).forEach((b) => {
+      const L = b.shape.legs.map((x) => x * 10), ft = L[0], h = L[1], tp = L[2];
+      const side = b.mark === 'S2' ? B1 : B, z0 = b.mark === 'S2' ? T1 - c : c + 2 * pb;
+      const nx = b.grid.nx, ny = b.grid.ny, dx = side / nx, dy = side / ny;
+      mk = b.mark;
+      for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
+        const xc = -side / 2 + dx * (i + 0.5), y = -side / 2 + dy * (j + 0.5), a = tp / 2;
+        pl([[xc - a - ft, y, z0], [xc - a, y, z0], [xc - a, y, z0 + h], [xc + a, y, z0 + h], [xc + a, y, z0], [xc + a + ft, y, z0]], '#138D90', sw(b.phi));
+      }
+      mk = null;
+    });
     // baca çubukları (ayaktan uca tek doğru) ve etriyeler
     const zb = c + pb * 2, zt = H - o.coverChimTop * 10;
     (rbd ? rbd.bars.filter((b) => b.group === 'baca' && b.xy && b.mark[0] === 'K') : []).forEach((b) => {
@@ -2700,6 +2712,8 @@ I18N.addText("ku", "0|Amûra hesabkirina bingehan\n1|Cureyê bircê\n2|B-# (birc
     const cm = (n, phi, wd) => n1(((wd - 2 * c - phi) / (n - 1)) / 10, 1);
     const leg = [['#B03A2E', `Alt hasır: ${rb.padBotN}Φ${rb.padBotPhi} (s≈${cm(rb.padBotN, rb.padBotPhi, B)} cm)`], ['#1E7B34', `Üst hasır: ${rb.padTopN}Φ${rb.padTopPhi} (s≈${cm(rb.padTopN, rb.padTopPhi, B)} cm) – kesik çizgi`],
       ['#7B3FA0', `2. ayak: ${rb.pad2N}Φ${rb.pad2Phi} (s≈${cm(rb.pad2N, rb.pad2Phi, B1)} cm)`], ['#C77700', `Baca ${rb.chimN}Φ${rb.chimPhi}`], ['#555555', `Etriye Φ${rb.stPhi}/${rb.stS * 10}`], ['#1F3A5F', 'Stub ve cleat']];
+    const chs = rbd ? rbd.bars.filter((b) => b.group === 'sehpa' && b.grid) : [];
+    if (chs.length) leg.push(['#138D90', 'Sehpalar (üst hasır taşıyıcı)']);
     body += leg.map((l, i) => `<rect x="14" y="${16 + i * 18}" width="16" height="4" fill="${l[0]}"/>` + txt(36, 22 + i * 18, l[1], { anchor: 'start', size: 11 })).join('');
     return svg(W, HH, body);
   }
